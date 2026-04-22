@@ -1,69 +1,76 @@
-# Imports Manager
+# MY IMP-EXP MANAGER (IMP-EXP MIDAS MANAGER)
 
-An AI-powered Import Operations Management System for tracking shipments, Letters of Credit (LCs), budgets, and automating WhatsApp summary reports.
+A comprehensive Ethiopian Import/Export Management System built with a 29-page wireframe specification.
+
+**Tagline:** MANAGE YOUR IMPORT AND EXPORT AT THE PALM OF YOUR HAND !!
 
 ## Architecture
 
-- **Frontend**: React + Vite + TypeScript + Tailwind CSS + shadcn/ui
-- **Backend**: Express.js + TypeScript
-- **AI**: OpenAI GPT-4o-mini via Replit AI Integrations
-- **Storage**: In-memory (MemStorage)
-- **Routing**: wouter (client-side)
-- **Data Fetching**: TanStack Query v5
+Full-stack TypeScript with React frontend and Express backend.
 
-## Key Features
+### Technology Stack
+- **Frontend:** React + TypeScript, Vite, TanStack Query, Wouter routing, Recharts, Shadcn/UI
+- **Backend:** Express, in-memory storage (MemStorage)
+- **AI:** OpenAI GPT-4o-mini via Replit AI Integrations
+- **Styling:** Tailwind CSS with custom ETB/Ethiopian-themed colors
 
-1. **Dashboard** — Overview with metric cards, recent shipments, active LCs, budget progress
-2. **Shipments** — Full CRUD for shipment tracking with status badges and search
-3. **Letters of Credit** — LC portfolio management with expiry alerts
-4. **Budgets** — Category-based budget tracking with utilization progress bars
-5. **AI Assistant** — GPT-4o-mini powered chat that answers questions about real-time operations data
-6. **WhatsApp Integration** — Daily summary report generation (status indicator in header)
-7. **Dark/Light Mode** — Full theme support via ThemeProvider
+### Key Features
+1. **Dashboard** — Trade volume chart, currency exchange rates (ETB/USD), AI insights, recent shipments
+2. **AI Insights Engine** — Efficiency score gauge, trade predictions, risk detection, AI chat assistant
+3. **Financial Ledger** — Available balance, LC credit limit, cash flow forecast, transaction history
+4. **Exchange Rates** — Addis Fortune Exchange Board with 8 Ethiopian banks (Amhara, Berhan, Hijra, Hibret, Dashen, ZamZam, Oromia, CBE), smart USD/ETB converter
+5. **LC Management** — Full CRUD for Letters of Credit with auto-calculated cost breakdown modal:
+   - Opening Payments Advice: FCY value × exchange rate, margin (30%), bank commission (4%), VAT (15%), Swift charge
+   - Settlement Amount: FCY value, margin held, settlement % (70%), NBE 2.5% rate
+   - Paid/unpaid status checkboxes with color indicators
+6. **Import Shipments** — Route tracking (Supplier→Port→Sea→Djibouti→Modjo→Warehouse), documents, customs financials, pre-fill from approved LC
+7. **Inventory** — Post-clearance stock with warehouse utilization, low stock alerts, AI stock forecasting
+8. **Customs Engine** — Real-time tax calculator: CIF = FOB + Freight + Insurance; Duty(20%) + Surtax(3%) + VAT(15%) + Withholding(3%), required documents status, AI HS code classification
+9. **Settings** — Company profile (Midas Global Trade Ltd), Banks, Suppliers, Certifications, Notifications with toggles
 
-## Project Structure
+### Ethiopian Context
+- Currency: ETB (Ethiopian Birr), USD/ETB rates from Addis Fortune
+- Ports: Djibouti (main port), Modjo (inland dry port), Kality (Addis Ababa warehouse)
+- Banks: Commercial Bank of Ethiopia, Dashen Bank, Amhara Bank, NBE, Hijra Bank, Hibret Bank, ZamZam Bank, Oromia Bank
+- Company: Midas Global Trade Ltd, Bole Road, Addis Ababa, Ethiopia (TIN: 0012345678)
+- Certifications: Organic (USDA), Fairtrade, Rainforest Alliance
 
-```
-client/src/
-  components/
-    AIAssistant.tsx       — Slide-in AI chat panel
-    AppSidebar.tsx        — Main sidebar navigation
-    MetricCard.tsx        — Reusable stat card
-    StatusBadge.tsx       — Color-coded status badges
-    ThemeProvider.tsx     — Dark/light mode context
-    ThemeToggle.tsx       — Theme toggle button
-    examples/             — Component preview examples
-  pages/
-    Dashboard.tsx         — Main overview page
-    Shipments.tsx         — Shipment CRUD
-    LettersOfCredit.tsx   — LC CRUD
-    Budgets.tsx           — Budget CRUD
-  App.tsx                 — Root with sidebar layout + routing
+### Data Models (shared/schema.ts)
+- `lcs` — Letters of Credit with full financial fields
+- `shipments` — Import shipments with route and customs data
+- `inventory` — Post-clearance inventory items
+- `exchangeRates` — Ethiopian bank USD/ETB rates
+- `banks` — Company bank accounts
+- `suppliers` — International supplier registry
+- `certifications` — Export/import certification types
+- `companySettings` — Company profile
+- `notificationSettings` — Alert preferences
 
-server/
-  routes.ts               — All API endpoints
-  storage.ts              — MemStorage with seeded data
-  openai.ts               — AI response & daily summary generation
+### API Routes (server/routes.ts)
+- `GET /api/dashboard` — Dashboard aggregated data
+- `GET/POST/PATCH/DELETE /api/lcs` — LC CRUD
+- `GET/POST/PATCH/DELETE /api/shipments` — Shipment CRUD
+- `GET/POST/PATCH/DELETE /api/inventory` — Inventory CRUD
+- `GET /api/exchange-rates` — Exchange rates
+- `GET/POST/DELETE /api/settings/banks` — Bank accounts
+- `GET/POST/DELETE /api/settings/suppliers` — Suppliers
+- `GET/POST/DELETE /api/settings/certifications` — Certifications
+- `GET/PATCH /api/settings/company` — Company settings
+- `GET/PATCH /api/settings/notifications` — Notification settings
+- `POST /api/ai/chat` — AI chat (OpenAI GPT-4o-mini)
 
-shared/
-  schema.ts               — Drizzle schema + Zod types
-```
+### Navigation
+- `/` — Dashboard
+- `/ai-insights` — AI Insights Engine
+- `/finance` — Financial Ledger
+- `/exchange-rates` — Exchange Rates (Addis Fortune Board)
+- `/import/lc-management` — LC Management
+- `/import/shipments` — Import Shipments
+- `/import/inventory` — Inventory
+- `/customs` — Customs Engine
+- `/settings` — Settings (Company/Banks/Suppliers/Certs/Notifications)
 
-## API Endpoints
-
-- `GET/POST /api/shipments` — List/create shipments
-- `GET/PATCH/DELETE /api/shipments/:id`
-- `GET/POST /api/lcs` — List/create LCs
-- `GET/PATCH/DELETE /api/lcs/:id`
-- `GET/POST /api/budgets` — List/create budget categories
-- `PATCH/DELETE /api/budgets/:id`
-- `GET /api/dashboard` — Aggregated dashboard data
-- `POST /api/ai/chat` — AI assistant (sends message, returns response)
-- `GET /api/whatsapp/summary` — Generate daily WhatsApp summary
-- `GET/PATCH /api/whatsapp/config`
-
-## Environment Variables
-
-- `AI_INTEGRATIONS_OPENAI_API_KEY` — Set by Replit AI Integrations
-- `AI_INTEGRATIONS_OPENAI_BASE_URL` — Set by Replit AI Integrations
-- `SESSION_SECRET` — Express session secret
+### Environment Variables
+- `AI_INTEGRATIONS_OPENAI_API_KEY` — OpenAI API key (via Replit AI Integrations)
+- `AI_INTEGRATIONS_OPENAI_BASE_URL` — OpenAI base URL
+- `SESSION_SECRET` — Session secret
