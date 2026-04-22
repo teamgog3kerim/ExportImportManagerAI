@@ -1,20 +1,43 @@
+import { useQuery } from "@tanstack/react-query";
 import { MetricCard } from "@/components/MetricCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Ship, DollarSign, FileText, TrendingUp, Clock, MapPin } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Ship, DollarSign, FileText, Clock, MapPin } from "lucide-react";
+import type { Shipment, LC, BudgetCategory } from "@shared/schema";
+
+interface DashboardData {
+  activeShipments: number;
+  inTransit: number;
+  delayed: number;
+  pendingClearance: number;
+  openLCs: number;
+  totalBudget: number;
+  totalSpent: number;
+  recentShipments: Shipment[];
+  activeLCList: LC[];
+  budgetCategories: BudgetCategory[];
+}
 
 export default function Dashboard() {
-  const recentShipments = [
-    { id: "SH-2024-001", origin: "Shanghai", status: "in-transit" as const, eta: "2024-11-15" },
-    { id: "SH-2024-002", origin: "Mumbai", status: "arrived" as const, eta: "2024-10-28" },
-    { id: "SH-2024-003", origin: "Hamburg", status: "delayed" as const, eta: "2024-11-20" },
-  ];
+  // todo: remove mock functionality - replace with real API
+  const { data, isLoading } = useQuery<DashboardData>({
+    queryKey: ["/api/dashboard"],
+  });
 
-  const activeLCs = [
-    { id: "LC-2024-045", bank: "HSBC", amount: "$125,000", expiry: "2025-01-15" },
-    { id: "LC-2024-046", bank: "Standard Chartered", amount: "$89,500", expiry: "2024-12-20" },
-  ];
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-8 w-48 bg-muted rounded-md" />
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => <div key={i} className="h-28 bg-muted rounded-lg" />)}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -26,25 +49,24 @@ export default function Dashboard() {
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Active Shipments"
-          value={12}
+          value={data?.activeShipments ?? 0}
           icon={Ship}
-          trend={{ value: 8, direction: "up" }}
+          subtitle={`${data?.inTransit ?? 0} in transit, ${data?.delayed ?? 0} delayed`}
         />
         <MetricCard
           title="Open LCs"
-          value={5}
+          value={data?.openLCs ?? 0}
           icon={FileText}
-          trend={{ value: 2, direction: "down" }}
         />
         <MetricCard
           title="Total Budget"
-          value="$2.4M"
+          value={formatCurrency(data?.totalBudget ?? 0)}
           icon={DollarSign}
-          subtitle="$1.8M utilized"
+          subtitle={`${formatCurrency(data?.totalSpent ?? 0)} utilized`}
         />
         <MetricCard
           title="Pending Clearance"
-          value={3}
+          value={data?.pendingClearance ?? 0}
           icon={Clock}
         />
       </div>
@@ -55,22 +77,22 @@ export default function Dashboard() {
             <CardTitle className="text-lg font-semibold">Recent Shipments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentShipments.map((shipment) => (
+            <div className="space-y-3">
+              {data?.recentShipments?.map((shipment) => (
                 <div
                   key={shipment.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover-elevate"
+                  className="flex items-center justify-between p-3 rounded-md border hover-elevate"
                   data-testid={`shipment-${shipment.id}`}
                 >
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-mono font-medium">{shipment.id}</p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <MapPin className="h-3 w-3" />
-                      <span>{shipment.origin}</span>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{shipment.origin} → {shipment.destination}</span>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <StatusBadge status={shipment.status} />
+                  <div className="flex flex-col items-end gap-1 ml-4 shrink-0">
+                    <StatusBadge status={shipment.status as any} />
                     <span className="text-xs text-muted-foreground">ETA: {shipment.eta}</span>
                   </div>
                 </div>
@@ -84,18 +106,18 @@ export default function Dashboard() {
             <CardTitle className="text-lg font-semibold">Active Letters of Credit</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {activeLCs.map((lc) => (
+            <div className="space-y-3">
+              {data?.activeLCList?.map((lc) => (
                 <div
                   key={lc.id}
-                  className="flex items-center justify-between p-3 rounded-lg border hover-elevate"
+                  className="flex items-center justify-between p-3 rounded-md border hover-elevate"
                   data-testid={`lc-${lc.id}`}
                 >
                   <div>
                     <p className="text-sm font-mono font-medium">{lc.id}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{lc.bank}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{lc.bank} · {lc.beneficiary}</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right ml-4 shrink-0">
                     <p className="text-sm font-semibold">{lc.amount}</p>
                     <p className="text-xs text-muted-foreground">Exp: {lc.expiry}</p>
                   </div>
@@ -112,27 +134,20 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>Electronics</span>
-                <span className="font-medium">$820K / $1M</span>
-              </div>
-              <Progress value={82} className="h-2" />
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>Textiles</span>
-                <span className="font-medium">$560K / $800K</span>
-              </div>
-              <Progress value={70} className="h-2" />
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span>Raw Materials</span>
-                <span className="font-medium">$420K / $600K</span>
-              </div>
-              <Progress value={70} className="h-2" />
-            </div>
+            {data?.budgetCategories?.map((cat) => {
+              const pct = Math.min((Number(cat.spent) / Number(cat.allocated)) * 100, 100);
+              return (
+                <div key={cat.id}>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span>{cat.name}</span>
+                    <span className="font-medium text-muted-foreground">
+                      {formatCurrency(Number(cat.spent))} / {formatCurrency(Number(cat.allocated))}
+                    </span>
+                  </div>
+                  <Progress value={pct} className="h-2" />
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
