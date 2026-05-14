@@ -113,7 +113,7 @@ export default function ExchangeRates() {
       <PageHeader
         eyebrow="Markets"
         title="Live Exchange Rates"
-        description="Live USD/ETB rates from every major Ethiopian bank — sourced from exchange.addisfortune.news, refreshed every 5 minutes."
+        description="Live USD/ETB rates from every major Ethiopian banks — source refreshed every 5 minutes."
         actions={
           <Badge variant="secondary" className="gap-1.5 px-2.5">
             <RadioTower className={`h-3.5 w-3.5 ${data?.live ? "text-emerald-600 animate-pulse" : "text-amber-600"}`} />
