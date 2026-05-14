@@ -320,6 +320,65 @@ export default function LCManagement() {
               </div>
             </div>
 
+            {/* Goods & Cert */}
+            <div>
+              <h3 className="text-xs font-semibold text-primary mb-3">Goods & Certification</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs flex items-center gap-2">
+                    <span>Description of Goods <span className="text-destructive">*</span></span>
+                    {suppliers.find(s => s.name === form.supplierName)?.products?.length ? (
+                      <span className="text-[0.65rem] text-muted-foreground font-normal">pick from this supplier's products</span>
+                    ) : null}
+                  </Label>
+                  {(() => {
+                    const sup = suppliers.find(s => s.name === form.supplierName);
+                    if (sup?.products && sup.products.length > 0) {
+                      const DESC_OTHER = "__desc_other__";
+                      return (
+                        <>
+                          <Select
+                            value={sup.products.includes(form.descriptionOfGoods ?? "") ? form.descriptionOfGoods : (form.descriptionOfGoods ? DESC_OTHER : "")}
+                            onValueChange={v => field("descriptionOfGoods", v === DESC_OTHER ? "" : v)}
+                          >
+                            <SelectTrigger data-testid="select-description-of-goods"><SelectValue placeholder="Select a product" /></SelectTrigger>
+                            <SelectContent>
+                              {sup.products.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                              <SelectItem value={DESC_OTHER}>Other (enter manually)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {!sup.products.includes(form.descriptionOfGoods ?? "") && (
+                            <Input
+                              className="mt-2"
+                              value={form.descriptionOfGoods ?? ""}
+                              onChange={e => field("descriptionOfGoods", e.target.value)}
+                              placeholder="Type description of goods"
+                              data-testid="input-description-of-goods"
+                            />
+                          )}
+                        </>
+                      );
+                    }
+                    return (
+                      <Input value={form.descriptionOfGoods ?? ""} onChange={e => field("descriptionOfGoods", e.target.value)} placeholder="Industrial Machinery for manufacturing plant" data-testid="input-description-of-goods" />
+                    );
+                  })()}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Total Quantity (Units) <span className="text-destructive">*</span></Label>
+                  <Input value={form.totalQuantity ?? ""} onChange={e => field("totalQuantity", e.target.value)} placeholder="15 units" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Entry Certificate Letter</Label>
+                  <Input value={form.entryCertificateLetter ?? ""} onChange={e => field("entryCertificateLetter", e.target.value)} placeholder="ECL-889" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Entry Certificate Issued Date</Label>
+                  <Input type="date" value={form.entryCertificateDate ?? ""} onChange={e => field("entryCertificateDate", e.target.value)} />
+                </div>
+              </div>
+            </div>
+
             {/* General LC Info */}
             <div>
               <h3 className="text-xs font-semibold text-primary mb-3 flex items-center gap-1.5">
@@ -379,65 +438,6 @@ export default function LCManagement() {
                   <Label className="text-xs">Expiry Date</Label>
                   <Input type="date" value={form.expiryDate} onChange={e => field("expiryDate", e.target.value)} />
                   <p className="text-xs text-muted-foreground">Set to 90 days from issue date.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Goods & Cert */}
-            <div>
-              <h3 className="text-xs font-semibold text-primary mb-3">Goods & Certification</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1 sm:col-span-2">
-                  <Label className="text-xs flex items-center gap-2">
-                    <span>Description of Goods <span className="text-destructive">*</span></span>
-                    {suppliers.find(s => s.name === form.supplierName)?.products?.length ? (
-                      <span className="text-[0.65rem] text-muted-foreground font-normal">pick from this supplier's products</span>
-                    ) : null}
-                  </Label>
-                  {(() => {
-                    const sup = suppliers.find(s => s.name === form.supplierName);
-                    if (sup?.products && sup.products.length > 0) {
-                      const DESC_OTHER = "__desc_other__";
-                      return (
-                        <>
-                          <Select
-                            value={sup.products.includes(form.descriptionOfGoods ?? "") ? form.descriptionOfGoods : (form.descriptionOfGoods ? DESC_OTHER : "")}
-                            onValueChange={v => field("descriptionOfGoods", v === DESC_OTHER ? "" : v)}
-                          >
-                            <SelectTrigger data-testid="select-description-of-goods"><SelectValue placeholder="Select a product" /></SelectTrigger>
-                            <SelectContent>
-                              {sup.products.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                              <SelectItem value={DESC_OTHER}>Other (enter manually)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {!sup.products.includes(form.descriptionOfGoods ?? "") && (
-                            <Input
-                              className="mt-2"
-                              value={form.descriptionOfGoods ?? ""}
-                              onChange={e => field("descriptionOfGoods", e.target.value)}
-                              placeholder="Type description of goods"
-                              data-testid="input-description-of-goods"
-                            />
-                          )}
-                        </>
-                      );
-                    }
-                    return (
-                      <Input value={form.descriptionOfGoods ?? ""} onChange={e => field("descriptionOfGoods", e.target.value)} placeholder="Industrial Machinery for manufacturing plant" data-testid="input-description-of-goods" />
-                    );
-                  })()}
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Total Quantity (Units) <span className="text-destructive">*</span></Label>
-                  <Input value={form.totalQuantity ?? ""} onChange={e => field("totalQuantity", e.target.value)} placeholder="15 units" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Entry Certificate Letter</Label>
-                  <Input value={form.entryCertificateLetter ?? ""} onChange={e => field("entryCertificateLetter", e.target.value)} placeholder="ECL-889" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Entry Certificate Issued Date</Label>
-                  <Input type="date" value={form.entryCertificateDate ?? ""} onChange={e => field("entryCertificateDate", e.target.value)} />
                 </div>
               </div>
             </div>
