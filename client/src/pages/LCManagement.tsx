@@ -42,7 +42,7 @@ export default function LCManagement() {
       ...p,
       supplierName: s.name,
       supplierAddress: s.address ?? p.supplierAddress ?? "",
-      descriptionOfGoods: (s.products && s.products.length > 0) ? s.products.join(", ") : (p.descriptionOfGoods ?? ""),
+      descriptionOfGoods: "",
     }));
   }
   const [search, setSearch] = useState("");
@@ -326,27 +326,39 @@ export default function LCManagement() {
                   <Label className="text-xs flex items-center gap-2">
                     Description of Goods
                     {suppliers.find(s => s.name === form.supplierName)?.products?.length ? (
-                      <span className="text-[0.65rem] text-muted-foreground font-normal">auto-filled from supplier · editable</span>
+                      <span className="text-[0.65rem] text-muted-foreground font-normal">pick from this supplier's products</span>
                     ) : null}
                   </Label>
-                  <Input value={form.descriptionOfGoods ?? ""} onChange={e => field("descriptionOfGoods", e.target.value)} placeholder="Industrial Machinery for manufacturing plant" data-testid="input-description-of-goods" />
                   {(() => {
                     const sup = suppliers.find(s => s.name === form.supplierName);
-                    if (!sup?.products || sup.products.length === 0) return null;
-                    return (
-                      <div className="flex flex-wrap gap-1 pt-1">
-                        {sup.products.map(p => (
-                          <Badge
-                            key={p}
-                            variant="outline"
-                            className="cursor-pointer"
-                            onClick={() => field("descriptionOfGoods", p)}
-                            data-testid={`chip-product-${p.toLowerCase().replace(/\s+/g, "-")}`}
+                    if (sup?.products && sup.products.length > 0) {
+                      const DESC_OTHER = "__desc_other__";
+                      return (
+                        <>
+                          <Select
+                            value={sup.products.includes(form.descriptionOfGoods ?? "") ? form.descriptionOfGoods : (form.descriptionOfGoods ? DESC_OTHER : "")}
+                            onValueChange={v => field("descriptionOfGoods", v === DESC_OTHER ? "" : v)}
                           >
-                            {p}
-                          </Badge>
-                        ))}
-                      </div>
+                            <SelectTrigger data-testid="select-description-of-goods"><SelectValue placeholder="Select a product" /></SelectTrigger>
+                            <SelectContent>
+                              {sup.products.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                              <SelectItem value={DESC_OTHER}>Other (enter manually)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {!sup.products.includes(form.descriptionOfGoods ?? "") && (
+                            <Input
+                              className="mt-2"
+                              value={form.descriptionOfGoods ?? ""}
+                              onChange={e => field("descriptionOfGoods", e.target.value)}
+                              placeholder="Type description of goods"
+                              data-testid="input-description-of-goods"
+                            />
+                          )}
+                        </>
+                      );
+                    }
+                    return (
+                      <Input value={form.descriptionOfGoods ?? ""} onChange={e => field("descriptionOfGoods", e.target.value)} placeholder="Industrial Machinery for manufacturing plant" data-testid="input-description-of-goods" />
                     );
                   })()}
                 </div>

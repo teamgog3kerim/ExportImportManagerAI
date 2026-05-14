@@ -45,7 +45,7 @@ export default function ExportPurchases() {
       ...p,
       supplierName: s.name,
       supplierLocation: s.address ?? s.country ?? p.supplierLocation ?? "",
-      productName: (s.products && s.products.length === 1) ? s.products[0] : p.productName ?? "",
+      productName: "",
     }));
   }
   const [search, setSearch] = useState("");
