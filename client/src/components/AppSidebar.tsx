@@ -46,7 +46,7 @@ export function AppSidebar() {
             <span className="font-display text-primary-foreground text-base font-semibold">M</span>
           </div>
           <div className="min-w-0">
-            <p className="font-display text-base font-semibold leading-tight truncate tracking-tight">My EX-IM </p>
+            <p className="font-display font-semibold truncate tracking-tight text-[19px]">EXIMER</p>
             <p className="text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground leading-tight truncate mt-0.5">My Export & Import Manager</p>
           </div>
         </div>
