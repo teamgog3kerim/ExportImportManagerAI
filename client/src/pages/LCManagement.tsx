@@ -53,6 +53,7 @@ export default function LCManagement() {
   const [editLC, setEditLC] = useState<LC | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(157.50);
+  const [insuranceFocused, setInsuranceFocused] = useState(false);
 
   const emptyForm = {
     lcNumber: "", issuingBank: "", currency: "USD", fobValueUsd: "0", freightValueUsd: "0",
@@ -433,21 +434,33 @@ export default function LCManagement() {
                   <Label className="text-xs">Insurance Amount (ETB)</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">ETB</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      step="0.01"
-                      inputMode="decimal"
-                      className="pl-12 tabular-nums"
-                      value={form.insurancePaidEtb ?? "0"}
-                      onChange={e => field("insurancePaidEtb", e.target.value)}
-                      onBlur={e => {
-                        const n = parseFloat(e.target.value);
-                        field("insurancePaidEtb", isNaN(n) ? "0.00" : n.toFixed(2));
-                      }}
-                      placeholder="0.00"
-                      data-testid="input-insurance-amount-etb"
-                    />
+                    {(() => {
+                      const raw = String(form.insurancePaidEtb ?? "");
+                      const n = parseFloat(raw);
+                      const formatted = isNaN(n) ? "" : n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                      return (
+                        <Input
+                          type="text"
+                          inputMode="decimal"
+                          className="pl-12 tabular-nums"
+                          value={insuranceFocused ? raw : formatted}
+                          onFocus={() => setInsuranceFocused(true)}
+                          onChange={e => {
+                            const cleaned = e.target.value.replace(/[^0-9.]/g, "");
+                            const parts = cleaned.split(".");
+                            const normalized = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join("")}` : cleaned;
+                            field("insurancePaidEtb", normalized);
+                          }}
+                          onBlur={e => {
+                            setInsuranceFocused(false);
+                            const v = parseFloat(e.target.value.replace(/,/g, ""));
+                            field("insurancePaidEtb", isNaN(v) ? "0.00" : v.toFixed(2));
+                          }}
+                          placeholder="0.00"
+                          data-testid="input-insurance-amount-etb"
+                        />
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
