@@ -46,12 +46,11 @@ export function AppSidebar() {
             <span className="font-display text-primary-foreground text-base font-semibold">M</span>
           </div>
           <div className="min-w-0">
-            <p className="font-display text-base font-semibold leading-tight truncate tracking-tight">Midas</p>
+            <p className="font-display text-base font-semibold leading-tight truncate tracking-tight">My EX-IM </p>
             <p className="text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground leading-tight truncate mt-0.5">Imp · Exp Manager</p>
           </div>
         </div>
       </SidebarHeader>
-
       <SidebarContent className="px-2 py-2">
         <SidebarGroup>
           <SidebarGroupContent>
@@ -139,7 +138,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-
       <SidebarFooter className="px-4 py-3 border-t">
         <div className="flex items-center gap-2.5">
           <span className="relative flex h-2 w-2 shrink-0">
