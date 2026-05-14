@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, FileText, AlertTriangle, Pencil, Trash2, Calculator } from "lucide-react";
-import type { LC, Supplier } from "@shared/schema";
+import type { LC, Supplier, Bank } from "@shared/schema";
 import { LCCostCalculator } from "@/components/LCCostCalculator";
 
 function lcStatusColor(s: string) {
@@ -22,7 +22,7 @@ function lcStatusColor(s: string) {
   return "secondary";
 }
 
-const BANKS = ["Commercial Bank of Ethiopia (CBE)", "Dashen Bank", "Bank of Abyssinia (BOA)", "Awash Bank", "Wegagen Bank"];
+const BANK_OTHER = "__bank_other__";
 const CURRENCIES = ["USD ($)", "EUR (€)", "GBP (£)", "CNY (¥)"];
 
 export default function LCManagement() {
@@ -30,6 +30,10 @@ export default function LCManagement() {
   const { data: lcs = [], isLoading } = useQuery<LC[]>({ queryKey: ["/api/lcs"] });
   const { data: suppliersRaw = [] } = useQuery<Supplier[]>({ queryKey: ["/api/settings/suppliers"] });
   const suppliers = suppliersRaw.filter(s => !!s.name && s.name.trim().length > 0);
+  const { data: banksRaw = [] } = useQuery<Bank[]>({ queryKey: ["/api/settings/banks"] });
+  const bankNames = Array.from(new Set(
+    banksRaw.map(b => b.bankName).filter((n): n is string => !!n && n.trim().length > 0)
+  ));
   const SUPPLIER_OTHER = "__other__";
   function applySupplier(name: string) {
     if (name === SUPPLIER_OTHER) {
@@ -258,10 +262,30 @@ export default function LCManagement() {
                 </div>
                 <div className="space-y-1 sm:col-span-2">
                   <Label className="text-xs">Issuing Bank <span className="text-destructive">*</span></Label>
-                  <Select value={form.issuingBank} onValueChange={v => field("issuingBank", v)}>
-                    <SelectTrigger data-testid="select-issuing-bank"><SelectValue placeholder="Select bank" /></SelectTrigger>
-                    <SelectContent>{BANKS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
+                  <Select
+                    value={bankNames.includes(form.issuingBank) ? form.issuingBank : (form.issuingBank ? BANK_OTHER : "")}
+                    onValueChange={v => field("issuingBank", v === BANK_OTHER ? "" : v)}
+                  >
+                    <SelectTrigger data-testid="select-issuing-bank">
+                      <SelectValue placeholder={bankNames.length === 0 ? "Add a bank in Settings first" : "Select bank"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bankNames.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
+                      <SelectItem value={BANK_OTHER}>Other (enter manually)</SelectItem>
+                    </SelectContent>
                   </Select>
+                  {!bankNames.includes(form.issuingBank) && (
+                    <Input
+                      className="mt-2"
+                      value={form.issuingBank}
+                      onChange={e => field("issuingBank", e.target.value)}
+                      placeholder="Type bank name"
+                      data-testid="input-issuing-bank"
+                    />
+                  )}
+                  {bankNames.length === 0 && (
+                    <p className="text-[0.65rem] text-muted-foreground">No saved banks yet — add them under Settings → Banks.</p>
+                  )}
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">LC Currency <span className="text-destructive">*</span></Label>
