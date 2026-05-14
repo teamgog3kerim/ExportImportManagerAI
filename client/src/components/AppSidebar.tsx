@@ -42,8 +42,27 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="px-4 py-4 border-b">
         <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-md bg-primary flex items-center justify-center shrink-0 shadow-sm">
-            <span className="font-display text-primary-foreground text-base font-semibold">M</span>
+          <div className="h-9 w-9 rounded-md bg-primary flex items-center justify-center shrink-0 shadow-sm" aria-label="Import / Export">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-5 w-5 text-primary-foreground"
+              aria-hidden="true"
+            >
+              {/* Globe meridian — international trade */}
+              <circle cx="12" cy="12" r="8.5" opacity="0.35" />
+              <path d="M3.5 12h17" opacity="0.35" />
+              {/* Inbound arrow (import) */}
+              <path d="M5 9 L9 9 L9 6.5" />
+              <path d="M9 9 L4.5 13.5" />
+              {/* Outbound arrow (export) */}
+              <path d="M19 15 L15 15 L15 17.5" />
+              <path d="M15 15 L19.5 10.5" />
+            </svg>
           </div>
           <div className="min-w-0">
             <p className="font-display font-semibold truncate tracking-tight text-[19px]">EXIMER</p>
