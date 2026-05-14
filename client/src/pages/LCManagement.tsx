@@ -324,7 +324,7 @@ export default function LCManagement() {
             <div>
               <h3 className="text-xs font-semibold text-primary mb-3">Goods & Certification</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1 sm:col-span-2">
+                <div className="space-y-1">
                   <Label className="text-xs flex items-center gap-2">
                     <span>Description of Goods <span className="text-destructive">*</span></span>
                     {suppliers.find(s => s.name === form.supplierName)?.products?.length ? (
