@@ -80,6 +80,30 @@ export default function LCManagement() {
   function openNew() { setEditLC(null); setForm(emptyForm); setShowBreakdown(false); setOpenModal(true); }
   function openEdit(lc: LC) { setEditLC(lc); setForm({ ...lc }); setShowBreakdown(false); setOpenModal(true); }
   function submit() {
+    const requiredFields: { key: string; label: string }[] = [
+      { key: "issuingBank", label: "Issuing Bank" },
+      { key: "currency", label: "LC Currency" },
+      { key: "fobValueUsd", label: "FOB Value (USD)" },
+      { key: "proformaInvoiceNo", label: "Proforma Invoice No." },
+      { key: "proformaInvoiceDate", label: "Proforma Invoice Date" },
+      { key: "supplierName", label: "Supplier Name" },
+      { key: "supplierAddress", label: "Supplier Address" },
+      { key: "descriptionOfGoods", label: "Description of Goods" },
+      { key: "totalQuantity", label: "Total Quantity (Units)" },
+    ];
+    const missing = requiredFields.filter(f => {
+      const v = form[f.key];
+      if (f.key === "fobValueUsd") return v === undefined || v === null || v === "" || Number(v) <= 0;
+      return v === undefined || v === null || String(v).trim() === "";
+    });
+    if (missing.length > 0) {
+      toast({
+        title: "Missing required fields",
+        description: missing.map(m => m.label).join(", "),
+        variant: "destructive",
+      });
+      return;
+    }
     if (editLC) updateMutation.mutate({ id: editLC.id, body: form });
     else createMutation.mutate(form);
   }
@@ -220,6 +244,7 @@ export default function LCManagement() {
             </DialogTitle>
           </DialogHeader>
 
+          <p className="text-xs text-muted-foreground -mt-1">Fields marked <span className="text-destructive">*</span> are required to issue the LC. All other fields can be filled in or updated later.</p>
           <div className="space-y-5 py-2">
             {/* General LC Info */}
             <div>
@@ -232,14 +257,14 @@ export default function LCManagement() {
                   <Input value={form.lcNumber} onChange={e => field("lcNumber", e.target.value)} placeholder="LC-XXXXX" data-testid="input-lc-number" />
                 </div>
                 <div className="space-y-1 sm:col-span-2">
-                  <Label className="text-xs">Issuing Bank</Label>
+                  <Label className="text-xs">Issuing Bank <span className="text-destructive">*</span></Label>
                   <Select value={form.issuingBank} onValueChange={v => field("issuingBank", v)}>
                     <SelectTrigger data-testid="select-issuing-bank"><SelectValue placeholder="Select bank" /></SelectTrigger>
                     <SelectContent>{BANKS.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">LC Currency</Label>
+                  <Label className="text-xs">LC Currency <span className="text-destructive">*</span></Label>
                   <Select value={form.currency} onValueChange={v => field("currency", v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -250,7 +275,7 @@ export default function LCManagement() {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">FOB Value (USD)</Label>
+                  <Label className="text-xs">FOB Value (USD) <span className="text-destructive">*</span></Label>
                   <Input type="number" value={form.fobValueUsd} onChange={e => field("fobValueUsd", e.target.value)} data-testid="input-fob-value" />
                 </div>
                 <div className="space-y-1">
@@ -278,15 +303,15 @@ export default function LCManagement() {
               <h3 className="text-xs font-semibold text-primary mb-3">Invoice & Supplier Details</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">Proforma Invoice No.</Label>
+                  <Label className="text-xs">Proforma Invoice No. <span className="text-destructive">*</span></Label>
                   <Input value={form.proformaInvoiceNo ?? ""} onChange={e => field("proformaInvoiceNo", e.target.value)} placeholder="PI-2024-001" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Proforma Invoice Date</Label>
+                  <Label className="text-xs">Proforma Invoice Date <span className="text-destructive">*</span></Label>
                   <Input type="date" value={form.proformaInvoiceDate ?? ""} onChange={e => field("proformaInvoiceDate", e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Supplier Name</Label>
+                  <Label className="text-xs">Supplier Name <span className="text-destructive">*</span></Label>
                   <Select
                     value={suppliers.some(s => s.name === form.supplierName) ? form.supplierName : (form.supplierName ? SUPPLIER_OTHER : "")}
                     onValueChange={applySupplier}
@@ -312,7 +337,7 @@ export default function LCManagement() {
                   )}
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Supplier Address</Label>
+                  <Label className="text-xs">Supplier Address <span className="text-destructive">*</span></Label>
                   <Input value={form.supplierAddress ?? ""} onChange={e => field("supplierAddress", e.target.value)} placeholder="Shanghai Tech Park, Bldg 4" />
                 </div>
               </div>
@@ -324,7 +349,7 @@ export default function LCManagement() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1 sm:col-span-2">
                   <Label className="text-xs flex items-center gap-2">
-                    Description of Goods
+                    <span>Description of Goods <span className="text-destructive">*</span></span>
                     {suppliers.find(s => s.name === form.supplierName)?.products?.length ? (
                       <span className="text-[0.65rem] text-muted-foreground font-normal">pick from this supplier's products</span>
                     ) : null}
@@ -363,7 +388,7 @@ export default function LCManagement() {
                   })()}
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Total Quantity (Units)</Label>
+                  <Label className="text-xs">Total Quantity (Units) <span className="text-destructive">*</span></Label>
                   <Input value={form.totalQuantity ?? ""} onChange={e => field("totalQuantity", e.target.value)} placeholder="15 units" />
                 </div>
                 <div className="space-y-1">
