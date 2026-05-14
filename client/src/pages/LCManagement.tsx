@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, FileText, AlertTriangle, Pencil, Trash2, Calculator } from "lucide-react";
 import type { LC } from "@shared/schema";
@@ -356,28 +357,17 @@ export default function LCManagement() {
 
             {/* Cost Breakdown Toggle */}
             <div>
-              <Button
-                variant="outline"
-                type="button"
-                className="w-full"
-                onClick={() => setShowBreakdown(!showBreakdown)}
-                data-testid="button-toggle-cost-breakdown"
-              >
-                <Calculator className="h-4 w-4 mr-1.5" />
-                {showBreakdown ? "Hide" : "Show"} LC & Freight Cost Breakdown Calculator
-              </Button>
-
-              {showBreakdown && (
-                <div className="mt-4">
-                  <LCCostCalculator
-                    initialFcyValue={form.fobValueUsd}
-                    initialOpeningRate={String(exchangeRate)}
-                    initialTotalUnits={form.totalQuantity}
-                    initialBank={form.issuingBank}
-                    initialLcNumber={form.lcNumber}
-                  />
-                </div>
-              )}
+              <div className="flex items-center gap-2 mb-3">
+                <Calculator className="h-4 w-4 text-primary" />
+                <h3 className="font-display text-lg font-semibold text-primary">LC & Freight Cost Breakdown Calculator</h3>
+              </div>
+              <LCCostCalculator
+                initialFcyValue={form.fobValueUsd}
+                initialOpeningRate={String(exchangeRate)}
+                initialTotalUnits={form.totalQuantity}
+                initialBank={form.issuingBank}
+                initialLcNumber={form.lcNumber}
+              />
             </div>
           </div>
 
