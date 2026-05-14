@@ -117,7 +117,7 @@ export default function ExportShipments() {
   const fmt = (n: number) => new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(n);
 
   // Cost summary for current form (in ETB equivalent)
-  const formRate = 129.67;
+  const formRate = 157.50;
   const fobEtb = Number(form.fobValueUsd) * formRate;
   const totalEtbCost = Number(form.insuranceEtb) + Number(form.inlandTransportEtb) + Number(form.customsClearanceEtb) + Number(form.portHandlingEtb);
 

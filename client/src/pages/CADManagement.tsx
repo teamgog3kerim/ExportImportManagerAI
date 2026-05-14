@@ -36,7 +36,7 @@ export default function CADManagement() {
   const emptyForm = {
     cadNumber: "", buyerName: "", buyerAddress: "", buyerCountry: "Germany", buyerBank: "", buyerSwift: "",
     productDescription: "", quantityKg: "0", unitPriceUsd: "0", fobValueUsd: "0",
-    freightUsd: "0", insuranceUsd: "0", totalContractUsd: "0", exchangeRate: "129.67",
+    freightUsd: "0", insuranceUsd: "0", totalContractUsd: "0", exchangeRate: "157.50",
     bankCommissionPct: "1", nbeRetentionPct: "30", paymentTerms: "Sight",
     documentsRequired: "[]", contractDate: new Date().toISOString().slice(0, 10), shipmentDate: "",
     status: "Draft", paidStatus: "unpaid",

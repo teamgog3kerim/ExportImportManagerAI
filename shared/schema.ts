@@ -182,7 +182,7 @@ export const cads = pgTable("cads", {
   freightUsd: numeric("freight_usd").default("0"),
   insuranceUsd: numeric("insurance_usd").default("0"),
   totalContractUsd: numeric("total_contract_usd").default("0"),
-  exchangeRate: numeric("exchange_rate").default("129.67"),
+  exchangeRate: numeric("exchange_rate").default("157.50"),
   bankCommissionPct: numeric("bank_commission_pct").default("1"),
   nbeRetentionPct: numeric("nbe_retention_pct").default("30"),
   paymentTerms: text("payment_terms").default("Sight"),

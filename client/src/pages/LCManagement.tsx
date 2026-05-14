@@ -32,7 +32,7 @@ export default function LCManagement() {
   const [openModal, setOpenModal] = useState(false);
   const [editLC, setEditLC] = useState<LC | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
-  const [exchangeRate, setExchangeRate] = useState(129.69);
+  const [exchangeRate, setExchangeRate] = useState(157.50);
 
   const emptyForm = {
     lcNumber: "", issuingBank: "", currency: "USD", fobValueUsd: "0", freightValueUsd: "0",

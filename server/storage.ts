@@ -113,51 +113,47 @@ export class MemStorage implements IStorage {
     inventoryData.forEach(i => this.inventory.set(i.id, i));
 
     // Seed Exchange Rates — all major Ethiopian banks (Addis Fortune board)
-    const seedBanks: Array<[string, string, number]> = [
-      ["Commercial Bank of Ethiopia", "CBE", 129.6500],
-      ["Awash Bank", "AWB", 129.6815],
-      ["Dashen Bank", "DAS", 129.6690],
-      ["Bank of Abyssinia", "BOA", 129.6620],
-      ["Wegagen Bank", "WEG", 129.6555],
-      ["Nib International Bank", "NIB", 129.6480],
-      ["United Bank (Hibret)", "HIB", 129.6741],
-      ["Cooperative Bank of Oromia", "CBO", 129.6577],
-      ["Lion International Bank", "LIB", 129.6510],
-      ["Zemen Bank", "ZEM", 129.6720],
-      ["Oromia International Bank", "OIB", 129.6448],
-      ["Berhan Bank", "BER", 129.6875],
-      ["Bunna Bank", "BUN", 129.6390],
-      ["Abay Bank", "ABA", 129.6610],
-      ["Addis International Bank", "ADD", 129.6360],
-      ["Debub Global Bank", "DGB", 129.6280],
-      ["Enat Bank", "ENA", 129.6540],
-      ["Amhara Bank", "AMB", 129.6892],
-      ["Hijra Bank", "HIJ", 129.6790],
-      ["ZamZam Bank", "ZAM", 129.6625],
-      ["Goh Betoch Bank", "GOH", 129.6300],
-      ["Tsehay Bank", "TSE", 129.6420],
-      ["Siinqee Bank", "SIQ", 129.6470],
-      ["Shabelle Bank", "SHA", 129.6510],
-      ["Gadaa Bank", "GAD", 129.6360],
-      ["Ahadu Bank", "AHB", 129.6510],
+    // Reflects the post-NBE-liberalization birr market; transaction buy ~156–159, sell ~159–162.
+    // [bankName, bankCode, txnBuy, txnSell, cashBuy, cashSell]
+    const seedBanks: Array<[string, string, number, number, number, number]> = [
+      ["Commercial Bank of Ethiopia", "CBE", 156.8421, 159.9789, 156.5300, 160.2900],
+      ["Awash Bank",                   "AWB", 158.4500, 161.6190, 157.9800, 161.9300],
+      ["Dashen Bank",                  "DAS", 158.1200, 161.2824, 157.7100, 161.6200],
+      ["Bank of Abyssinia",            "BOA", 157.6800, 160.8336, 157.2400, 161.1600],
+      ["Wegagen Bank",                 "WEG", 157.4500, 160.5990, 157.0100, 160.9400],
+      ["Nib International Bank",       "NIB", 157.2300, 160.3746, 156.7900, 160.7300],
+      ["Hibret Bank",                  "HIB", 157.9200, 161.0784, 157.4900, 161.4100],
+      ["Cooperative Bank of Oromia",   "CBO", 157.6100, 160.7622, 157.1700, 161.0900],
+      ["Lion International Bank",      "LIB", 157.0800, 160.2216, 156.6300, 160.5700],
+      ["Zemen Bank",                   "ZEM", 158.0900, 161.2518, 157.6700, 161.5800],
+      ["Oromia International Bank",    "OIB", 156.9500, 160.0890, 156.5200, 160.4500],
+      ["Berhan Bank",                  "BER", 158.2700, 161.4354, 157.8500, 161.7600],
+      ["Bunna Bank",                   "BUN", 156.7800, 159.9156, 156.3500, 160.2700],
+      ["Abay Bank",                    "ABA", 157.4900, 160.6398, 157.0500, 160.9700],
+      ["Addis International Bank",     "ADD", 156.6100, 159.7422, 156.1700, 160.1100],
+      ["Debub Global Bank",            "DGB", 156.4300, 159.5586, 156.0000, 159.9300],
+      ["Enat Bank",                    "ENA", 157.3500, 160.4970, 156.9100, 160.8400],
+      ["Amhara Bank",                  "AMB", 158.6400, 161.8128, 158.1900, 162.1400],
+      ["Hijra Bank",                   "HIJ", 158.0500, 161.2110, 157.6300, 161.5400],
+      ["ZamZam Bank",                  "ZAM", 157.7900, 160.9458, 157.3500, 161.2700],
+      ["Goh Betoch Bank",              "GOH", 156.5400, 159.6708, 156.1100, 160.0200],
+      ["Tsehay Bank",                  "TSE", 156.8900, 160.0278, 156.4600, 160.3700],
+      ["Siinqee Bank",                 "SIQ", 157.0200, 160.1604, 156.5800, 160.5000],
+      ["Shabelle Bank",                "SHA", 157.1600, 160.3032, 156.7200, 160.6400],
+      ["Gadaa Bank",                   "GAD", 156.5800, 159.7116, 156.1500, 160.0500],
+      ["Ahadu Bank",                   "AHB", 157.1100, 160.2522, 156.6700, 160.5900],
     ];
-    const rateData: ExchangeRate[] = seedBanks.map(([name, code, mid]) => {
-      const txnBuy = mid + (Math.random() - 0.5) * 0.04;
-      const txnSell = txnBuy * 1.0444 + (Math.random() - 0.5) * 0.03;
-      const cashBuy = txnBuy - 0.05 - Math.random() * 0.08;
-      const cashSell = txnSell + 0.04 + Math.random() * 0.08;
-      return {
-        id: randomUUID(),
-        bankName: name,
-        bankCode: code,
-        buyingEtb: txnBuy.toFixed(4),
-        sellingEtb: txnSell.toFixed(4),
-        cashBuyingEtb: cashBuy.toFixed(4),
-        cashSellingEtb: cashSell.toFixed(4),
-        currency: "USD",
-        updatedAt: now,
-      };
-    });
+    const rateData: ExchangeRate[] = seedBanks.map(([name, code, tb, ts, cb, cs]) => ({
+      id: randomUUID(),
+      bankName: name,
+      bankCode: code,
+      buyingEtb: tb.toFixed(4),
+      sellingEtb: ts.toFixed(4),
+      cashBuyingEtb: cb.toFixed(4),
+      cashSellingEtb: cs.toFixed(4),
+      currency: "USD",
+      updatedAt: now,
+    }));
     rateData.forEach(r => this.exchangeRates.set(r.id, r));
 
     // Seed Banks (Settings)
@@ -199,9 +195,9 @@ export class MemStorage implements IStorage {
 
     // Seed CADs (Cash Against Documents)
     const cadData: Cad[] = [
-      { id: randomUUID(), cadNumber: "CAD-2024-001", buyerName: "Hamburg Coffee Roasters GmbH", buyerAddress: "Hafenstraße 12, 20359 Hamburg", buyerCountry: "Germany", buyerBank: "Deutsche Bank AG", buyerSwift: "DEUTDEFF", productDescription: "Yirgacheffe Coffee Grade 1 — 12,000 kg", quantityKg: "12000", unitPriceUsd: "5.80", fobValueUsd: "69600", freightUsd: "4200", insuranceUsd: "850", totalContractUsd: "74650", exchangeRate: "129.6892", bankCommissionPct: "1", nbeRetentionPct: "30", paymentTerms: "Sight", documentsRequired: '["Commercial Invoice","Bill of Lading","Certificate of Origin","Phytosanitary Certificate","Quality Certificate (ECX)","Packing List"]', contractDate: "2024-04-15", shipmentDate: "2024-05-01", status: "Documents Sent", paidStatus: "unpaid", createdAt: now },
-      { id: randomUUID(), cadNumber: "CAD-2024-002", buyerName: "Jeddah Spice Trading Co.", buyerAddress: "King Abdullah Road, Jeddah 21442", buyerCountry: "Saudi Arabia", buyerBank: "Al Rajhi Bank", buyerSwift: "RJHISARI", productDescription: "White Humera Sesame Seeds — 25,000 kg", quantityKg: "25000", unitPriceUsd: "1.45", fobValueUsd: "36250", freightUsd: "2100", insuranceUsd: "420", totalContractUsd: "38770", exchangeRate: "129.6500", bankCommissionPct: "1", nbeRetentionPct: "30", paymentTerms: "30 Days", documentsRequired: '["Commercial Invoice","Bill of Lading","Certificate of Origin","Phytosanitary Certificate"]', contractDate: "2024-04-20", shipmentDate: "2024-05-15", status: "Awaiting Payment", paidStatus: "unpaid", createdAt: now },
-      { id: randomUUID(), cadNumber: "CAD-2024-003", buyerName: "Milano Pelle SRL", buyerAddress: "Via della Moda 45, Milan", buyerCountry: "Italy", buyerBank: "Intesa Sanpaolo", buyerSwift: "BCITITMM", productDescription: "Wet Blue Sheep Skin — 8,000 kg", quantityKg: "8000", unitPriceUsd: "3.20", fobValueUsd: "25600", freightUsd: "1800", insuranceUsd: "350", totalContractUsd: "27750", exchangeRate: "129.6741", bankCommissionPct: "1", nbeRetentionPct: "30", paymentTerms: "Sight", documentsRequired: '["Commercial Invoice","Bill of Lading","Certificate of Origin"]', contractDate: "2024-04-25", shipmentDate: "2024-06-01", status: "Draft", paidStatus: "unpaid", createdAt: now },
+      { id: randomUUID(), cadNumber: "CAD-2024-001", buyerName: "Hamburg Coffee Roasters GmbH", buyerAddress: "Hafenstraße 12, 20359 Hamburg", buyerCountry: "Germany", buyerBank: "Deutsche Bank AG", buyerSwift: "DEUTDEFF", productDescription: "Yirgacheffe Coffee Grade 1 — 12,000 kg", quantityKg: "12000", unitPriceUsd: "5.80", fobValueUsd: "69600", freightUsd: "4200", insuranceUsd: "850", totalContractUsd: "74650", exchangeRate: "157.4900", bankCommissionPct: "1", nbeRetentionPct: "30", paymentTerms: "Sight", documentsRequired: '["Commercial Invoice","Bill of Lading","Certificate of Origin","Phytosanitary Certificate","Quality Certificate (ECX)","Packing List"]', contractDate: "2024-04-15", shipmentDate: "2024-05-01", status: "Documents Sent", paidStatus: "unpaid", createdAt: now },
+      { id: randomUUID(), cadNumber: "CAD-2024-002", buyerName: "Jeddah Spice Trading Co.", buyerAddress: "King Abdullah Road, Jeddah 21442", buyerCountry: "Saudi Arabia", buyerBank: "Al Rajhi Bank", buyerSwift: "RJHISARI", productDescription: "White Humera Sesame Seeds — 25,000 kg", quantityKg: "25000", unitPriceUsd: "1.45", fobValueUsd: "36250", freightUsd: "2100", insuranceUsd: "420", totalContractUsd: "38770", exchangeRate: "157.2300", bankCommissionPct: "1", nbeRetentionPct: "30", paymentTerms: "30 Days", documentsRequired: '["Commercial Invoice","Bill of Lading","Certificate of Origin","Phytosanitary Certificate"]', contractDate: "2024-04-20", shipmentDate: "2024-05-15", status: "Awaiting Payment", paidStatus: "unpaid", createdAt: now },
+      { id: randomUUID(), cadNumber: "CAD-2024-003", buyerName: "Milano Pelle SRL", buyerAddress: "Via della Moda 45, Milan", buyerCountry: "Italy", buyerBank: "Intesa Sanpaolo", buyerSwift: "BCITITMM", productDescription: "Wet Blue Sheep Skin — 8,000 kg", quantityKg: "8000", unitPriceUsd: "3.20", fobValueUsd: "25600", freightUsd: "1800", insuranceUsd: "350", totalContractUsd: "27750", exchangeRate: "157.9200", bankCommissionPct: "1", nbeRetentionPct: "30", paymentTerms: "Sight", documentsRequired: '["Commercial Invoice","Bill of Lading","Certificate of Origin"]', contractDate: "2024-04-25", shipmentDate: "2024-06-01", status: "Draft", paidStatus: "unpaid", createdAt: now },
     ];
     cadData.forEach(c => this.cads.set(c.id, c));
 
@@ -280,10 +276,15 @@ export class MemStorage implements IStorage {
     const now = new Date().toISOString();
     for (const r of Array.from(this.exchangeRates.values())) {
       const jitter = () => (Math.random() - 0.5) * 0.06;
+      // Walk transaction buy; lock other legs to it via stable spreads so
+      // sell > buy and cash deltas vs transaction never invert over time.
       const tb = Math.max(1, Number(r.buyingEtb) + jitter());
-      const ts = Math.max(tb + 0.5, Number(r.sellingEtb) + jitter());
-      const cb = Math.max(1, Number(r.cashBuyingEtb) + jitter());
-      const cs = Math.max(cb + 0.5, Number(r.cashSellingEtb) + jitter());
+      const txnSpread = Math.max(2.5, Number(r.sellingEtb) - Number(r.buyingEtb));
+      const cashBuyGap = Math.max(0.2, Number(r.buyingEtb) - Number(r.cashBuyingEtb));
+      const cashSellGap = Math.max(0.2, Number(r.cashSellingEtb) - Number(r.sellingEtb));
+      const ts = tb + txnSpread + (Math.random() - 0.5) * 0.02;
+      const cb = tb - cashBuyGap + (Math.random() - 0.5) * 0.02;
+      const cs = ts + cashSellGap + (Math.random() - 0.5) * 0.02;
       this.exchangeRates.set(r.id, {
         ...r,
         buyingEtb: tb.toFixed(4),
@@ -392,7 +393,7 @@ export class MemStorage implements IStorage {
       freightUsd: c.freightUsd ?? "0",
       insuranceUsd: c.insuranceUsd ?? "0",
       totalContractUsd: c.totalContractUsd ?? "0",
-      exchangeRate: c.exchangeRate ?? "129.67",
+      exchangeRate: c.exchangeRate ?? "157.50",
       bankCommissionPct: c.bankCommissionPct ?? "1",
       nbeRetentionPct: c.nbeRetentionPct ?? "30",
       paymentTerms: c.paymentTerms ?? "Sight",

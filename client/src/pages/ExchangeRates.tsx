@@ -44,7 +44,7 @@ const CURRENCIES: Array<{ code: string; name: string; perUsd: number; flag: stri
   { code: "AUD", name: "Australian Dollar", perUsd: 1.546, flag: "🇦🇺" },
   { code: "KES", name: "Kenyan Shilling", perUsd: 129.40,  flag: "🇰🇪" },
   { code: "DJF", name: "Djiboutian Franc", perUsd: 177.72, flag: "🇩🇯" },
-  { code: "ETB", name: "Ethiopian Birr",  perUsd: 129.67,  flag: "🇪🇹" },
+  { code: "ETB", name: "Ethiopian Birr",  perUsd: 157.50,  flag: "🇪🇹" },
 ];
 
 const fmt = (n: number, d = 4) =>
