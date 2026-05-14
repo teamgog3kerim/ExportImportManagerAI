@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, Ship, AlertTriangle, Pencil, Trash2, MapPin, ChevronRight } from "lucide-react";
-import type { Shipment } from "@shared/schema";
+import { Plus, Search, Ship, AlertTriangle, Pencil, Trash2, MapPin, ChevronRight, Calculator } from "lucide-react";
+import type { Shipment, LC } from "@shared/schema";
+import { LCCostCalculator } from "@/components/LCCostCalculator";
 
 const STATUSES = [
   "Under Production", "Port Loading", "Sea Transit", "Djibouti Port arrived",
@@ -35,7 +36,8 @@ const ROUTE_STAGES = ["Supplier", "Port Loading", "Sea Transit", "Djibouti", "Mo
 export default function ImportShipments() {
   const { toast } = useToast();
   const { data: shipments = [], isLoading } = useQuery<Shipment[]>({ queryKey: ["/api/shipments"] });
-  const { data: lcs = [] } = useQuery<any[]>({ queryKey: ["/api/lcs"] });
+  const { data: lcs = [] } = useQuery<LC[]>({ queryKey: ["/api/lcs"] });
+  const EXCHANGE_RATE = 157.5;
   const [search, setSearch] = useState("");
   const [openModal, setOpenModal] = useState(false);
   const [editShipment, setEditShipment] = useState<Shipment | null>(null);
@@ -285,15 +287,18 @@ export default function ImportShipments() {
                   <Ship className="h-3.5 w-3.5 text-primary" /> Pre-fill from Approved LC
                 </p>
                 <p className="text-xs text-muted-foreground mb-2">Select an approved LC to automatically populate shipment details.</p>
-                <Select onValueChange={lcId => {
+                <Select value={form.lcId || undefined} onValueChange={lcId => {
                   const lc = approvedLCs.find(l => l.id === lcId);
                   if (lc) {
-                    field("supplierName", lc.supplierName);
-                    field("supplierAddress", lc.supplierAddress ?? "");
-                    field("descriptionOfGoods", lc.descriptionOfGoods ?? "");
-                    field("totalValueUsd", String(Number(lc.fobValueUsd) + Number(lc.freightValueUsd)));
-                    field("paymentTerm", lc.paymentTerm ?? "FOB");
-                    field("lcId", lcId);
+                    setForm((p: any) => ({
+                      ...p,
+                      lcId,
+                      supplierName: lc.supplierName ?? "",
+                      supplierAddress: lc.supplierAddress ?? "",
+                      descriptionOfGoods: lc.descriptionOfGoods ?? "",
+                      totalValueUsd: String(Number(lc.fobValueUsd ?? 0) + Number(lc.freightValueUsd ?? 0)),
+                      paymentTerm: lc.paymentTerm ?? "FOB",
+                    }));
                   }
                 }}>
                   <SelectTrigger className="text-xs" data-testid="select-prefill-lc">
@@ -307,6 +312,38 @@ export default function ImportShipments() {
                 </Select>
               </div>
             )}
+
+            {/* LC & Freight Cost Breakdown Calculator (duplicated from LC) */}
+            {(() => {
+              const selectedLc = lcs.find(l => l.id === form.lcId);
+              if (!selectedLc) return null;
+              return (
+                <div className="rounded-md border border-border bg-card">
+                  <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-muted/40">
+                    <Calculator className="h-4 w-4 text-primary" />
+                    <h3 className="font-display text-base font-semibold text-primary">
+                      LC & Freight Cost Breakdown Calculator
+                    </h3>
+                    <span className="ml-auto text-[0.62rem] uppercase tracking-[0.08em] text-muted-foreground">
+                      From {selectedLc.lcNumber}
+                    </span>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[0.7rem] text-muted-foreground mb-3">
+                      Pre-filled from the selected LC. Record LC Settlement Payables and Sea Freight Payables here.
+                    </p>
+                    <LCCostCalculator
+                      key={selectedLc.id}
+                      initialBank={selectedLc.issuingBank ?? ""}
+                      initialLcNumber={selectedLc.lcNumber ?? ""}
+                      initialFcyValue={String(selectedLc.fobValueUsd ?? "")}
+                      initialOpeningRate={String(EXCHANGE_RATE)}
+                      initialTotalUnits={String(selectedLc.totalQuantity ?? "")}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Logistics Info */}
             <div>

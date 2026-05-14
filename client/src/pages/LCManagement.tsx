@@ -81,7 +81,21 @@ export default function LCManagement() {
   });
 
   function openNew() { setEditLC(null); setForm(emptyForm); setShowBreakdown(false); setOpenModal(true); }
-  function openEdit(lc: LC) { setEditLC(lc); setForm({ ...lc }); setShowBreakdown(false); setOpenModal(true); }
+  function openEdit(lc: LC) {
+    const cleanBank = bankNames.includes(lc.issuingBank) ? lc.issuingBank : "";
+    const cleanSupplier = suppliers.some(s => s.name === lc.supplierName) ? lc.supplierName : "";
+    setEditLC(lc);
+    setForm({ ...lc, issuingBank: cleanBank, supplierName: cleanSupplier });
+    setShowBreakdown(false);
+    setOpenModal(true);
+    if (!cleanBank || !cleanSupplier) {
+      const missing = [!cleanBank && "Issuing Bank", !cleanSupplier && "Supplier"].filter(Boolean).join(" & ");
+      toast({
+        title: `Re-select ${missing}`,
+        description: `Saved ${missing.toLowerCase()} is no longer in Settings. Please pick again.`,
+      });
+    }
+  }
   function submit() {
     const requiredFields: { key: string; label: string }[] = [
       { key: "issuingBank", label: "Issuing Bank" },
@@ -103,6 +117,22 @@ export default function LCManagement() {
       toast({
         title: "Missing required fields",
         description: missing.map(m => m.label).join(", "),
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!bankNames.includes(form.issuingBank)) {
+      toast({
+        title: "Issuing Bank not in Settings",
+        description: "Pick a bank saved under Settings → Banks, or add it there first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!suppliers.some(s => s.name === form.supplierName)) {
+      toast({
+        title: "Supplier not in Settings",
+        description: "Pick a supplier saved under Settings → Suppliers, or add it there first.",
         variant: "destructive",
       });
       return;
