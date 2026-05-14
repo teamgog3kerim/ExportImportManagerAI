@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/PageHeader";
-import { Calculator, Printer, RotateCcw, FileText, PieChart as PieIcon } from "lucide-react";
+import { Calculator, Printer, RotateCcw, FileText, PieChart as PieIcon, Download } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 interface TaxRow {
   code: string;
@@ -30,6 +32,7 @@ const fmt = (n: number) =>
 
 const emptyInputs = {
   itemDescription: "",
+  units: "",
   fobUsd: "",
   exchangeRate: "",
   freightUsd: "",
@@ -66,8 +69,10 @@ export default function CustomsEngine() {
       return { ...t, pct: p, value };
     });
     const totalItemTax = taxes.reduce((s, t) => s + t.value, 0);
+    const units = n(inp.units);
+    const taxPerUnit = units > 0 ? totalItemTax / units : 0;
 
-    return { fobEtb, freightEtb, cifEtb, taxableEtb, taxes, totalItemTax };
+    return { fobEtb, freightEtb, cifEtb, taxableEtb, taxes, totalItemTax, units, taxPerUnit };
   }, [inp, pct]);
 
   const chartData = c.taxes.filter(t => t.value > 0);
@@ -79,6 +84,51 @@ export default function CustomsEngine() {
 
   function handlePrint() {
     window.print();
+  }
+
+  async function handleSavePdf() {
+    const node = printRef.current;
+    if (!node) return;
+    const prev = { display: node.style.display, position: node.style.position, left: node.style.left, top: node.style.top, width: node.style.width };
+    node.style.display = "block";
+    node.style.position = "fixed";
+    node.style.left = "-10000px";
+    node.style.top = "0";
+    node.style.width = "210mm";
+    try {
+      const canvas = await html2canvas(node, { scale: 2, backgroundColor: "#ffffff" });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const imgW = pageW - margin * 2;
+      const imgH = (canvas.height * imgW) / canvas.width;
+      let y = margin;
+      let remaining = imgH;
+      if (imgH <= pageH - margin * 2) {
+        pdf.addImage(imgData, "PNG", margin, y, imgW, imgH);
+      } else {
+        let position = 0;
+        while (remaining > 0) {
+          pdf.addImage(imgData, "PNG", margin, y - position, imgW, imgH);
+          remaining -= pageH - margin * 2;
+          if (remaining > 0) {
+            pdf.addPage();
+            position += pageH - margin * 2;
+            y = margin;
+          }
+        }
+      }
+      const safe = (inp.itemDescription || "tax-assessment").replace(/[^a-z0-9-_]+/gi, "_").slice(0, 50);
+      pdf.save(`${safe}_assessment.pdf`);
+    } finally {
+      node.style.display = prev.display;
+      node.style.position = prev.position;
+      node.style.left = prev.left;
+      node.style.top = prev.top;
+      node.style.width = prev.width;
+    }
   }
 
   return (
@@ -93,8 +143,11 @@ export default function CustomsEngine() {
               <Button variant="outline" onClick={reset} data-testid="button-reset-calculator">
                 <RotateCcw className="h-4 w-4 mr-1.5" /> Reset
               </Button>
+              <Button variant="outline" onClick={handleSavePdf} data-testid="button-save-pdf">
+                <Download className="h-4 w-4 mr-1.5" /> Save as PDF
+              </Button>
               <Button onClick={handlePrint} data-testid="button-print-assessment">
-                <Printer className="h-4 w-4 mr-1.5" /> Print / Save PDF
+                <Printer className="h-4 w-4 mr-1.5" /> Print
               </Button>
             </>
           }
@@ -110,14 +163,27 @@ export default function CustomsEngine() {
               <h2 className="font-display text-lg font-semibold text-primary">CIF & Taxable Amount</h2>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs">Item / Goods Description</Label>
-              <Input
-                value={inp.itemDescription}
-                onChange={e => set("itemDescription", e.target.value)}
-                placeholder="e.g. Toyota Spare Parts — 1 Container"
-                data-testid="input-item-description"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-xs">Item / Goods Description</Label>
+                <Input
+                  value={inp.itemDescription}
+                  onChange={e => set("itemDescription", e.target.value)}
+                  placeholder="e.g. Toyota Spare Parts — 1 Container"
+                  data-testid="input-item-description"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Units</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={inp.units}
+                  onChange={e => set("units", e.target.value)}
+                  placeholder="0"
+                  data-testid="input-units"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -218,6 +284,14 @@ export default function CustomsEngine() {
                         ETB {fmt(c.totalItemTax)}
                       </td>
                     </tr>
+                    <tr className="bg-primary text-primary-foreground">
+                      <td colSpan={3} className="px-3 py-3 font-semibold uppercase tracking-wide text-[0.7rem]">
+                        Tax Assessed Per Unit {c.units > 0 ? `(÷ ${c.units.toLocaleString()} units)` : "(enter units above)"}
+                      </td>
+                      <td className="px-3 py-3 text-right font-display text-lg font-semibold tabular-nums" data-testid="text-tax-per-unit">
+                        ETB {fmt(c.taxPerUnit)}
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -302,9 +376,14 @@ function AssessmentNoticePreview({ inp, c }: { inp: any; c: any }) {
         <div className="rounded-md border border-border bg-card overflow-hidden">
           <div className="bg-muted/40 px-3 py-2 border-b border-border">
             <p className="font-display text-sm font-semibold text-foreground">Assessment Notice</p>
-            <p className="text-[0.65rem] text-muted-foreground mt-0.5 truncate">
-              {inp.itemDescription || "— No item description —"}
-            </p>
+            <div className="flex items-center justify-between gap-2 mt-0.5">
+              <p className="text-[0.65rem] text-muted-foreground truncate">
+                {inp.itemDescription || "— No item description —"}
+              </p>
+              <p className="text-[0.65rem] text-muted-foreground whitespace-nowrap">
+                {c.units > 0 ? `${c.units.toLocaleString()} units` : "— units"}
+              </p>
+            </div>
           </div>
           <div className="p-3 space-y-1.5 text-[0.72rem]">
             <Line label="FOB Value (ETB)" value={c.fobEtb} />
@@ -320,9 +399,15 @@ function AssessmentNoticePreview({ inp, c }: { inp: any; c: any }) {
               <Line key={t.code} label={`${t.code} · ${t.name} (${t.pct}%)`} value={t.value} muted />
             ))}
             <div className="border-t border-border my-2" />
-            <div className="bg-primary text-primary-foreground rounded-md p-3 flex items-center justify-between gap-2">
+            <div className="bg-foreground text-background rounded-md p-3 flex items-center justify-between gap-2">
               <p className="text-[0.65rem] uppercase tracking-[0.1em] opacity-90">Total Assessed Amount</p>
               <p className="font-display text-base font-semibold tabular-nums">ETB {fmt(c.totalItemTax)}</p>
+            </div>
+            <div className="bg-primary text-primary-foreground rounded-md p-3 flex items-center justify-between gap-2">
+              <p className="text-[0.65rem] uppercase tracking-[0.1em] opacity-90">
+                Tax Per Unit {c.units > 0 ? `(÷ ${c.units.toLocaleString()})` : ""}
+              </p>
+              <p className="font-display text-base font-semibold tabular-nums">ETB {fmt(c.taxPerUnit)}</p>
             </div>
             <p className="text-[0.6rem] text-muted-foreground italic mt-2">
               System generated assessment notice · No signature required.
@@ -351,7 +436,7 @@ function PrintableAssessment({ inp, c }: { inp: any; c: any }) {
       <div style={{ borderBottom: "2px solid #a87b3d", paddingBottom: 12, marginBottom: 16 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: "#5c4423", margin: 0 }}>Tax Assessment Notice</h1>
         <p style={{ fontSize: 11, color: "#555", margin: "4px 0 0 0" }}>
-          Generated {today} · Item: {inp.itemDescription || "—"}
+          Generated {today} · Item: {inp.itemDescription || "—"} · Units: {c.units > 0 ? c.units.toLocaleString() : "—"}
         </p>
       </div>
 
@@ -402,6 +487,12 @@ function PrintableAssessment({ inp, c }: { inp: any; c: any }) {
           <tr style={{ background: "#5c4423", color: "#fff" }}>
             <td colSpan={3} style={{ padding: "10px", fontWeight: 700, fontSize: 12 }}>TOTAL TAX ASSESSED AMOUNT</td>
             <td style={{ padding: "10px", textAlign: "right", fontWeight: 700, fontSize: 13 }}>ETB {fmt(c.totalItemTax)}</td>
+          </tr>
+          <tr style={{ background: "#a87b3d", color: "#fff" }}>
+            <td colSpan={3} style={{ padding: "10px", fontWeight: 700, fontSize: 12 }}>
+              TAX ASSESSED PER UNIT {c.units > 0 ? `(÷ ${c.units.toLocaleString()} units)` : "(units not entered)"}
+            </td>
+            <td style={{ padding: "10px", textAlign: "right", fontWeight: 700, fontSize: 13 }}>ETB {fmt(c.taxPerUnit)}</td>
           </tr>
         </tbody>
       </table>
