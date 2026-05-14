@@ -4,6 +4,34 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { generateAIResponse, generateDailySummary } from "./openai";
 import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema } from "@shared/schema";
+import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
+
+let lastScrapeAt = 0;
+let lastScrapeOk = false;
+let scrapeInFlight = false;
+const MIN_BANKS = 20;
+async function refreshLiveRates() {
+  if (scrapeInFlight) return;
+  scrapeInFlight = true;
+  try {
+    const scraped = await scrapeAddisFortuneRates();
+    // Validate completeness + sanity before swapping in
+    const valid = scraped.filter(r => r.sellingEtb >= r.buyingEtb && r.buyingEtb > 50);
+    const uniqueCodes = new Set(valid.map(r => r.bankCode));
+    if (valid.length < MIN_BANKS || uniqueCodes.size !== valid.length) {
+      throw new Error(`partial/invalid scrape: ${valid.length} rows, ${uniqueCodes.size} unique codes`);
+    }
+    await storage.setExchangeRates(scrapedToExchangeRates(valid));
+    lastScrapeAt = Date.now();
+    lastScrapeOk = true;
+    console.log(`[rates] Refreshed ${valid.length} bank rates from Addis Fortune`);
+  } catch (e) {
+    lastScrapeOk = false;
+    console.warn("[rates] scrape failed:", (e as Error).message);
+  } finally {
+    scrapeInFlight = false;
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard
@@ -116,8 +144,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).end();
   });
 
-  // Exchange Rates — ticks every 10s on the server
-  setInterval(() => { storage.tickExchangeRates().catch(() => {}); }, 10000);
+  // Exchange Rates — scraped live from exchange.addisfortune.news every 5 minutes
+  refreshLiveRates();
+  setInterval(refreshLiveRates, 5 * 60 * 1000);
   app.get("/api/exchange-rates", async (_req, res) => {
     const rates = await storage.getExchangeRates();
     const txnBuys = rates.map(r => Number(r.buyingEtb));
@@ -135,17 +164,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `${bestCashBuy?.bankName ?? "—"} offers the best cash buying rate (ETB ${Number(bestCashBuy?.cashBuyingEtb ?? 0).toFixed(4)}).`,
       `${lowestSell?.bankName ?? "—"} has the cheapest transaction selling at ETB ${Number(lowestSell?.sellingEtb ?? 0).toFixed(4)}.`,
       `Average bank spread is ETB ${spread.toFixed(4)} — book FX early to lock in tighter pricing.`,
-      `Cash rates trail transaction rates by ~ETB ${(avg(txnBuys) - avg(cashBuys)).toFixed(2)} on the buy side.`,
+      `Rates sourced live from exchange.addisfortune.news, refreshed every 5 minutes.`,
     ];
     res.json({
       rates,
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: lastScrapeAt ? new Date(lastScrapeAt).toISOString() : null,
+      source: "exchange.addisfortune.news",
+      live: lastScrapeOk,
+      refreshIntervalMs: 5 * 60 * 1000,
       stats: {
         avgTxnBuy: avg(txnBuys), avgTxnSell: avg(txnSells),
         avgCashBuy: avg(cashBuys), avgCashSell: avg(cashSells),
         bestTxnBuy, bestCashBuy, lowestSell, spread,
       },
-      insight: insights[Math.floor(Date.now() / 10000) % insights.length],
+      insight: insights[Math.floor(Date.now() / (5 * 60 * 1000)) % insights.length],
     });
   });
 

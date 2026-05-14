@@ -32,7 +32,7 @@ export interface IStorage {
   deleteInventoryItem(id: string): Promise<boolean>;
   // Exchange Rates
   getExchangeRates(): Promise<ExchangeRate[]>;
-  tickExchangeRates(): Promise<void>;
+  setExchangeRates(rates: ExchangeRate[]): Promise<void>;
   // Banks
   getBanks(): Promise<Bank[]>;
   createBank(bank: InsertBank): Promise<Bank>;
@@ -272,28 +272,9 @@ export class MemStorage implements IStorage {
   async deleteInventoryItem(id: string) { return this.inventory.delete(id); }
 
   async getExchangeRates() { return Array.from(this.exchangeRates.values()); }
-  async tickExchangeRates() {
-    const now = new Date().toISOString();
-    for (const r of Array.from(this.exchangeRates.values())) {
-      const jitter = () => (Math.random() - 0.5) * 0.06;
-      // Walk transaction buy; lock other legs to it via stable spreads so
-      // sell > buy and cash deltas vs transaction never invert over time.
-      const tb = Math.max(1, Number(r.buyingEtb) + jitter());
-      const txnSpread = Math.max(2.5, Number(r.sellingEtb) - Number(r.buyingEtb));
-      const cashBuyGap = Math.max(0.2, Number(r.buyingEtb) - Number(r.cashBuyingEtb));
-      const cashSellGap = Math.max(0.2, Number(r.cashSellingEtb) - Number(r.sellingEtb));
-      const ts = tb + txnSpread + (Math.random() - 0.5) * 0.02;
-      const cb = tb - cashBuyGap + (Math.random() - 0.5) * 0.02;
-      const cs = ts + cashSellGap + (Math.random() - 0.5) * 0.02;
-      this.exchangeRates.set(r.id, {
-        ...r,
-        buyingEtb: tb.toFixed(4),
-        sellingEtb: ts.toFixed(4),
-        cashBuyingEtb: cb.toFixed(4),
-        cashSellingEtb: cs.toFixed(4),
-        updatedAt: now,
-      });
-    }
+  async setExchangeRates(rates: ExchangeRate[]) {
+    this.exchangeRates.clear();
+    for (const r of rates) this.exchangeRates.set(r.id, r);
   }
 
   async getBanks() { return Array.from(this.banks.values()); }

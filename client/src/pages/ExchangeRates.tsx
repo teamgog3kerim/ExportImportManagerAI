@@ -18,7 +18,10 @@ import {
 
 interface RatesResponse {
   rates: ExchangeRate[];
-  lastUpdated: string;
+  lastUpdated: string | null;
+  source?: string;
+  live?: boolean;
+  refreshIntervalMs?: number;
   stats: {
     avgTxnBuy: number; avgTxnSell: number;
     avgCashBuy: number; avgCashSell: number;
@@ -53,7 +56,7 @@ const fmt = (n: number, d = 4) =>
 export default function ExchangeRates() {
   const { data, isLoading, dataUpdatedAt } = useQuery<RatesResponse>({
     queryKey: ["/api/exchange-rates"],
-    refetchInterval: 10000,
+    refetchInterval: 5 * 60 * 1000,
     refetchIntervalInBackground: true,
   });
 
@@ -110,11 +113,13 @@ export default function ExchangeRates() {
       <PageHeader
         eyebrow="Markets"
         title="Live Exchange Rates"
-        description="All major Ethiopian banks — cash and transaction USD/ETB rates, refreshed every 10 seconds."
+        description="Live USD/ETB rates from every major Ethiopian bank — sourced from exchange.addisfortune.news, refreshed every 5 minutes."
         actions={
           <Badge variant="secondary" className="gap-1.5 px-2.5">
-            <RadioTower className="h-3.5 w-3.5 text-emerald-600 animate-pulse" />
-            <span className="text-xs font-medium" data-testid="text-last-updated">Live · {lastUpdate}</span>
+            <RadioTower className={`h-3.5 w-3.5 ${data?.live ? "text-emerald-600 animate-pulse" : "text-amber-600"}`} />
+            <span className="text-xs font-medium" data-testid="text-last-updated">
+              {data?.live ? "Live" : "Fallback"} · {lastUpdate}
+            </span>
           </Badge>
         }
       />
@@ -168,6 +173,11 @@ export default function ExchangeRates() {
                   </TabsList>
                 </Tabs>
               </div>
+              {activeTab === "cash" && (
+                <p className="text-[0.65rem] text-muted-foreground mb-2 italic">
+                  Cash rates are estimated from transaction rates (banks rarely publish them). Transaction rates are 100% live from {data?.source ?? "Addis Fortune"}.
+                </p>
+              )}
 
               {isLoading ? (
                 <div className="space-y-2">
@@ -343,7 +353,7 @@ export default function ExchangeRates() {
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="h-4 w-4 text-primary" />
                 <h3 className="font-display text-base font-semibold text-primary">Market Insight</h3>
-                <Badge variant="secondary" className="ml-auto text-[0.6rem]">Auto · 10s</Badge>
+                <Badge variant="secondary" className="ml-auto text-[0.6rem]">Auto · 5m</Badge>
               </div>
               <p className="text-xs leading-relaxed text-foreground/80" data-testid="text-market-insight" key={dataUpdatedAt}>
                 {insight || "Awaiting market data…"}
