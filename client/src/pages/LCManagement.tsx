@@ -8,10 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Search, FileText, AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, FileText, AlertTriangle, Pencil, Trash2, Calculator } from "lucide-react";
 import type { LC } from "@shared/schema";
+import { LCCostCalculator } from "@/components/LCCostCalculator";
 
 function lcStatusColor(s: string) {
   if (s === "Approved") return "default";
@@ -19,28 +19,6 @@ function lcStatusColor(s: string) {
   if (s === "Settled") return "outline";
   if (s === "Expired") return "destructive";
   return "secondary";
-}
-
-function calcLC(lc: Partial<LC>, exchangeRate: number) {
-  const fcy = Number(lc.fobValueUsd ?? 0);
-  const margin = Number(lc.marginOpenedPct ?? 30) / 100;
-  const swiftUsd = 100; // standard swift charge USD
-  const etbValue = fcy * exchangeRate;
-  const openingMargin = etbValue * margin;
-  const bankCommission = etbValue * 0.04;
-  const vatBankCommission = bankCommission * 0.15;
-  const swiftCharge = swiftUsd * exchangeRate;
-  const vatSwiftCharge = swiftCharge * 0.15;
-  const totalOpening = openingMargin + bankCommission + vatBankCommission + swiftCharge + vatSwiftCharge;
-  const settlementFcy = fcy;
-  const settlementEtb = settlementFcy * exchangeRate;
-  const marginHeld = etbValue * margin;
-  const settlePct = 1 - margin; // 70%
-  const settleAmt = settlementEtb * settlePct - marginHeld;
-  const nbe = settlementEtb * 0.025;
-  const totalSettlement = settleAmt + nbe < 0 ? 0 : settleAmt + nbe;
-  const totalPayable = totalOpening + totalSettlement;
-  return { etbValue, openingMargin, bankCommission, vatBankCommission, swiftCharge, vatSwiftCharge, totalOpening, marginHeld, settleAmt, nbe, totalSettlement, totalPayable };
 }
 
 const BANKS = ["Commercial Bank of Ethiopia (CBE)", "Dashen Bank", "Bank of Abyssinia (BOA)", "Awash Bank", "Wegagen Bank"];
@@ -93,9 +71,6 @@ export default function LCManagement() {
     lc.lcNumber.toLowerCase().includes(search.toLowerCase()) ||
     lc.supplierName.toLowerCase().includes(search.toLowerCase())
   );
-
-  const calc = calcLC(form, exchangeRate);
-  const fmtEtb = (n: number) => n.toFixed(2);
 
   return (
     <div className="p-6 space-y-6">
@@ -219,7 +194,7 @@ export default function LCManagement() {
 
       {/* LC Modal */}
       <Dialog open={openModal} onOpenChange={setOpenModal}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
@@ -383,136 +358,24 @@ export default function LCManagement() {
             <div>
               <Button
                 variant="outline"
-                size="sm"
                 type="button"
                 className="w-full"
                 onClick={() => setShowBreakdown(!showBreakdown)}
                 data-testid="button-toggle-cost-breakdown"
               >
-                {showBreakdown ? "Hide" : "Show"} LC Cost Breakdown Calculation
+                <Calculator className="h-4 w-4 mr-1.5" />
+                {showBreakdown ? "Hide" : "Show"} LC & Freight Cost Breakdown Calculator
               </Button>
 
               {showBreakdown && (
-                <div className="mt-4 space-y-4 border rounded-md p-4">
-                  {/* Exchange Rate input */}
-                  <div className="flex items-center gap-3">
-                    <Label className="text-xs whitespace-nowrap">Exchange Rate (ETB/USD)</Label>
-                    <Input
-                      type="number"
-                      value={exchangeRate}
-                      onChange={e => setExchangeRate(Number(e.target.value))}
-                      className="w-28"
-                      data-testid="input-exchange-rate"
-                    />
-                  </div>
-
-                  {/* Opening Values */}
-                  <div>
-                    <h4 className="text-xs font-bold mb-2 uppercase tracking-wide">1. LC Opening Payments Advice</h4>
-                    <table className="w-full text-xs">
-                      <thead><tr className="bg-muted">
-                        <th className="text-left px-2 py-1.5 font-semibold">No.</th>
-                        <th className="text-left px-2 py-1.5 font-semibold">Opening Values</th>
-                        <th className="text-right px-2 py-1.5 font-semibold">Value USD</th>
-                        <th className="text-right px-2 py-1.5 font-semibold">Rate/%</th>
-                        <th className="text-right px-2 py-1.5 font-semibold">Value ETB</th>
-                      </tr></thead>
-                      <tbody>
-                        {[
-                          ["1", "FCY Value (USD)", Number(form.fobValueUsd).toFixed(2), exchangeRate.toFixed(4), fmtEtb(calc.etbValue)],
-                          ["2", "Opening Margin", "", `${form.marginOpenedPct}%`, fmtEtb(calc.openingMargin)],
-                          ["3", "Bank Commission", "", "4%", fmtEtb(calc.bankCommission)],
-                          ["4", "VAT on Bank Commission", "", "15%", fmtEtb(calc.vatBankCommission)],
-                          ["5", "Swift Charge (if available)", "100.00", exchangeRate.toFixed(4), fmtEtb(calc.swiftCharge)],
-                          ["6", "VAT on Swift Charge", "", "15%", fmtEtb(calc.vatSwiftCharge)],
-                        ].map(([no, item, usd, rate, etb]) => (
-                          <tr key={no} className="border-b last:border-0">
-                            <td className="px-2 py-1.5 text-muted-foreground">{no}</td>
-                            <td className="px-2 py-1.5">{item}</td>
-                            <td className="px-2 py-1.5 text-right text-muted-foreground">{usd}</td>
-                            <td className="px-2 py-1.5 text-right text-muted-foreground">{rate}</td>
-                            <td className="px-2 py-1.5 text-right font-medium">{etb}</td>
-                          </tr>
-                        ))}
-                        <tr className="bg-foreground text-background">
-                          <td colSpan={2} className="px-2 py-1.5 font-bold">TOTAL OPENING DEBITED</td>
-                          <td colSpan={2} className="px-2 py-1.5">
-                            <div className="flex items-center justify-end gap-2">
-                              <Checkbox
-                                checked={form.openingPaidStatus === "paid"}
-                                onCheckedChange={v => field("openingPaidStatus", v ? "paid" : "unpaid")}
-                              />
-                              <span className="text-xs">{form.openingPaidStatus === "paid" ? "PAID" : "UNPAID"}</span>
-                            </div>
-                          </td>
-                          <td className={`px-2 py-1.5 text-right font-bold ${form.openingPaidStatus === "paid" ? "text-emerald-400" : "text-red-400"}`}>
-                            ETB {fmtEtb(calc.totalOpening)}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Settlement */}
-                  <div>
-                    <h4 className="text-xs font-bold mb-2 uppercase tracking-wide">2. Settlement Amount Required / Payable</h4>
-                    <table className="w-full text-xs">
-                      <thead><tr className="bg-muted">
-                        <th className="text-left px-2 py-1.5 font-semibold">No.</th>
-                        <th className="text-left px-2 py-1.5 font-semibold">Items</th>
-                        <th className="text-right px-2 py-1.5 font-semibold">Value USD</th>
-                        <th className="text-right px-2 py-1.5 font-semibold">Rate/%</th>
-                        <th className="text-right px-2 py-1.5 font-semibold">Value ETB</th>
-                      </tr></thead>
-                      <tbody>
-                        {[
-                          ["1", "FCY Value (USD)", Number(form.fobValueUsd).toFixed(2), exchangeRate.toFixed(4), fmtEtb(Number(form.fobValueUsd) * exchangeRate)],
-                          ["2", "Margin Held Payable", "", `${form.marginOpenedPct}%`, fmtEtb(calc.marginHeld)],
-                          ["3", `Settlement Amount %`, "", `${100 - Number(form.marginOpenedPct ?? 30)}%`, fmtEtb(calc.settleAmt)],
-                          ["4", "NBE 2.5% Rate", "", "2.5%", fmtEtb(calc.nbe)],
-                        ].map(([no, item, usd, rate, etb]) => (
-                          <tr key={no} className="border-b last:border-0">
-                            <td className="px-2 py-1.5 text-muted-foreground">{no}</td>
-                            <td className="px-2 py-1.5">{item}</td>
-                            <td className="px-2 py-1.5 text-right text-muted-foreground">{usd}</td>
-                            <td className="px-2 py-1.5 text-right text-muted-foreground">{rate}</td>
-                            <td className="px-2 py-1.5 text-right font-medium">{etb}</td>
-                          </tr>
-                        ))}
-                        <tr className="bg-foreground text-background">
-                          <td colSpan={2} className="px-2 py-1.5 font-bold">TOTAL SETTLEMENT DEBITED</td>
-                          <td colSpan={2} className="px-2 py-1.5">
-                            <div className="flex items-center justify-end gap-2">
-                              <Checkbox
-                                checked={form.settlementPaidStatus === "paid"}
-                                onCheckedChange={v => field("settlementPaidStatus", v ? "paid" : "unpaid")}
-                              />
-                              <span className="text-xs">{form.settlementPaidStatus === "paid" ? "PAID" : "UNPAID"}</span>
-                            </div>
-                          </td>
-                          <td className={`px-2 py-1.5 text-right font-bold ${form.settlementPaidStatus === "paid" ? "text-emerald-400" : "text-red-400"}`}>
-                            ETB {fmtEtb(calc.totalSettlement)}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Total Payable */}
-                  <div className={`rounded-md p-4 ${(calc.totalPayable > 0) ? "bg-foreground text-background" : "bg-muted"}`}>
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div>
-                        <p className="text-xs opacity-70">Total Amount Payable Value ETB</p>
-                        <p className={`text-2xl font-bold mt-1 ${form.openingPaidStatus === "paid" && form.settlementPaidStatus === "paid" ? "text-emerald-400" : "text-red-400"}`}>
-                          ETB {fmtEtb(calc.totalPayable)}
-                        </p>
-                      </div>
-                      <Badge variant={form.openingPaidStatus === "paid" && form.settlementPaidStatus === "paid" ? "default" : "destructive"}>
-                        {form.openingPaidStatus === "paid" && form.settlementPaidStatus === "paid" ? "PAID" : "PAYMENT PENDING"}
-                      </Badge>
-                    </div>
-                    <p className="text-xs opacity-60 mt-2">SYSTEM GENERATED ADVICE · NB: This is a computer generated document, no signature required.</p>
-                  </div>
+                <div className="mt-4">
+                  <LCCostCalculator
+                    initialFcyValue={form.fobValueUsd}
+                    initialOpeningRate={String(exchangeRate)}
+                    initialTotalUnits={form.totalQuantity}
+                    initialBank={form.issuingBank}
+                    initialLcNumber={form.lcNumber}
+                  />
                 </div>
               )}
             </div>

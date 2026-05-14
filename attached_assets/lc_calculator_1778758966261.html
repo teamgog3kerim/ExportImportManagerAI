@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LC & Freight Cost Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #070b14;
+    --surface: #0f1623;
+    --surface2: #151e2e;
+    --border: #1e2d45;
+    --gold: #c9973a;
+    --gold2: #e8b456;
+    --orange: #e07a3a;
+    --amber: #b8860b;
+    --green: #1a9e5c;
+    --green-bg: #0a2a1a;
+    --red: #c0392b;
+    --red-bg: #2a0a0a;
+    --text: #dce6f4;
+    --muted: #4a6080;
+    --accent: #2a4a7a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;background-image:radial-gradient(ellipse at 20% 0%,#0d1f3c 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,#1a0d05 0%,transparent 50%)}
+  header{background:linear-gradient(135deg,#0a0e1a 0%,#12192b 100%);border-bottom:1px solid var(--gold);padding:24px 40px;position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
+  header h1{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--gold);letter-spacing:0.02em}
+  header p{font-size:0.7rem;color:var(--muted);margin-top:4px;letter-spacing:0.1em;text-transform:uppercase}
+  .container{max-width:960px;margin:0 auto;padding:32px 24px 80px}
+  .type-selector{display:flex;gap:12px;margin-bottom:32px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:6px}
+  .type-btn{flex:1;padding:12px;border:none;background:transparent;color:var(--muted);font-family:'IBM Plex Mono',monospace;font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;border-radius:2px;transition:all 0.2s}
+  .type-btn.active{background:var(--gold);color:#070b14;font-weight:600}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:4px;margin-bottom:20px;overflow:hidden;transition:opacity 0.3s}
+  .card.hidden{display:none}
+  .card-header{background:linear-gradient(90deg,var(--surface2),var(--surface));border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+  .card-header h2{font-family:'Cormorant Garamond',serif;font-size:1.15rem;font-weight:600;color:var(--gold2);letter-spacing:0.04em}
+  .card-header .badge{font-size:0.6rem;background:var(--accent);color:var(--gold);padding:3px 8px;border-radius:2px;letter-spacing:0.1em;text-transform:uppercase}
+  .card-body{padding:0}
+  .row{display:grid;grid-template-columns:1fr auto auto;align-items:center;padding:10px 24px;border-bottom:1px solid #0d1522;gap:16px;transition:background 0.15s}
+  .row:last-child{border-bottom:none}
+  .row.input-row{border-left:3px solid var(--orange)}
+  .row.calc-row{border-left:3px solid var(--amber);background:rgba(184,134,11,0.04)}
+  .row.total-row{border-left:3px solid var(--gold);background:rgba(201,151,58,0.08);padding:14px 24px}
+  .row.total-row.paid{background:var(--green-bg);border-left-color:var(--green)}
+  .row.total-row.unpaid{background:var(--red-bg);border-left-color:var(--red)}
+  .row.grand-row{background:rgba(201,151,58,0.15);border-left:4px solid var(--gold2);padding:18px 24px}
+  .row-label{font-size:0.72rem;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase}
+  .total-row .row-label,.grand-row .row-label{color:var(--text);font-weight:500;font-size:0.75rem}
+  .row-usd{font-size:0.8rem;color:#5a7a9a;min-width:120px;text-align:right}
+  .row-etb{font-size:0.88rem;font-weight:600;min-width:180px;text-align:right;color:var(--text)}
+  .total-row .row-etb{font-size:1rem;color:var(--gold)}
+  .total-row.paid .row-etb{color:var(--green)}
+  .total-row.unpaid .row-etb{color:var(--red)}
+  .grand-row .row-etb{font-size:1.15rem;color:var(--gold2)}
+  input[type="number"],input[type="text"],select{background:rgba(14,22,38,0.8);border:1px solid var(--border);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:0.82rem;padding:5px 10px;border-radius:2px;width:100%;outline:none;transition:border-color 0.2s}
+  input[type="number"]:focus,input[type="text"]:focus,select:focus{border-color:var(--orange)}
+  select option{background:#0f1623}
+  .input-group{display:flex;gap:8px;align-items:center}
+  .input-group input{max-width:130px}
+  .rate-input{max-width:100px}
+  .percent-input{max-width:70px}
+  .paid-toggle{display:flex;align-items:center;gap:8px;font-size:0.68rem;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;cursor:pointer}
+  .toggle-switch{width:36px;height:18px;background:var(--border);border-radius:9px;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0}
+  .toggle-switch::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#4a6080;top:2px;left:2px;transition:all 0.2s}
+  .toggle-switch.on{background:var(--green)}
+  .toggle-switch.on::after{background:#fff;left:20px}
+  .section-divider{display:flex;align-items:center;gap:12px;margin:28px 0 12px;padding:0 4px}
+  .section-divider span{font-size:0.62rem;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;white-space:nowrap}
+  .section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+  .carried-badge{font-size:0.6rem;color:var(--amber);background:rgba(184,134,11,0.15);padding:2px 6px;border-radius:2px;margin-left:8px;letter-spacing:0.08em}
+  .note{font-size:0.62rem;color:var(--muted);margin-left:8px}
+  .freight-toggle-row{padding:12px 24px;border-bottom:1px solid #0d1522;display:flex;align-items:center;gap:10px;font-size:0.72rem;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase}
+  .sub-label{font-size:0.62rem;color:var(--muted);margin-top:2px}
+  .header-fields{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .header-field{padding:10px 24px;border-bottom:1px solid #0d1522;border-right:1px solid #0d1522}
+  .header-field:nth-child(2n){border-right:none}
+  .header-field label{font-size:0.62rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;display:block;margin-bottom:4px}
+  .etb-label{font-size:0.62rem;color:var(--amber);letter-spacing:0.08em}
+  @media(max-width:640px){.row{grid-template-columns:1fr;gap:6px}.row-usd,.row-etb{text-align:left}.header-fields{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>LC &amp; Freight Cost Calculator</h1>
+  <p>Letter of Credit · Bank Charges · Sea Freight · Full &amp; Partial Shipments</p>
+</header>
+
+<div class="container">
+
+  <div class="type-selector">
+    <button class="type-btn active" onclick="setType('full')">Case 1 — Full Shipment</button>
+    <button class="type-btn" onclick="setType('partial')">Case 2 — Partial Shipment</button>
+  </div>
+
+  <!-- HEADER -->
+  <div class="card">
+    <div class="card-header"><h2>Document Header</h2><span class="badge">Required</span></div>
+    <div class="header-fields">
+      <div class="header-field"><label>Bank Name</label><input type="text" id="bank_name" placeholder="e.g. Awash Bank" oninput="calc()"/></div>
+      <div class="header-field"><label>LC / Document Ref No.</label><input type="text" id="lc_number" placeholder="e.g. AIB1000283ET" oninput="calc()"/></div>
+      <div class="header-field"><label>Total Units (Qty)</label><input type="number" id="total_units" placeholder="0" oninput="calc()"/></div>
+      <div class="header-field"><label>Currency Type</label><select id="currency_type" onchange="calc()"><option>USD</option><option>JPY</option><option>EUR</option><option>AED</option><option>DJF</option></select></div>
+    </div>
+  </div>
+
+  <!-- LC OPENING -->
+  <div class="card">
+    <div class="card-header"><h2>LC Opening Payable — All Units</h2><span class="badge">Always</span></div>
+    <div class="card-body">
+      <div class="row input-row">
+        <div><div class="row-label">FCY Value (FOB)</div><div class="sub-label">From proforma invoice</div></div>
+        <div class="input-group"><input type="number" id="fcy_value" placeholder="0.00" oninput="calc()"/><span class="etb-label">FCY</span></div>
+        <div class="row-etb" id="d_fcy_value">—</div>
+      </div>
+      <div class="row input-row">
+        <div class="row-label">Opening Exchange Rate (ETB)</div>
+        <input type="number" id="opening_rate" placeholder="0.0000" step="0.0001" oninput="calc()"/>
+        <div class="row-etb" id="d_fcy_etb">—</div>
+      </div>
+      <div class="row input-row">
+        <div class="row-label">Opening Margin %</div>
+        <input type="number" id="opening_margin_pct" placeholder="30" min="0" max="100" oninput="calc()"/>
+        <div class="row-etb" id="d_opening_margin_etb">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">Bank Service Charge <span class="note">Fixed 4%</span></div>
+        <div class="row-usd">× 4%</div>
+        <div class="row-etb" id="d_bsc_open">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">VAT on BSC <span class="note">Fixed 15%</span></div>
+        <div class="row-usd">× 15%</div>
+        <div class="row-etb" id="d_vat_bsc_open">—</div>
+      </div>
+      <div class="row input-row">
+        <div class="row-label">Swift Charge (if any)</div>
+        <div class="input-group"><input type="number" id="swift_usd" placeholder="0.00" oninput="calc()"/><span class="etb-label">USD</span></div>
+        <div class="row-etb" id="d_swift_etb">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">VAT on Swift Charge <span class="note">Fixed 15%</span></div>
+        <div class="row-usd">× 15%</div>
+        <div class="row-etb" id="d_vat_swift">—</div>
+      </div>
+      <div class="row total-row unpaid" id="row_total_opening">
+        <div>
+          <div class="row-label">TOTAL LC Opening Debited</div>
+          <div style="margin-top:6px" class="paid-toggle" onclick="togglePaid('opening')">
+            <div class="toggle-switch" id="sw_opening"></div>Mark as Paid
+          </div>
+        </div>
+        <div></div>
+        <div class="row-etb" id="d_total_opening">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL SETTLEMENT -->
+  <div class="card" id="sec_full_settlement">
+    <div class="card-header"><h2>LC Settlement Payable — Full Shipment</h2></div>
+    <div class="card-body">
+      <div class="row input-row">
+        <div class="row-label">Settlement Exchange Rate (ETB)</div>
+        <input type="number" id="fs_rate" placeholder="0.0000" step="0.0001" oninput="calc()"/>
+        <div class="row-etb" id="d_fs_fcy_etb">—</div>
+      </div>
+      <div class="row calc-row">
+        <div><div class="row-label">Margin Held Payable <span class="carried-badge">Carried</span></div></div>
+        <div class="row-usd" id="d_fs_margin_pct">—</div>
+        <div class="row-etb" id="d_fs_margin_held">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">Settlement Amount %</div>
+        <div class="row-usd" id="d_fs_settle_pct">—</div>
+        <div class="row-etb" id="d_fs_settle_etb">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">NBE 2.5% Rate <span class="note">Fixed 2.5%</span></div>
+        <div class="row-usd">× 2.5%</div>
+        <div class="row-etb" id="d_fs_nbe">—</div>
+      </div>
+      <div class="row input-row">
+        <div class="row-label">Other Payment (USD, if any)</div>
+        <div class="input-group"><input type="number" id="fs_other_usd" placeholder="0.00" oninput="calc()"/><span class="etb-label">USD</span></div>
+        <div class="row-etb" id="d_fs_other_etb">—</div>
+      </div>
+      <div class="row total-row unpaid" id="row_fs_settle">
+        <div>
+          <div class="row-label">TOTAL LC Settlement Debited</div>
+          <div style="margin-top:6px" class="paid-toggle" onclick="togglePaid('fs_settle')">
+            <div class="toggle-switch" id="sw_fs_settle"></div>Mark as Paid
+          </div>
+        </div>
+        <div></div>
+        <div class="row-etb" id="d_total_fs_settle">—</div>
+      </div>
+      <div class="row grand-row">
+        <div class="row-label">TOTAL ETB Amount Payable on This LC</div>
+        <div></div>
+        <div class="row-etb" id="d_total_lc_payable">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FULL FREIGHT -->
+  <div class="card" id="sec_full_freight">
+    <div class="card-header"><h2>Sea Freight Payable — Full Shipment</h2><span class="badge">Skip if Djibouti</span></div>
+    <div class="card-body">
+      <div class="freight-toggle-row">
+        <div class="toggle-switch" id="sw_include_freight" onclick="toggleFreight()"></div>
+        Include Sea Freight in Calculation
+      </div>
+      <div id="freight_fields" style="display:none">
+        <div class="row input-row">
+          <div class="row-label">Freight FCY Value (USD)</div>
+          <div class="input-group"><input type="number" id="ff_fcy" placeholder="0.00" oninput="calc()"/><span class="etb-label">USD</span></div>
+          <div class="row-etb" id="d_ff_fcy">—</div>
+        </div>
+        <div class="row input-row">
+          <div class="row-label">Freight Exchange Rate (ETB)</div>
+          <input type="number" id="ff_rate" placeholder="0.0000" step="0.0001" oninput="calc()"/>
+          <div class="row-etb" id="d_ff_etb">—</div>
+        </div>
+        <div class="row calc-row">
+          <div class="row-label">Bank Service Charge <span class="note">Fixed 4%</span></div>
+          <div class="row-usd">× 4%</div>
+          <div class="row-etb" id="d_ff_bsc">—</div>
+        </div>
+        <div class="row calc-row">
+          <div class="row-label">VAT on BSC <span class="note">Fixed 15%</span></div>
+          <div class="row-usd">× 15%</div>
+          <div class="row-etb" id="d_ff_vat_bsc">—</div>
+        </div>
+        <div class="row calc-row">
+          <div class="row-label">NBE 2.5% Rate <span class="note">Fixed 2.5%</span></div>
+          <div class="row-usd">× 2.5%</div>
+          <div class="row-etb" id="d_ff_nbe">—</div>
+        </div>
+        <div class="row total-row unpaid" id="row_ff">
+          <div>
+            <div class="row-label">TOTAL Freight Payable Debited</div>
+            <div style="margin-top:6px" class="paid-toggle" onclick="togglePaid('ff')">
+              <div class="toggle-switch" id="sw_ff"></div>Mark as Paid
+            </div>
+          </div>
+          <div></div>
+          <div class="row-etb" id="d_total_ff">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P1 SETTLEMENT -->
+  <div class="card hidden" id="sec_p1_settlement">
+    <div class="card-header"><h2>1st Partial — LC Settlement</h2><span class="badge">Partial</span></div>
+    <div class="card-body">
+      <div class="row input-row">
+        <div class="row-label">Units Shipped (1st Partial)</div>
+        <input type="number" id="p1_units" placeholder="0" oninput="calc()"/>
+        <div class="row-etb" id="d_p1_fcy">—</div>
+      </div>
+      <div class="row input-row">
+        <div class="row-label">1st Partial Settlement Rate (ETB)</div>
+        <input type="number" id="p1_rate" placeholder="0.0000" step="0.0001" oninput="calc()"/>
+        <div class="row-etb" id="d_p1_fcy_etb">—</div>
+      </div>
+      <div class="row calc-row">
+        <div><div class="row-label">Margin Held <span class="carried-badge">Proportional</span></div></div>
+        <div class="row-usd" id="d_p1_margin_pct">—</div>
+        <div class="row-etb" id="d_p1_margin_held">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">Settlement Amount %</div>
+        <div class="row-usd" id="d_p1_settle_pct">—</div>
+        <div class="row-etb" id="d_p1_settle_etb">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">NBE 2.5% Rate</div>
+        <div class="row-usd">× 2.5%</div>
+        <div class="row-etb" id="d_p1_nbe">—</div>
+      </div>
+      <div class="row input-row">
+        <div class="row-label">Other Payment (USD, if any)</div>
+        <div class="input-group"><input type="number" id="p1_other_usd" placeholder="0.00" oninput="calc()"/><span class="etb-label">USD</span></div>
+        <div class="row-etb" id="d_p1_other_etb">—</div>
+      </div>
+      <div class="row total-row unpaid" id="row_p1_settle">
+        <div>
+          <div class="row-label">TOTAL 1st Partial Settlement Debited</div>
+          <div style="margin-top:6px" class="paid-toggle" onclick="togglePaid('p1_settle')">
+            <div class="toggle-switch" id="sw_p1_settle"></div>Mark as Paid
+          </div>
+        </div>
+        <div></div>
+        <div class="row-etb" id="d_total_p1_settle">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P1 FREIGHT -->
+  <div class="card hidden" id="sec_p1_freight">
+    <div class="card-header"><h2>1st Partial — Sea Freight</h2><span class="badge">Partial</span></div>
+    <div class="card-body">
+      <div class="row input-row">
+        <div class="row-label">Total Freight FCY (USD) — Full Shipment</div>
+        <div class="input-group"><input type="number" id="total_freight_fcy" placeholder="0.00" oninput="calc()"/><span class="etb-label">USD</span></div>
+        <div class="row-etb" id="d_p1_ff_fcy">—</div>
+      </div>
+      <div class="row input-row">
+        <div class="row-label">1st Partial Freight Rate (ETB)</div>
+        <input type="number" id="p1_freight_rate" placeholder="0.0000" step="0.0001" oninput="calc()"/>
+        <div class="row-etb" id="d_p1_ff_etb">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">Bank Service Charge <span class="note">Fixed 4%</span></div>
+        <div class="row-usd">× 4%</div>
+        <div class="row-etb" id="d_p1_ff_bsc">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">VAT on BSC <span class="note">Fixed 15%</span></div>
+        <div class="row-usd">× 15%</div>
+        <div class="row-etb" id="d_p1_ff_vat">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">NBE 2.5% Rate</div>
+        <div class="row-usd">× 2.5%</div>
+        <div class="row-etb" id="d_p1_ff_nbe">—</div>
+      </div>
+      <div class="row total-row unpaid" id="row_p1_freight">
+        <div>
+          <div class="row-label">TOTAL 1st Partial Freight Debited</div>
+          <div style="margin-top:6px" class="paid-toggle" onclick="togglePaid('p1_freight')">
+            <div class="toggle-switch" id="sw_p1_freight"></div>Mark as Paid
+          </div>
+        </div>
+        <div></div>
+        <div class="row-etb" id="d_total_p1_freight">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P2 SETTLEMENT -->
+  <div class="card hidden" id="sec_p2_settlement">
+    <div class="card-header"><h2>Remaining Units — LC Settlement</h2><span class="badge">Partial</span></div>
+    <div class="card-body">
+      <div class="row calc-row">
+        <div class="row-label">Remaining Units <span class="carried-badge">Auto</span></div>
+        <div></div>
+        <div class="row-etb" id="d_p2_units">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">Remaining FCY (USD) <span class="carried-badge">Auto</span></div>
+        <div></div>
+        <div class="row-etb" id="d_p2_fcy">—</div>
+      </div>
+      <div class="row input-row">
+        <div class="row-label">Remaining Settlement Rate (ETB)</div>
+        <input type="number" id="p2_rate" placeholder="0.0000" step="0.0001" oninput="calc()"/>
+        <div class="row-etb" id="d_p2_fcy_etb">—</div>
+      </div>
+      <div class="row calc-row">
+        <div><div class="row-label">Margin Held <span class="carried-badge">Balance</span></div></div>
+        <div class="row-usd" id="d_p2_margin_pct">—</div>
+        <div class="row-etb" id="d_p2_margin_held">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">Settlement Amount %</div>
+        <div class="row-usd" id="d_p2_settle_pct">—</div>
+        <div class="row-etb" id="d_p2_settle_etb">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">NBE 2.5% Rate</div>
+        <div class="row-usd">× 2.5%</div>
+        <div class="row-etb" id="d_p2_nbe">—</div>
+      </div>
+      <div class="row input-row">
+        <div class="row-label">Other Payment (USD, if any)</div>
+        <div class="input-group"><input type="number" id="p2_other_usd" placeholder="0.00" oninput="calc()"/><span class="etb-label">USD</span></div>
+        <div class="row-etb" id="d_p2_other_etb">—</div>
+      </div>
+      <div class="row total-row unpaid" id="row_p2_settle">
+        <div>
+          <div class="row-label">TOTAL Remaining Settlement Debited</div>
+          <div style="margin-top:6px" class="paid-toggle" onclick="togglePaid('p2_settle')">
+            <div class="toggle-switch" id="sw_p2_settle"></div>Mark as Paid
+          </div>
+        </div>
+        <div></div>
+        <div class="row-etb" id="d_total_p2_settle">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- P2 FREIGHT -->
+  <div class="card hidden" id="sec_p2_freight">
+    <div class="card-header"><h2>Remaining Units — Sea Freight</h2><span class="badge">Partial</span></div>
+    <div class="card-body">
+      <div class="row calc-row">
+        <div class="row-label">Remaining Freight FCY (USD) <span class="carried-badge">Auto</span></div>
+        <div></div>
+        <div class="row-etb" id="d_p2_ff_fcy">—</div>
+      </div>
+      <div class="row input-row">
+        <div class="row-label">Remaining Freight Rate (ETB)</div>
+        <input type="number" id="p2_freight_rate" placeholder="0.0000" step="0.0001" oninput="calc()"/>
+        <div class="row-etb" id="d_p2_ff_etb">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">Bank Service Charge <span class="note">Fixed 4%</span></div>
+        <div class="row-usd">× 4%</div>
+        <div class="row-etb" id="d_p2_ff_bsc">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">VAT on BSC <span class="note">Fixed 15%</span></div>
+        <div class="row-usd">× 15%</div>
+        <div class="row-etb" id="d_p2_ff_vat">—</div>
+      </div>
+      <div class="row calc-row">
+        <div class="row-label">NBE 2.5% Rate</div>
+        <div class="row-usd">× 2.5%</div>
+        <div class="row-etb" id="d_p2_ff_nbe">—</div>
+      </div>
+      <div class="row total-row unpaid" id="row_p2_freight">
+        <div>
+          <div class="row-label">TOTAL Remaining Freight Debited</div>
+          <div style="margin-top:6px" class="paid-toggle" onclick="togglePaid('p2_freight')">
+            <div class="toggle-switch" id="sw_p2_freight"></div>Mark as Paid
+          </div>
+        </div>
+        <div></div>
+        <div class="row-etb" id="d_total_p2_freight">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRAND TOTAL -->
+  <div class="card">
+    <div class="card-header"><h2>Grand Total — CFR &amp; Bank Charges</h2></div>
+    <div class="card-body">
+      <div class="row grand-row">
+        <div class="row-label">TOTAL CFR &amp; Bank Service Charges Paid (ETB)</div>
+        <div></div>
+        <div class="row-etb" id="d_grand_total">—</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let shipType = 'full';
+let freightOn = false;
+const paid = {};
+
+function setType(t) {
+  shipType = t;
+  document.querySelectorAll('.type-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&t==='full')||(i===1&&t==='partial')));
+  const fullSecs = ['sec_full_settlement','sec_full_freight'];
+  const partialSecs = ['sec_p1_settlement','sec_p1_freight','sec_p2_settlement','sec_p2_freight'];
+  fullSecs.forEach(id=>document.getElementById(id).classList.toggle('hidden', t!=='full'));
+  partialSecs.forEach(id=>document.getElementById(id).classList.toggle('hidden', t!=='partial'));
+  calc();
+}
+
+function toggleFreight() {
+  freightOn = !freightOn;
+  document.getElementById('sw_include_freight').classList.toggle('on', freightOn);
+  document.getElementById('freight_fields').style.display = freightOn ? 'block' : 'none';
+  calc();
+}
+
+function togglePaid(key) {
+  paid[key] = !paid[key];
+  document.getElementById('sw_'+key).classList.toggle('on', paid[key]);
+  const row = document.getElementById('row_'+key);
+  if(row) { row.classList.toggle('paid', paid[key]); row.classList.toggle('unpaid', !paid[key]); }
+}
+
+function v(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+function pct(id) { return v(id) / 100; }
+
+function fmt(n) {
+  if (!n && n!==0) return '—';
+  return 'ETB ' + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtUSD(n) { return n ? '$ ' + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'; }
+function set(id, val) { const el=document.getElementById(id); if(el) el.textContent = val; }
+
+function calc() {
+  const fcy_value = v('fcy_value');
+  const opening_rate = v('opening_rate');
+  const opening_margin_pct = pct('opening_margin_pct');
+  const swift_usd = v('swift_usd');
+
+  // LC OPENING
+  const fcy_etb = fcy_value * opening_rate;
+  const opening_margin_etb = fcy_etb * opening_margin_pct;
+  const bsc_open = fcy_etb * 0.04;
+  const vat_bsc_open = bsc_open * 0.15;
+  const swift_etb = swift_usd * opening_rate;
+  const vat_swift = swift_etb * 0.15;
+  const total_opening = opening_margin_etb + bsc_open + vat_bsc_open + swift_etb + vat_swift;
+
+  set('d_fcy_value', fmtUSD(fcy_value));
+  set('d_fcy_etb', fmt(fcy_etb));
+  set('d_opening_margin_etb', fmt(opening_margin_etb));
+  set('d_bsc_open', fmt(bsc_open));
+  set('d_vat_bsc_open', fmt(vat_bsc_open));
+  set('d_swift_etb', swift_usd ? fmt(swift_etb) : '—');
+  set('d_vat_swift', swift_usd ? fmt(vat_swift) : '—');
+  set('d_total_opening', fmt(total_opening));
+
+  let grand = total_opening;
+
+  if (shipType === 'full') {
+    const fs_rate = v('fs_rate');
+    const fs_other_usd = v('fs_other_usd');
+    const fs_fcy_etb = fcy_value * fs_rate;
+    const fs_margin_held = opening_margin_etb;
+    const fs_settle_pct = 1 - opening_margin_pct;
+    const fs_settle_etb = fs_fcy_etb - fs_margin_held;
+    const fs_nbe = fs_fcy_etb * 0.025;
+    const fs_other_etb = fs_other_usd * fs_rate;
+    const total_fs_settle = fs_settle_etb + fs_nbe + fs_other_etb;
+    const total_lc_payable = total_opening + total_fs_settle;
+
+    set('d_fs_fcy_etb', fmt(fs_fcy_etb));
+    set('d_fs_margin_pct', (opening_margin_pct*100).toFixed(1)+'%');
+    set('d_fs_margin_held', fmt(fs_margin_held));
+    set('d_fs_settle_pct', (fs_settle_pct*100).toFixed(1)+'%');
+    set('d_fs_settle_etb', fmt(fs_settle_etb));
+    set('d_fs_nbe', fmt(fs_nbe));
+    set('d_fs_other_etb', fs_other_usd ? fmt(fs_other_etb) : '—');
+    set('d_total_fs_settle', fmt(total_fs_settle));
+    set('d_total_lc_payable', fmt(total_lc_payable));
+
+    grand += total_fs_settle;
+
+    if (freightOn) {
+      const ff_fcy = v('ff_fcy');
+      const ff_rate = v('ff_rate');
+      const ff_etb = ff_fcy * ff_rate;
+      const ff_bsc = ff_etb * 0.04;
+      const ff_vat_bsc = ff_bsc * 0.15;
+      const ff_nbe = ff_etb * 0.025;
+      const total_ff = ff_etb + ff_bsc + ff_vat_bsc + ff_nbe;
+      set('d_ff_fcy', fmtUSD(ff_fcy));
+      set('d_ff_etb', fmt(ff_etb));
+      set('d_ff_bsc', fmt(ff_bsc));
+      set('d_ff_vat_bsc', fmt(ff_vat_bsc));
+      set('d_ff_nbe', fmt(ff_nbe));
+      set('d_total_ff', fmt(total_ff));
+      grand += total_ff;
+    }
+
+  } else {
+    const total_units = v('total_units');
+    const p1_units = v('p1_units');
+    const p1_rate = v('p1_rate');
+    const p1_other_usd = v('p1_other_usd');
+    const total_freight_fcy = v('total_freight_fcy');
+    const p1_freight_rate = v('p1_freight_rate');
+    const p2_rate = v('p2_rate');
+    const p2_other_usd = v('p2_other_usd');
+    const p2_freight_rate = v('p2_freight_rate');
+
+    const ratio1 = total_units ? p1_units / total_units : 0;
+    const ratio2 = 1 - ratio1;
+
+    // P1 Settlement
+    const p1_fcy = fcy_value * ratio1;
+    const p1_fcy_etb = p1_fcy * p1_rate;
+    const p1_margin_held = opening_margin_etb * ratio1;
+    const p1_settle_pct = 1 - opening_margin_pct;
+    const p1_settle_etb = p1_fcy_etb - p1_margin_held;
+    const p1_nbe = p1_fcy_etb * 0.025;
+    const p1_other_etb = p1_other_usd * p1_rate;
+    const total_p1_settle = p1_settle_etb + p1_nbe + p1_other_etb;
+
+    set('d_p1_fcy', fmtUSD(p1_fcy));
+    set('d_p1_fcy_etb', fmt(p1_fcy_etb));
+    set('d_p1_margin_pct', (opening_margin_pct*100).toFixed(1)+'%');
+    set('d_p1_margin_held', fmt(p1_margin_held));
+    set('d_p1_settle_pct', (p1_settle_pct*100).toFixed(1)+'%');
+    set('d_p1_settle_etb', fmt(p1_settle_etb));
+    set('d_p1_nbe', fmt(p1_nbe));
+    set('d_p1_other_etb', p1_other_usd ? fmt(p1_other_etb) : '—');
+    set('d_total_p1_settle', fmt(total_p1_settle));
+
+    // P1 Freight
+    const p1_ff_fcy = total_freight_fcy * ratio1;
+    const p1_ff_etb = p1_ff_fcy * p1_freight_rate;
+    const p1_ff_bsc = p1_ff_etb * 0.04;
+    const p1_ff_vat = p1_ff_bsc * 0.15;
+    const p1_ff_nbe = p1_ff_etb * 0.025;
+    const total_p1_freight = p1_ff_etb + p1_ff_bsc + p1_ff_vat + p1_ff_nbe;
+
+    set('d_p1_ff_fcy', fmtUSD(p1_ff_fcy));
+    set('d_p1_ff_etb', fmt(p1_ff_etb));
+    set('d_p1_ff_bsc', fmt(p1_ff_bsc));
+    set('d_p1_ff_vat', fmt(p1_ff_vat));
+    set('d_p1_ff_nbe', fmt(p1_ff_nbe));
+    set('d_total_p1_freight', fmt(total_p1_freight));
+
+    // P2 Settlement
+    const p2_units = total_units - p1_units;
+    const p2_fcy = fcy_value - p1_fcy;
+    const p2_fcy_etb = p2_fcy * p2_rate;
+    const p2_margin_held = opening_margin_etb - p1_margin_held;
+    const p2_settle_pct = 1 - opening_margin_pct;
+    const p2_settle_etb = p2_fcy_etb - p2_margin_held;
+    const p2_nbe = p2_fcy_etb * 0.025;
+    const p2_other_etb = p2_other_usd * p2_rate;
+    const total_p2_settle = p2_settle_etb + p2_nbe + p2_other_etb;
+
+    set('d_p2_units', p2_units || '—');
+    set('d_p2_fcy', fmtUSD(p2_fcy));
+    set('d_p2_fcy_etb', fmt(p2_fcy_etb));
+    set('d_p2_margin_pct', (opening_margin_pct*100).toFixed(1)+'%');
+    set('d_p2_margin_held', fmt(p2_margin_held));
+    set('d_p2_settle_pct', (p2_settle_pct*100).toFixed(1)+'%');
+    set('d_p2_settle_etb', fmt(p2_settle_etb));
+    set('d_p2_nbe', fmt(p2_nbe));
+    set('d_p2_other_etb', p2_other_usd ? fmt(p2_other_etb) : '—');
+    set('d_total_p2_settle', fmt(total_p2_settle));
+
+    // P2 Freight
+    const p2_ff_fcy = total_freight_fcy - p1_ff_fcy;
+    const p2_ff_etb = p2_ff_fcy * p2_freight_rate;
+    const p2_ff_bsc = p2_ff_etb * 0.04;
+    const p2_ff_vat = p2_ff_bsc * 0.15;
+    const p2_ff_nbe = p2_ff_etb * 0.025;
+    const total_p2_freight = p2_ff_etb + p2_ff_bsc + p2_ff_vat + p2_ff_nbe;
+
+    set('d_p2_ff_fcy', fmtUSD(p2_ff_fcy));
+    set('d_p2_ff_etb', fmt(p2_ff_etb));
+    set('d_p2_ff_bsc', fmt(p2_ff_bsc));
+    set('d_p2_ff_vat', fmt(p2_ff_vat));
+    set('d_p2_ff_nbe', fmt(p2_ff_nbe));
+    set('d_total_p2_freight', fmt(total_p2_freight));
+
+    grand += total_p1_settle + total_p1_freight + total_p2_settle + total_p2_freight;
+  }
+
+  set('d_grand_total', fmt(grand));
+}
+
+calc();
+</script>
+</body>
+</html>
