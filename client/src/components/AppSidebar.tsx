@@ -47,7 +47,7 @@ export function AppSidebar() {
           </div>
           <div className="min-w-0">
             <p className="font-display text-base font-semibold leading-tight truncate tracking-tight">My EX-IM </p>
-            <p className="text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground leading-tight truncate mt-0.5">Imp · Exp Manager</p>
+            <p className="text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground leading-tight truncate mt-0.5">My Export & Import Manager</p>
           </div>
         </div>
       </SidebarHeader>
