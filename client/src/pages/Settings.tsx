@@ -21,7 +21,7 @@ const TABS = [
   { id: "company", label: "Company", icon: Building2 },
   { id: "banks", label: "Banks", icon: BanknoteIcon },
   { id: "suppliers", label: "Suppliers", icon: Users },
-  { id: "certs", label: "Certs", icon: Award },
+  { id: "certs", label: "Certifications", icon: Award },
   { id: "notifications", label: "Notifications", icon: Bell },
 ];
 
