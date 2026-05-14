@@ -22,7 +22,6 @@ function lcStatusColor(s: string) {
   return "secondary";
 }
 
-const BANK_OTHER = "__bank_other__";
 const CURRENCIES = ["USD ($)", "EUR (€)", "GBP (£)", "CNY (¥)"];
 
 export default function LCManagement() {
@@ -263,28 +262,19 @@ export default function LCManagement() {
                 <div className="space-y-1 sm:col-span-2">
                   <Label className="text-xs">Issuing Bank <span className="text-destructive">*</span></Label>
                   <Select
-                    value={bankNames.includes(form.issuingBank) ? form.issuingBank : (form.issuingBank ? BANK_OTHER : "")}
-                    onValueChange={v => field("issuingBank", v === BANK_OTHER ? "" : v)}
+                    value={bankNames.includes(form.issuingBank) ? form.issuingBank : ""}
+                    onValueChange={v => field("issuingBank", v)}
+                    disabled={bankNames.length === 0}
                   >
                     <SelectTrigger data-testid="select-issuing-bank">
-                      <SelectValue placeholder={bankNames.length === 0 ? "Add a bank in Settings first" : "Select bank"} />
+                      <SelectValue placeholder={bankNames.length === 0 ? "Add a bank in Settings → Banks first" : "Select bank"} />
                     </SelectTrigger>
                     <SelectContent>
                       {bankNames.map(b => <SelectItem key={b} value={b}>{b}</SelectItem>)}
-                      <SelectItem value={BANK_OTHER}>Other (enter manually)</SelectItem>
                     </SelectContent>
                   </Select>
-                  {!bankNames.includes(form.issuingBank) && (
-                    <Input
-                      className="mt-2"
-                      value={form.issuingBank}
-                      onChange={e => field("issuingBank", e.target.value)}
-                      placeholder="Type bank name"
-                      data-testid="input-issuing-bank"
-                    />
-                  )}
                   {bankNames.length === 0 && (
-                    <p className="text-[0.65rem] text-muted-foreground">No saved banks yet — add them under Settings → Banks.</p>
+                    <p className="text-[0.65rem] text-muted-foreground">No saved banks yet — add them under Settings → Banks to be able to issue an LC.</p>
                   )}
                 </div>
                 <div className="space-y-1">
