@@ -556,7 +556,8 @@ export default function LCManagement() {
               <LCCostCalculator
                 initialFcyValue={form.fobValueUsd}
                 initialOpeningRate={String(exchangeRate)}
-                initialTotalUnits={form.totalQuantity}
+                initialTotalUnits={String(form.totalQuantity ?? "").replace(/[^0-9]/g, "")}
+                initialPartialUnits={form.partialShipmentAllowed === "true" ? (form.partialShipmentUnits ?? "") : ""}
                 initialBank={form.issuingBank}
                 initialLcNumber={form.lcNumber}
                 lockedShipType={form.partialShipmentAllowed === "true" ? "partial" : "full"}

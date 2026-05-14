@@ -126,6 +126,7 @@ interface Props {
   initialFcyValue?: string;
   initialOpeningRate?: string;
   initialTotalUnits?: string;
+  initialPartialUnits?: string;
   initialBank?: string;
   initialLcNumber?: string;
   /** If set, locks the calculator to this scenario and disables the other tab. */
@@ -144,9 +145,18 @@ export function LCCostCalculator(props: Props) {
     fcy_value: props.initialFcyValue ?? initial.fcy_value,
     opening_rate: props.initialOpeningRate ?? initial.opening_rate,
     total_units: props.initialTotalUnits ?? initial.total_units,
+    p1_units: props.initialPartialUnits ?? initial.p1_units,
     bank_name: props.initialBank ?? initial.bank_name,
     lc_number: props.initialLcNumber ?? initial.lc_number,
   });
+
+  useEffect(() => {
+    setS(prev => ({
+      ...prev,
+      ...(props.initialTotalUnits !== undefined && { total_units: props.initialTotalUnits }),
+      ...(props.initialPartialUnits !== undefined && { p1_units: props.initialPartialUnits }),
+    }));
+  }, [props.initialTotalUnits, props.initialPartialUnits]);
 
   const set = (k: keyof State, v: string) => setS(p => ({ ...p, [k]: v }));
   const tp = (k: string) => setPaid(p => ({ ...p, [k]: !p[k] }));
