@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/PageHeader";
 import { Plus, Search, ShoppingCart, Pencil, Trash2, Wheat, Package, DollarSign } from "lucide-react";
 import type { ExportPurchase } from "@shared/schema";
 
@@ -101,15 +102,16 @@ export default function ExportPurchases() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">Purchase / Sourcing Inventory</h1>
-          <p className="text-sm text-muted-foreground">Source local Ethiopian goods for export markets</p>
-        </div>
-        <Button onClick={openNew} data-testid="button-create-purchase">
-          <Plus className="h-4 w-4 mr-1.5" /> New Purchase
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Export · Sourcing"
+        title="Purchase & Sourcing Inventory"
+        description="Track local Ethiopian goods procured from cooperatives and unions, ready for international markets."
+        actions={
+          <Button onClick={openNew} data-testid="button-create-purchase">
+            <Plus className="h-4 w-4 mr-1.5" /> New Purchase
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card>

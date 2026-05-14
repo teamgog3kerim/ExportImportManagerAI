@@ -14,81 +14,81 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .07);
 
-  /* Warm cream — lighter than #ECE7D1 */
-  --background: 47 38% 95%;
+  /* Refined paper-cream — soft, editorial */
+  --background: 42 32% 96%;
 
-  /* Dark warm brown */
-  --foreground: 38 28% 12%;
+  /* Deep espresso-brown for text — high readability */
+  --foreground: 30 24% 14%;
 
-  /* Muted sand border */
-  --border: 45 20% 78%;
+  /* Subtle warm border */
+  --border: 40 16% 80%;
 
-  /* Cream card — #ECE7D1 territory */
-  --card: 47 32% 91%;
+  /* Card — clean ivory, near-white for breathing room */
+  --card: 42 38% 98%;
 
-  --card-foreground: 38 28% 12%;
+  --card-foreground: 30 24% 14%;
 
-  --card-border: 46 22% 85%;
+  --card-border: 40 18% 86%;
 
-  /* Sidebar: warm sand #DBCEA5 territory */
-  --sidebar: 45 26% 86%;
+  /* Sidebar: warm parchment, slightly deeper than bg for definition */
+  --sidebar: 38 22% 88%;
 
-  --sidebar-foreground: 38 28% 12%;
+  --sidebar-foreground: 30 24% 16%;
 
-  --sidebar-border: 45 18% 81%;
+  --sidebar-border: 38 14% 80%;
 
-  /* Primary: warm brown #8A7650 */
-  --sidebar-primary: 39 27% 43%;
+  /* Primary: deep heritage brown — more sophisticated than #8A7650 */
+  --sidebar-primary: 30 32% 32%;
 
-  --sidebar-primary-foreground: 47 45% 97%;
+  --sidebar-primary-foreground: 42 45% 97%;
 
-  --sidebar-accent: 46 20% 80%;
+  --sidebar-accent: 38 18% 82%;
 
-  --sidebar-accent-foreground: 38 22% 22%;
+  --sidebar-accent-foreground: 30 22% 22%;
 
-  --sidebar-ring: 39 27% 43%;
+  --sidebar-ring: 30 32% 32%;
 
-  --popover: 47 32% 91%;
+  --popover: 42 38% 98%;
 
-  --popover-foreground: 38 28% 12%;
+  --popover-foreground: 30 24% 14%;
 
-  --popover-border: 46 22% 83%;
+  --popover-border: 40 18% 86%;
 
-  /* Primary: warm brown #8A7650 → HSL(39, 27%, 43%) */
-  --primary: 39 27% 43%;
+  /* Primary: deep heritage brown — sophisticated, professional */
+  --primary: 30 32% 32%;
 
-  --primary-foreground: 47 45% 97%;
+  --primary-foreground: 42 45% 97%;
 
-  /* Secondary: sage green #8E977D → HSL(81, 11%, 54%) — lightened */
-  --secondary: 80 14% 82%;
+  /* Secondary: muted sage */
+  --secondary: 78 10% 84%;
 
-  --secondary-foreground: 38 20% 18%;
+  --secondary-foreground: 30 22% 18%;
 
-  /* Muted: sandy #DBCEA5 territory */
-  --muted: 46 24% 84%;
+  /* Muted: warm ivory */
+  --muted: 40 20% 88%;
 
-  --muted-foreground: 38 14% 40%;
+  --muted-foreground: 30 12% 38%;
 
-  /* Accent: sage-tinted */
-  --accent: 78 12% 80%;
+  /* Accent: forest-sage refined */
+  --accent: 84 10% 82%;
 
-  --accent-foreground: 38 20% 15%;
+  --accent-foreground: 30 22% 16%;
 
-  --destructive: 4 68% 38%;
+  --destructive: 4 62% 36%;
 
   --destructive-foreground: 0 0% 98%;
 
-  --input: 46 18% 72%;
-  --ring: 39 27% 43%;
-  /* Chart colors: warm earthy tones */
-  --chart-1: 39 27% 43%;
-  --chart-2: 80 22% 48%;
-  --chart-3: 46 55% 55%;
-  --chart-4: 14 60% 42%;
-  --chart-5: 145 28% 38%;
+  --input: 40 16% 76%;
+  --ring: 30 32% 32%;
+  /* Chart colors: warm refined earthy */
+  --chart-1: 30 32% 32%;
+  --chart-2: 78 18% 42%;
+  --chart-3: 42 50% 50%;
+  --chart-4: 14 55% 42%;
+  --chart-5: 145 25% 36%;
 
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-serif: Georgia, serif;
+  --font-serif: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
   --font-mono: 'JetBrains Mono', Menlo, monospace;
   --radius: .5rem; /* 8px */
   --shadow-2xs: 0px 1px 2px 0px hsl(38 20% 20% / 0.04);
@@ -254,6 +254,30 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    font-feature-settings: "ss01", "cv11", "kern";
+  }
+
+  /* Classical editorial headings — Playfair Display */
+  .font-display {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  /* Subtle gold-rule divider for page headers */
+  .heading-rule {
+    position: relative;
+    padding-bottom: 0.875rem;
+  }
+  .heading-rule::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 2.5rem;
+    height: 2px;
+    background: hsl(var(--primary));
+    border-radius: 2px;
   }
 }
 

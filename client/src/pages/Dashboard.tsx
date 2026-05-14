@@ -9,6 +9,7 @@ import {
   Ship, FileText, AlertTriangle, DollarSign, BrainCircuit, TrendingUp,
   ArrowUpRight, ArrowDownRight, RefreshCw
 } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 
 function fmt(n: number | string) {
   return Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -36,15 +37,16 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Executive Overview — MY IMP-EXP MANAGER</p>
-        </div>
-        <Button variant="outline" size="sm" data-testid="button-generate-report">
-          <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Generate Report
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Executive Overview"
+        title="Dashboard"
+        description="Real-time intelligence across your import and export operations."
+        actions={
+          <Button variant="outline" data-testid="button-generate-report">
+            <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Generate Report
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map(m => (

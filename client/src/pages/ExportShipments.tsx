@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/PageHeader";
 import { Plus, Search, Send, Pencil, Trash2, Ship, MapPin, Anchor, FileText } from "lucide-react";
 import type { ExportShipment, Cad } from "@shared/schema";
 
@@ -122,15 +123,16 @@ export default function ExportShipments() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">Export Shipments</h1>
-          <p className="text-sm text-muted-foreground">Track outbound goods from Ethiopia to international destinations</p>
-        </div>
-        <Button onClick={openNew} data-testid="button-create-export-shipment">
-          <Plus className="h-4 w-4 mr-1.5" /> New Export Shipment
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Export · Logistics"
+        title="Export Shipments"
+        description="Track outbound consignments from Ethiopian origins through transit ports to international destinations."
+        actions={
+          <Button onClick={openNew} data-testid="button-create-export-shipment">
+            <Plus className="h-4 w-4 mr-1.5" /> New Shipment
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card>

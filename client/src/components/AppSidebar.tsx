@@ -40,14 +40,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="px-3 py-3 border-b">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center shrink-0">
-            <span className="text-primary-foreground text-xs font-bold">IE</span>
+      <SidebarHeader className="px-4 py-4 border-b">
+        <div className="flex items-center gap-2.5">
+          <div className="h-9 w-9 rounded-md bg-primary flex items-center justify-center shrink-0 shadow-sm">
+            <span className="font-display text-primary-foreground text-base font-semibold">M</span>
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold leading-tight truncate">IMP-EXP</p>
-            <p className="text-xs text-muted-foreground leading-tight truncate">MIDAS MANAGER</p>
+            <p className="font-display text-base font-semibold leading-tight truncate tracking-tight">Midas</p>
+            <p className="text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground leading-tight truncate mt-0.5">Imp · Exp Manager</p>
           </div>
         </div>
       </SidebarHeader>
@@ -140,12 +140,15 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="px-3 py-3 border-t">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />
+      <SidebarFooter className="px-4 py-3 border-t">
+        <div className="flex items-center gap-2.5">
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-50" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
           <div>
-            <p className="text-xs text-muted-foreground">Platform Power</p>
-            <p className="text-xs font-medium text-green-600 dark:text-green-400">AI Engine Active</p>
+            <p className="text-[0.65rem] tracking-[0.16em] uppercase text-muted-foreground">Platform Status</p>
+            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">AI Engine Active</p>
           </div>
         </div>
       </SidebarFooter>

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/PageHeader";
 import { Plus, Search, Banknote, Pencil, Trash2, FileCheck, Globe, TrendingUp } from "lucide-react";
 import type { Cad } from "@shared/schema";
 
@@ -113,15 +114,16 @@ export default function CADManagement() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">CAD Management</h1>
-          <p className="text-sm text-muted-foreground">Cash Against Documents — export payment instruments with NBE forex compliance</p>
-        </div>
-        <Button onClick={openNew} data-testid="button-create-cad">
-          <Plus className="h-4 w-4 mr-1.5" /> New CAD
-        </Button>
-      </div>
+      <PageHeader
+        eyebrow="Export · Payments"
+        title="Cash Against Documents"
+        description="Manage export payment instruments and preview NBE forex settlement in real time."
+        actions={
+          <Button onClick={openNew} data-testid="button-create-cad">
+            <Plus className="h-4 w-4 mr-1.5" /> New CAD
+          </Button>
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card>
