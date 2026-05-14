@@ -60,7 +60,7 @@ export default function LCManagement() {
     supplierName: "", supplierAddress: "", descriptionOfGoods: "", totalQuantity: "",
     entryCertificateLetter: "", entryCertificateDate: "", insurancePaidEtb: "0",
     certificatePaidEtb: "0", marginOpenedPct: "30", paymentTerm: "CIF",
-    partialShipmentAllowed: "false", transshipmentAllowed: "false", status: "Draft",
+    partialShipmentAllowed: "false", partialShipmentUnits: "", transshipmentAllowed: "false", status: "Draft",
     openingPaidStatus: "unpaid", settlementPaidStatus: "unpaid",
   };
   const [form, setForm] = useState<any>(emptyForm);
@@ -366,7 +366,56 @@ export default function LCManagement() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Total Quantity (Units) <span className="text-destructive">*</span></Label>
-                  <Input value={form.totalQuantity ?? ""} onChange={e => field("totalQuantity", e.target.value)} placeholder="15 units" />
+                  <Input value={form.totalQuantity ?? ""} onChange={e => field("totalQuantity", e.target.value)} placeholder="15 units" data-testid="input-total-quantity" />
+                </div>
+                <div className="sm:col-span-2 rounded-md border border-border/60 bg-muted/30 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={form.partialShipmentAllowed === "true"}
+                      onCheckedChange={v => {
+                        const on = String(v);
+                        setForm((f: any) => ({ ...f, partialShipmentAllowed: on, partialShipmentUnits: on === "true" ? f.partialShipmentUnits : "" }));
+                      }}
+                      data-testid="checkbox-partial-shipment-available"
+                    />
+                    <Label className="text-xs">Partial shipment available from total quantity</Label>
+                  </div>
+                  {form.partialShipmentAllowed === "true" && (() => {
+                    const totalUnits = parseInt(String(form.totalQuantity ?? "").replace(/[^0-9]/g, ""), 10);
+                    const partialUnits = parseInt(String(form.partialShipmentUnits ?? "").replace(/[^0-9]/g, ""), 10);
+                    const hasTotal = !isNaN(totalUnits);
+                    const hasPartial = !isNaN(partialUnits);
+                    const remaining = hasTotal && hasPartial ? totalUnits - partialUnits : NaN;
+                    const overLimit = hasTotal && hasPartial && partialUnits > totalUnits;
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-6">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Partial Shipment Units</Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={form.partialShipmentUnits ?? ""}
+                            onChange={e => field("partialShipmentUnits", e.target.value)}
+                            placeholder="e.g. 5"
+                            data-testid="input-partial-shipment-units"
+                          />
+                          {overLimit && (
+                            <p className="text-[0.65rem] text-destructive">Partial units cannot exceed the total quantity ({totalUnits}).</p>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Remaining Units</Label>
+                          <Input
+                            readOnly
+                            className="bg-muted"
+                            value={hasTotal && hasPartial ? (overLimit ? "" : String(remaining)) : ""}
+                            placeholder={hasTotal ? "Auto-calculated" : "Enter total quantity first"}
+                            data-testid="input-remaining-units"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Entry Certificate Letter</Label>
@@ -479,7 +528,10 @@ export default function LCManagement() {
                   <div className="flex items-center gap-2">
                     <Checkbox
                       checked={form.partialShipmentAllowed === "true"}
-                      onCheckedChange={v => field("partialShipmentAllowed", String(v))}
+                      onCheckedChange={v => {
+                        const on = String(v);
+                        setForm((f: any) => ({ ...f, partialShipmentAllowed: on, partialShipmentUnits: on === "true" ? f.partialShipmentUnits : "" }));
+                      }}
                       data-testid="checkbox-partial-shipment"
                     />
                     <Label className="text-xs">Partial Shipment Allowed</Label>

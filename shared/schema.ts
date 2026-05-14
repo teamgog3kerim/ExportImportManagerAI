@@ -32,6 +32,7 @@ export const lcs = pgTable("lcs", {
   marginOpenedPct: numeric("margin_opened_pct").default("30"),
   paymentTerm: text("payment_term").default("FOB"),
   partialShipmentAllowed: text("partial_shipment_allowed").default("false"),
+  partialShipmentUnits: text("partial_shipment_units"),
   transshipmentAllowed: text("transshipment_allowed").default("false"),
   status: text("status").notNull().default("Draft"),
   openingPaidStatus: text("opening_paid_status").default("unpaid"),
