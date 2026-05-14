@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -128,10 +128,15 @@ interface Props {
   initialTotalUnits?: string;
   initialBank?: string;
   initialLcNumber?: string;
+  /** If set, locks the calculator to this scenario and disables the other tab. */
+  lockedShipType?: ShipType;
 }
 
 export function LCCostCalculator(props: Props) {
-  const [shipType, setShipType] = useState<ShipType>("full");
+  const [shipType, setShipType] = useState<ShipType>(props.lockedShipType ?? "full");
+  useEffect(() => {
+    if (props.lockedShipType) setShipType(props.lockedShipType);
+  }, [props.lockedShipType]);
   const [freightOn, setFreightOn] = useState(false);
   const [paid, setPaid] = useState<Record<string, boolean>>({});
   const [s, setS] = useState<State>({
@@ -261,22 +266,27 @@ export function LCCostCalculator(props: Props) {
         {([
           ["full", "Case 1 — Full Shipment"],
           ["partial", "Case 2 — Partial Shipment"],
-        ] as const).map(([k, l]) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setShipType(k)}
-            data-testid={`button-shiptype-${k}`}
-            className={cn(
-              "flex-1 px-3 py-2 rounded text-[0.72rem] uppercase tracking-[0.08em] transition-colors",
-              shipType === k
-                ? "bg-primary text-primary-foreground font-semibold"
-                : "text-muted-foreground hover-elevate"
-            )}
-          >
-            {l}
-          </button>
-        ))}
+        ] as const).map(([k, l]) => {
+          const disabled = !!props.lockedShipType && props.lockedShipType !== k;
+          return (
+            <button
+              key={k}
+              type="button"
+              onClick={() => { if (!disabled) setShipType(k); }}
+              disabled={disabled}
+              data-testid={`button-shiptype-${k}`}
+              className={cn(
+                "flex-1 px-3 py-2 rounded text-[0.72rem] uppercase tracking-[0.08em] transition-colors",
+                shipType === k
+                  ? "bg-primary text-primary-foreground font-semibold"
+                  : "text-muted-foreground hover-elevate",
+                disabled && "opacity-40 cursor-not-allowed hover:bg-transparent"
+              )}
+            >
+              {l}
+            </button>
+          );
+        })}
       </div>
 
       {/* Header */}

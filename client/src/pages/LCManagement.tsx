@@ -559,6 +559,7 @@ export default function LCManagement() {
                 initialTotalUnits={form.totalQuantity}
                 initialBank={form.issuingBank}
                 initialLcNumber={form.lcNumber}
+                lockedShipType={form.partialShipmentAllowed === "true" ? "partial" : "full"}
               />
             </div>
           </div>

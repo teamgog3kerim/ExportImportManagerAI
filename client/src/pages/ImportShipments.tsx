@@ -339,6 +339,7 @@ export default function ImportShipments() {
                       initialFcyValue={String(selectedLc.fobValueUsd ?? "")}
                       initialOpeningRate={String(EXCHANGE_RATE)}
                       initialTotalUnits={String(selectedLc.totalQuantity ?? "")}
+                      lockedShipType={selectedLc.partialShipmentAllowed === "true" ? "partial" : "full"}
                     />
                   </div>
                 </div>
