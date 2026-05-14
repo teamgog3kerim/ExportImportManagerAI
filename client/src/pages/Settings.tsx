@@ -11,7 +11,11 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Building2, BanknoteIcon, Users, UserCheck, Award, Bell, Trash2, Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ETHIOPIAN_BANKS, swiftForBank } from "@/lib/ethiopianBanks";
 import type { CompanySettings, NotificationSettings, Bank, Supplier, Certification } from "@shared/schema";
+
+const OTHER_BANK = "__other__";
 
 const TABS = [
   { id: "company", label: "Company", icon: Building2 },
@@ -44,9 +48,24 @@ export default function Settings() {
   const { data: banks = [] } = useQuery<Bank[]>({ queryKey: ["/api/settings/banks"] });
   const [bankModal, setBankModal] = useState(false);
   const [bankForm, setBankForm] = useState({ bankName: "", accountNumber: "", swiftBic: "", currency: "ETB / USD" });
+  const [bankSelect, setBankSelect] = useState<string>("");
+  const handleBankSelect = (value: string) => {
+    setBankSelect(value);
+    if (value === OTHER_BANK) {
+      setBankForm(p => ({ ...p, bankName: "", swiftBic: "" }));
+    } else {
+      setBankForm(p => ({ ...p, bankName: value, swiftBic: swiftForBank(value) }));
+    }
+  };
   const addBankMutation = useMutation({
     mutationFn: (body: any) => apiRequest("POST", "/api/settings/banks", body),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/settings/banks"] }); setBankModal(false); toast({ title: "Bank added" }); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings/banks"] });
+      setBankModal(false);
+      setBankSelect("");
+      setBankForm({ bankName: "", accountNumber: "", swiftBic: "", currency: "ETB / USD" });
+      toast({ title: "Bank added" });
+    },
   });
   const deleteBankMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/settings/banks/${id}`),
@@ -332,13 +351,36 @@ export default function Settings() {
       )}
 
       {/* Bank Modal */}
-      <Dialog open={bankModal} onOpenChange={setBankModal}>
+      <Dialog open={bankModal} onOpenChange={(o) => { setBankModal(o); if (!o) { setBankSelect(""); setBankForm({ bankName: "", accountNumber: "", swiftBic: "", currency: "ETB / USD" }); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Add Bank Account</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
-            <div className="space-y-1"><Label className="text-xs">Bank Name</Label><Input value={bankForm.bankName} onChange={e => setBankForm(p => ({ ...p, bankName: e.target.value }))} data-testid="input-bank-name" /></div>
-            <div className="space-y-1"><Label className="text-xs">Account Number</Label><Input value={bankForm.accountNumber} onChange={e => setBankForm(p => ({ ...p, accountNumber: e.target.value }))} /></div>
-            <div className="space-y-1"><Label className="text-xs">SWIFT/BIC</Label><Input value={bankForm.swiftBic} onChange={e => setBankForm(p => ({ ...p, swiftBic: e.target.value }))} /></div>
+            <div className="space-y-1">
+              <Label className="text-xs">Bank Name</Label>
+              <Select value={bankSelect} onValueChange={handleBankSelect}>
+                <SelectTrigger data-testid="select-bank-name"><SelectValue placeholder="Select a bank" /></SelectTrigger>
+                <SelectContent>
+                  {ETHIOPIAN_BANKS.map(b => (
+                    <SelectItem key={b.name} value={b.name} data-testid={`option-bank-${b.name.toLowerCase().replace(/\s+/g, "-")}`}>{b.name}</SelectItem>
+                  ))}
+                  <SelectItem value={OTHER_BANK}>Other (enter manually)</SelectItem>
+                </SelectContent>
+              </Select>
+              {bankSelect === OTHER_BANK && (
+                <Input
+                  className="mt-2"
+                  placeholder="Enter bank name"
+                  value={bankForm.bankName}
+                  onChange={e => setBankForm(p => ({ ...p, bankName: e.target.value }))}
+                  data-testid="input-bank-name-custom"
+                />
+              )}
+            </div>
+            <div className="space-y-1"><Label className="text-xs">Account Number</Label><Input value={bankForm.accountNumber} onChange={e => setBankForm(p => ({ ...p, accountNumber: e.target.value }))} data-testid="input-bank-account" /></div>
+            <div className="space-y-1">
+              <Label className="text-xs">SWIFT/BIC {bankSelect && bankSelect !== OTHER_BANK && <span className="text-[0.65rem] text-muted-foreground ml-1">(auto-filled, editable)</span>}</Label>
+              <Input value={bankForm.swiftBic} onChange={e => setBankForm(p => ({ ...p, swiftBic: e.target.value }))} data-testid="input-bank-swift" />
+            </div>
             <div className="space-y-1"><Label className="text-xs">Currency</Label><Input value={bankForm.currency} onChange={e => setBankForm(p => ({ ...p, currency: e.target.value }))} placeholder="ETB / USD" /></div>
           </div>
           <DialogFooter>
