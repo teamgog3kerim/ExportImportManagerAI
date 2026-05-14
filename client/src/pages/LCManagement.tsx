@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, FileText, AlertTriangle, Pencil, Trash2, Calculator } from "lucide-react";
-import type { LC } from "@shared/schema";
+import type { LC, Supplier } from "@shared/schema";
 import { LCCostCalculator } from "@/components/LCCostCalculator";
 
 function lcStatusColor(s: string) {
@@ -28,6 +28,23 @@ const CURRENCIES = ["USD ($)", "EUR (€)", "GBP (£)", "CNY (¥)"];
 export default function LCManagement() {
   const { toast } = useToast();
   const { data: lcs = [], isLoading } = useQuery<LC[]>({ queryKey: ["/api/lcs"] });
+  const { data: suppliersRaw = [] } = useQuery<Supplier[]>({ queryKey: ["/api/settings/suppliers"] });
+  const suppliers = suppliersRaw.filter(s => !!s.name && s.name.trim().length > 0);
+  const SUPPLIER_OTHER = "__other__";
+  function applySupplier(name: string) {
+    if (name === SUPPLIER_OTHER) {
+      setForm((p: any) => ({ ...p, supplierName: "", supplierAddress: "", descriptionOfGoods: "" }));
+      return;
+    }
+    const s = suppliers.find(x => x.name === name);
+    if (!s) return;
+    setForm((p: any) => ({
+      ...p,
+      supplierName: s.name,
+      supplierAddress: s.address ?? p.supplierAddress ?? "",
+      descriptionOfGoods: (s.products && s.products.length > 0) ? s.products.join(", ") : (p.descriptionOfGoods ?? ""),
+    }));
+  }
   const [search, setSearch] = useState("");
   const [openModal, setOpenModal] = useState(false);
   const [editLC, setEditLC] = useState<LC | null>(null);
@@ -270,7 +287,29 @@ export default function LCManagement() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Supplier Name</Label>
-                  <Input value={form.supplierName} onChange={e => field("supplierName", e.target.value)} placeholder="Global Heavy Industries" data-testid="input-supplier-name" />
+                  <Select
+                    value={suppliers.some(s => s.name === form.supplierName) ? form.supplierName : (form.supplierName ? SUPPLIER_OTHER : "")}
+                    onValueChange={applySupplier}
+                  >
+                    <SelectTrigger data-testid="select-supplier-name"><SelectValue placeholder="Select a saved supplier" /></SelectTrigger>
+                    <SelectContent>
+                      {suppliers.map(s => (
+                        <SelectItem key={s.id} value={s.name}>
+                          {s.name}{s.products && s.products.length > 0 ? ` · ${s.products.length} product${s.products.length === 1 ? "" : "s"}` : ""}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value={SUPPLIER_OTHER}>Other (enter manually)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {!suppliers.some(s => s.name === form.supplierName) && (
+                    <Input
+                      className="mt-2"
+                      value={form.supplierName}
+                      onChange={e => field("supplierName", e.target.value)}
+                      placeholder="Type supplier name"
+                      data-testid="input-supplier-name"
+                    />
+                  )}
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Supplier Address</Label>
@@ -284,8 +323,32 @@ export default function LCManagement() {
               <h3 className="text-xs font-semibold text-primary mb-3">Goods & Certification</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1 sm:col-span-2">
-                  <Label className="text-xs">Description of Goods</Label>
-                  <Input value={form.descriptionOfGoods ?? ""} onChange={e => field("descriptionOfGoods", e.target.value)} placeholder="Industrial Machinery for manufacturing plant" />
+                  <Label className="text-xs flex items-center gap-2">
+                    Description of Goods
+                    {suppliers.find(s => s.name === form.supplierName)?.products?.length ? (
+                      <span className="text-[0.65rem] text-muted-foreground font-normal">auto-filled from supplier · editable</span>
+                    ) : null}
+                  </Label>
+                  <Input value={form.descriptionOfGoods ?? ""} onChange={e => field("descriptionOfGoods", e.target.value)} placeholder="Industrial Machinery for manufacturing plant" data-testid="input-description-of-goods" />
+                  {(() => {
+                    const sup = suppliers.find(s => s.name === form.supplierName);
+                    if (!sup?.products || sup.products.length === 0) return null;
+                    return (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {sup.products.map(p => (
+                          <Badge
+                            key={p}
+                            variant="outline"
+                            className="cursor-pointer"
+                            onClick={() => field("descriptionOfGoods", p)}
+                            data-testid={`chip-product-${p.toLowerCase().replace(/\s+/g, "-")}`}
+                          >
+                            {p}
+                          </Badge>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Total Quantity (Units)</Label>

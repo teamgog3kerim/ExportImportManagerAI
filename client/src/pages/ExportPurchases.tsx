@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/PageHeader";
 import { Plus, Search, ShoppingCart, Pencil, Trash2, Wheat, Package, DollarSign } from "lucide-react";
-import type { ExportPurchase } from "@shared/schema";
+import type { ExportPurchase, Supplier } from "@shared/schema";
 
 const CATEGORIES = ["Coffee", "Sesame", "Leather", "Pulses", "Spices", "Oilseeds", "Cereals", "Khat", "Honey", "Other"];
 const QUALITY_GRADES = ["Grade 1", "Grade 2", "Grade 3", "Premium", "Specialty", "Standard", "Grade A", "Grade B"];
@@ -31,6 +31,23 @@ function statusColor(s: string): any {
 export default function ExportPurchases() {
   const { toast } = useToast();
   const { data: items = [], isLoading } = useQuery<ExportPurchase[]>({ queryKey: ["/api/export/purchases"] });
+  const { data: suppliersRaw = [] } = useQuery<Supplier[]>({ queryKey: ["/api/settings/suppliers"] });
+  const suppliers = suppliersRaw.filter(s => !!s.name && s.name.trim().length > 0);
+  const SUPPLIER_OTHER = "__other__";
+  function applySupplier(name: string) {
+    if (name === SUPPLIER_OTHER) {
+      setForm((p: any) => ({ ...p, supplierName: "", supplierLocation: "", productName: "" }));
+      return;
+    }
+    const s = suppliers.find(x => x.name === name);
+    if (!s) return;
+    setForm((p: any) => ({
+      ...p,
+      supplierName: s.name,
+      supplierLocation: s.address ?? s.country ?? p.supplierLocation ?? "",
+      productName: (s.products && s.products.length === 1) ? s.products[0] : p.productName ?? "",
+    }));
+  }
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [openModal, setOpenModal] = useState(false);
@@ -264,15 +281,73 @@ export default function ExportPurchases() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Supplier / Cooperative Name</Label>
-                <Input value={form.supplierName} onChange={e => field("supplierName", e.target.value)} placeholder="e.g. Yirgacheffe Coffee Cooperative" data-testid="input-supplier-name" />
+                <Select
+                  value={suppliers.some(s => s.name === form.supplierName) ? form.supplierName : (form.supplierName ? SUPPLIER_OTHER : "")}
+                  onValueChange={applySupplier}
+                >
+                  <SelectTrigger data-testid="select-supplier-name"><SelectValue placeholder="Select a saved supplier" /></SelectTrigger>
+                  <SelectContent>
+                    {suppliers.map(s => (
+                      <SelectItem key={s.id} value={s.name}>
+                        {s.name}{s.products && s.products.length > 0 ? ` · ${s.products.length} product${s.products.length === 1 ? "" : "s"}` : ""}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={SUPPLIER_OTHER}>Other (enter manually)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {!suppliers.some(s => s.name === form.supplierName) && (
+                  <Input
+                    className="mt-2"
+                    value={form.supplierName}
+                    onChange={e => field("supplierName", e.target.value)}
+                    placeholder="Type supplier name"
+                    data-testid="input-supplier-name"
+                  />
+                )}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Origin / Location</Label>
                 <Input value={form.supplierLocation ?? ""} onChange={e => field("supplierLocation", e.target.value)} placeholder="e.g. Yirgacheffe, SNNPR" />
               </div>
               <div className="space-y-1 sm:col-span-2">
-                <Label className="text-xs">Product Name</Label>
-                <Input value={form.productName} onChange={e => field("productName", e.target.value)} placeholder="e.g. Yirgacheffe Coffee Grade 1" data-testid="input-product-name" />
+                <Label className="text-xs flex items-center gap-2">
+                  Product Name
+                  {suppliers.find(s => s.name === form.supplierName)?.products?.length ? (
+                    <span className="text-[0.65rem] text-muted-foreground font-normal">from selected supplier</span>
+                  ) : null}
+                </Label>
+                {(() => {
+                  const sup = suppliers.find(s => s.name === form.supplierName);
+                  if (sup?.products && sup.products.length > 0) {
+                    const PRODUCT_OTHER = "__product_other__";
+                    return (
+                      <>
+                        <Select
+                          value={sup.products.includes(form.productName) ? form.productName : (form.productName ? PRODUCT_OTHER : "")}
+                          onValueChange={v => field("productName", v === PRODUCT_OTHER ? "" : v)}
+                        >
+                          <SelectTrigger data-testid="select-product-name"><SelectValue placeholder="Select a product" /></SelectTrigger>
+                          <SelectContent>
+                            {sup.products.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                            <SelectItem value={PRODUCT_OTHER}>Other (enter manually)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {!sup.products.includes(form.productName) && (
+                          <Input
+                            className="mt-2"
+                            value={form.productName}
+                            onChange={e => field("productName", e.target.value)}
+                            placeholder="Type product name"
+                            data-testid="input-product-name"
+                          />
+                        )}
+                      </>
+                    );
+                  }
+                  return (
+                    <Input value={form.productName} onChange={e => field("productName", e.target.value)} placeholder="e.g. Yirgacheffe Coffee Grade 1" data-testid="input-product-name" />
+                  );
+                })()}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Category</Label>

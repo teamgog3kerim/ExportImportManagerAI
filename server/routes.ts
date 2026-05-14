@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { generateAIResponse, generateDailySummary } from "./openai";
-import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema } from "@shared/schema";
+import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema } from "@shared/schema";
 import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
 
 let lastScrapeAt = 0;
@@ -197,9 +197,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Suppliers
   app.get("/api/settings/suppliers", async (_req, res) => res.json(await storage.getSuppliers()));
   app.post("/api/settings/suppliers", async (req, res) => {
+    const parsed = insertSupplierSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid supplier", errors: parsed.error.flatten() });
     try {
-      const s = await storage.createSupplier(req.body);
+      const s = await storage.createSupplier(parsed.data);
       res.status(201).json(s);
+    } catch (e) { res.status(400).json({ message: String(e) }); }
+  });
+  app.patch("/api/settings/suppliers/:id", async (req, res) => {
+    const parsed = insertSupplierSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid supplier", errors: parsed.error.flatten() });
+    try {
+      const updated = await storage.updateSupplier(req.params.id, parsed.data);
+      if (!updated) return res.status(404).json({ message: "Supplier not found" });
+      res.json(updated);
     } catch (e) { res.status(400).json({ message: String(e) }); }
   });
   app.delete("/api/settings/suppliers/:id", async (req, res) => {

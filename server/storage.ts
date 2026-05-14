@@ -1,4 +1,19 @@
 import { randomUUID } from "crypto";
+
+function normalizeProducts(input: unknown): string[] {
+  if (!Array.isArray(input)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of input) {
+    if (typeof raw !== "string") continue;
+    const v = raw.trim();
+    if (!v) continue;
+    if (seen.has(v)) continue;
+    seen.add(v);
+    out.push(v);
+  }
+  return out;
+}
 import type {
   User, InsertUser, LC, InsertLC, Shipment, InsertShipment,
   InventoryItem, InsertInventoryItem, ExchangeRate, Bank, InsertBank,
@@ -40,6 +55,7 @@ export interface IStorage {
   // Suppliers
   getSuppliers(): Promise<Supplier[]>;
   createSupplier(s: InsertSupplier): Promise<Supplier>;
+  updateSupplier(id: string, patch: Partial<InsertSupplier>): Promise<Supplier | null>;
   deleteSupplier(id: string): Promise<boolean>;
   // Certifications
   getCertifications(): Promise<Certification[]>;
@@ -166,8 +182,8 @@ export class MemStorage implements IStorage {
 
     // Seed Suppliers
     const supplierData: Supplier[] = [
-      { id: randomUUID(), name: "Global Heavy Industries", address: "Shanghai Tech Park, Bldg 4", country: "China", email: "trade@ghi.com", phone: "+86 21 1234 5678", createdAt: now },
-      { id: randomUUID(), name: "Shenzhen Electronics Ltd", address: "Shenzhen Industrial Zone", country: "China", email: "export@sel.cn", phone: "+86 755 8765 4321", createdAt: now },
+      { id: randomUUID(), name: "Global Heavy Industries", address: "Shanghai Tech Park, Bldg 4", country: "China", email: "trade@ghi.com", phone: "+86 21 1234 5678", products: ["Industrial Machinery", "Steel Rolling Mills", "Concrete Mixers"], createdAt: now },
+      { id: randomUUID(), name: "Shenzhen Electronics Ltd", address: "Shenzhen Industrial Zone", country: "China", email: "export@sel.cn", phone: "+86 755 8765 4321", products: ["Electronic Components", "LED Lighting", "Solar Panels"], createdAt: now },
     ];
     supplierData.forEach(s => this.suppliers.set(s.id, s));
 
@@ -289,9 +305,33 @@ export class MemStorage implements IStorage {
   async getSuppliers() { return Array.from(this.suppliers.values()); }
   async createSupplier(s: InsertSupplier): Promise<Supplier> {
     const id = randomUUID();
-    const n: Supplier = { ...s, id, address: s.address ?? null, country: s.country ?? null, email: s.email ?? null, phone: s.phone ?? null, createdAt: new Date().toISOString() };
+    const n: Supplier = {
+      id,
+      name: s.name,
+      address: s.address ?? null,
+      country: s.country ?? null,
+      email: s.email ?? null,
+      phone: s.phone ?? null,
+      products: normalizeProducts(s.products),
+      createdAt: new Date().toISOString(),
+    };
     this.suppliers.set(id, n);
     return n;
+  }
+  async updateSupplier(id: string, patch: Partial<InsertSupplier>): Promise<Supplier | null> {
+    const cur = this.suppliers.get(id);
+    if (!cur) return null;
+    const next: Supplier = {
+      ...cur,
+      ...(patch.name !== undefined ? { name: patch.name } : {}),
+      ...(patch.address !== undefined ? { address: patch.address ?? null } : {}),
+      ...(patch.country !== undefined ? { country: patch.country ?? null } : {}),
+      ...(patch.email !== undefined ? { email: patch.email ?? null } : {}),
+      ...(patch.phone !== undefined ? { phone: patch.phone ?? null } : {}),
+      ...(patch.products !== undefined ? { products: normalizeProducts(patch.products) } : {}),
+    };
+    this.suppliers.set(id, next);
+    return next;
   }
   async deleteSupplier(id: string) { return this.suppliers.delete(id); }
 

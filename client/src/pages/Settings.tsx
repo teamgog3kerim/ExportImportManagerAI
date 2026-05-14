@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, BanknoteIcon, Users, UserCheck, Award, Bell, Trash2, Plus } from "lucide-react";
+import { Building2, BanknoteIcon, Users, UserCheck, Award, Bell, Trash2, Plus, Pencil, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ETHIOPIAN_BANKS, swiftForBank } from "@/lib/ethiopianBanks";
 import type { CompanySettings, NotificationSettings, Bank, Supplier, Certification } from "@shared/schema";
@@ -75,11 +75,54 @@ export default function Settings() {
   // Suppliers
   const { data: suppliers = [] } = useQuery<Supplier[]>({ queryKey: ["/api/settings/suppliers"] });
   const [supplierModal, setSupplierModal] = useState(false);
-  const [supplierForm, setSupplierForm] = useState({ name: "", address: "", country: "", email: "", phone: "" });
+  const [editingSupplierId, setEditingSupplierId] = useState<string | null>(null);
+  const [supplierForm, setSupplierForm] = useState<{ name: string; address: string; country: string; email: string; phone: string; products: string[] }>({ name: "", address: "", country: "", email: "", phone: "", products: [] });
+  const [productInput, setProductInput] = useState("");
+  function resetSupplierForm() {
+    setSupplierForm({ name: "", address: "", country: "", email: "", phone: "", products: [] });
+    setProductInput("");
+    setEditingSupplierId(null);
+  }
+  function openAddSupplier() { resetSupplierForm(); setSupplierModal(true); }
+  function openEditSupplier(s: Supplier) {
+    setEditingSupplierId(s.id);
+    setSupplierForm({
+      name: s.name,
+      address: s.address ?? "",
+      country: s.country ?? "",
+      email: s.email ?? "",
+      phone: s.phone ?? "",
+      products: s.products ?? [],
+    });
+    setProductInput("");
+    setSupplierModal(true);
+  }
+  function addProduct() {
+    const v = productInput.trim();
+    if (!v) return;
+    if (supplierForm.products.includes(v)) { setProductInput(""); return; }
+    setSupplierForm(p => ({ ...p, products: [...p.products, v] }));
+    setProductInput("");
+  }
+  function removeProduct(name: string) {
+    setSupplierForm(p => ({ ...p, products: p.products.filter(x => x !== name) }));
+  }
   const addSupplierMutation = useMutation({
     mutationFn: (body: any) => apiRequest("POST", "/api/settings/suppliers", body),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/settings/suppliers"] }); setSupplierModal(false); toast({ title: "Supplier added" }); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/settings/suppliers"] }); setSupplierModal(false); resetSupplierForm(); toast({ title: "Supplier added" }); },
   });
+  const updateSupplierMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: any }) => apiRequest("PATCH", `/api/settings/suppliers/${id}`, body),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/settings/suppliers"] }); setSupplierModal(false); resetSupplierForm(); toast({ title: "Supplier updated" }); },
+  });
+  function submitSupplier() {
+    if (!supplierForm.name.trim()) {
+      toast({ title: "Supplier name is required", variant: "destructive" });
+      return;
+    }
+    if (editingSupplierId) updateSupplierMutation.mutate({ id: editingSupplierId, body: supplierForm });
+    else addSupplierMutation.mutate(supplierForm);
+  }
   const deleteSupplierMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/settings/suppliers/${id}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/settings/suppliers"] }); toast({ title: "Supplier removed" }); },
@@ -228,7 +271,7 @@ export default function Settings() {
                 <CardTitle className="text-sm font-semibold">Suppliers</CardTitle>
                 <p className="text-xs text-muted-foreground">Manage your international suppliers.</p>
               </div>
-              <Button size="sm" onClick={() => setSupplierModal(true)} data-testid="button-add-supplier">
+              <Button size="sm" onClick={openAddSupplier} data-testid="button-add-supplier">
                 <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Supplier
               </Button>
             </div>
@@ -240,6 +283,7 @@ export default function Settings() {
                   <tr>
                     <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Name</th>
                     <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Country</th>
+                    <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Products</th>
                     <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Email</th>
                     <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Phone</th>
                     <th className="text-right py-2 font-semibold text-muted-foreground">Actions</th>
@@ -248,18 +292,28 @@ export default function Settings() {
                 <tbody>
                   {suppliers.map((s, i) => (
                     <tr key={s.id} className="border-b last:border-0" data-testid={`row-supplier-${i}`}>
-                      <td className="py-2.5 pr-4 font-medium">{s.name}</td>
-                      <td className="py-2.5 pr-4 text-muted-foreground">{s.country ?? "—"}</td>
-                      <td className="py-2.5 pr-4 text-muted-foreground">{s.email ?? "—"}</td>
-                      <td className="py-2.5 pr-4 text-muted-foreground">{s.phone ?? "—"}</td>
-                      <td className="py-2.5 text-right">
+                      <td className="py-2.5 pr-4 font-medium align-top">{s.name}</td>
+                      <td className="py-2.5 pr-4 text-muted-foreground align-top">{s.country ?? "—"}</td>
+                      <td className="py-2.5 pr-4 align-top">
+                        {s.products && s.products.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-[260px]">
+                            {s.products.map(p => <Badge key={p} variant="outline" className="text-[0.65rem]">{p}</Badge>)}
+                          </div>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className="py-2.5 pr-4 text-muted-foreground align-top">{s.email ?? "—"}</td>
+                      <td className="py-2.5 pr-4 text-muted-foreground align-top">{s.phone ?? "—"}</td>
+                      <td className="py-2.5 text-right align-top">
+                        <Button size="icon" variant="ghost" onClick={() => openEditSupplier(s)} data-testid={`button-edit-supplier-${i}`}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
                         <Button size="icon" variant="ghost" onClick={() => deleteSupplierMutation.mutate(s.id)} data-testid={`button-delete-supplier-${i}`}>
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       </td>
                     </tr>
                   ))}
-                  {suppliers.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-muted-foreground">No suppliers added</td></tr>}
+                  {suppliers.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No suppliers added</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -391,19 +445,59 @@ export default function Settings() {
       </Dialog>
 
       {/* Supplier Modal */}
-      <Dialog open={supplierModal} onOpenChange={setSupplierModal}>
+      <Dialog open={supplierModal} onOpenChange={(o) => { setSupplierModal(o); if (!o) resetSupplierForm(); }}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Add Supplier</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingSupplierId ? "Edit Supplier" : "Add Supplier"}</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1"><Label className="text-xs">Name</Label><Input value={supplierForm.name} onChange={e => setSupplierForm(p => ({ ...p, name: e.target.value }))} data-testid="input-supplier-name-settings" /></div>
             <div className="space-y-1"><Label className="text-xs">Country</Label><Input value={supplierForm.country} onChange={e => setSupplierForm(p => ({ ...p, country: e.target.value }))} /></div>
             <div className="space-y-1"><Label className="text-xs">Email</Label><Input type="email" value={supplierForm.email} onChange={e => setSupplierForm(p => ({ ...p, email: e.target.value }))} /></div>
             <div className="space-y-1"><Label className="text-xs">Phone</Label><Input value={supplierForm.phone} onChange={e => setSupplierForm(p => ({ ...p, phone: e.target.value }))} /></div>
             <div className="space-y-1"><Label className="text-xs">Address</Label><Input value={supplierForm.address} onChange={e => setSupplierForm(p => ({ ...p, address: e.target.value }))} /></div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Products Supplied</Label>
+              <p className="text-[0.65rem] text-muted-foreground">These products will appear automatically when this supplier is selected on an LC or Purchase Order.</p>
+              <div className="flex gap-2">
+                <Input
+                  value={productInput}
+                  onChange={e => setProductInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addProduct(); } }}
+                  placeholder="e.g. Industrial Machinery"
+                  data-testid="input-supplier-product"
+                />
+                <Button type="button" variant="outline" onClick={addProduct} data-testid="button-add-product">
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              {supplierForm.products.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1" data-testid="list-supplier-products">
+                  {supplierForm.products.map(p => (
+                    <Badge key={p} variant="secondary" className="gap-1 pr-1">
+                      {p}
+                      <button
+                        type="button"
+                        onClick={() => removeProduct(p)}
+                        className="rounded-sm hover-elevate p-0.5"
+                        data-testid={`button-remove-product-${p.toLowerCase().replace(/\s+/g, "-")}`}
+                        aria-label={`Remove ${p}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSupplierModal(false)}>Cancel</Button>
-            <Button onClick={() => addSupplierMutation.mutate(supplierForm)} disabled={addSupplierMutation.isPending} data-testid="button-submit-supplier">Add Supplier</Button>
+            <Button variant="outline" onClick={() => { setSupplierModal(false); resetSupplierForm(); }}>Cancel</Button>
+            <Button
+              onClick={submitSupplier}
+              disabled={addSupplierMutation.isPending || updateSupplierMutation.isPending}
+              data-testid="button-submit-supplier"
+            >
+              {editingSupplierId ? "Save Changes" : "Add Supplier"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

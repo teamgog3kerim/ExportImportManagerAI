@@ -109,6 +109,7 @@ export const suppliers = pgTable("suppliers", {
   country: text("country"),
   email: text("email"),
   phone: text("phone"),
+  products: text("products").array(),
   createdAt: text("created_at").notNull(),
 });
 
