@@ -141,6 +141,87 @@ export const notificationSettings = pgTable("notification_settings", {
   marketRateAlerts: text("market_rate_alerts").default("false"),
 });
 
+// === EXPORT MODULE ===
+
+// Export Purchases (sourcing inventory for export from local Ethiopian suppliers)
+export const exportPurchases = pgTable("export_purchases", {
+  id: varchar("id").primaryKey(),
+  purchaseRef: text("purchase_ref").notNull(),
+  supplierName: text("supplier_name").notNull(),
+  supplierLocation: text("supplier_location"),
+  productName: text("product_name").notNull(),
+  productCategory: text("product_category"),
+  qualityGrade: text("quality_grade"),
+  quantityKg: numeric("quantity_kg").default("0"),
+  unitPriceEtb: numeric("unit_price_etb").default("0"),
+  totalCostEtb: numeric("total_cost_etb").default("0"),
+  warehouse: text("warehouse"),
+  certifications: text("certifications").default("[]"),
+  status: text("status").default("Sourced"),
+  paymentStatus: text("payment_status").default("Unpaid"),
+  purchaseDate: text("purchase_date"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull(),
+});
+
+// CAD (Cash Against Documents) — export payment instrument
+export const cads = pgTable("cads", {
+  id: varchar("id").primaryKey(),
+  cadNumber: text("cad_number").notNull(),
+  buyerName: text("buyer_name").notNull(),
+  buyerAddress: text("buyer_address"),
+  buyerCountry: text("buyer_country"),
+  buyerBank: text("buyer_bank"),
+  buyerSwift: text("buyer_swift"),
+  productDescription: text("product_description"),
+  quantityKg: numeric("quantity_kg").default("0"),
+  unitPriceUsd: numeric("unit_price_usd").default("0"),
+  fobValueUsd: numeric("fob_value_usd").default("0"),
+  freightUsd: numeric("freight_usd").default("0"),
+  insuranceUsd: numeric("insurance_usd").default("0"),
+  totalContractUsd: numeric("total_contract_usd").default("0"),
+  exchangeRate: numeric("exchange_rate").default("129.67"),
+  bankCommissionPct: numeric("bank_commission_pct").default("1"),
+  nbeRetentionPct: numeric("nbe_retention_pct").default("30"),
+  paymentTerms: text("payment_terms").default("Sight"),
+  documentsRequired: text("documents_required").default("[]"),
+  contractDate: text("contract_date"),
+  shipmentDate: text("shipment_date"),
+  status: text("status").default("Draft"),
+  paidStatus: text("paid_status").default("unpaid"),
+  createdAt: text("created_at").notNull(),
+});
+
+// Export Shipments
+export const exportShipments = pgTable("export_shipments", {
+  id: varchar("id").primaryKey(),
+  exportRef: text("export_ref").notNull(),
+  cadId: varchar("cad_id"),
+  origin: text("origin").notNull(),
+  port: text("port").default("Djibouti"),
+  destination: text("destination").notNull(),
+  destinationCountry: text("destination_country"),
+  buyerName: text("buyer_name"),
+  status: text("status").default("Preparing"),
+  etdDate: text("etd_date"),
+  etaDate: text("eta_date"),
+  vesselName: text("vessel_name"),
+  containerNumber: text("container_number"),
+  blNumber: text("bl_number"),
+  declarationNumber: text("declaration_number"),
+  productDescription: text("product_description"),
+  quantityKg: numeric("quantity_kg").default("0"),
+  fobValueUsd: numeric("fob_value_usd").default("0"),
+  freightUsd: numeric("freight_usd").default("0"),
+  insuranceEtb: numeric("insurance_etb").default("0"),
+  inlandTransportEtb: numeric("inland_transport_etb").default("0"),
+  customsClearanceEtb: numeric("customs_clearance_etb").default("0"),
+  portHandlingEtb: numeric("port_handling_etb").default("0"),
+  documents: text("documents").default("[]"),
+  certifications: text("certifications").default("[]"),
+  createdAt: text("created_at").notNull(),
+});
+
 // Schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertLcSchema = createInsertSchema(lcs).omit({ id: true, createdAt: true });
@@ -149,6 +230,9 @@ export const insertInventorySchema = createInsertSchema(inventory).omit({ id: tr
 export const insertBankSchema = createInsertSchema(banks).omit({ id: true, createdAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertCertificationSchema = createInsertSchema(certifications).omit({ id: true, createdAt: true });
+export const insertExportPurchaseSchema = createInsertSchema(exportPurchases).omit({ id: true, createdAt: true });
+export const insertCadSchema = createInsertSchema(cads).omit({ id: true, createdAt: true });
+export const insertExportShipmentSchema = createInsertSchema(exportShipments).omit({ id: true, createdAt: true });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -168,3 +252,9 @@ export type Certification = typeof certifications.$inferSelect;
 export type InsertCertification = z.infer<typeof insertCertificationSchema>;
 export type CompanySettings = typeof companySettings.$inferSelect;
 export type NotificationSettings = typeof notificationSettings.$inferSelect;
+export type ExportPurchase = typeof exportPurchases.$inferSelect;
+export type InsertExportPurchase = z.infer<typeof insertExportPurchaseSchema>;
+export type Cad = typeof cads.$inferSelect;
+export type InsertCad = z.infer<typeof insertCadSchema>;
+export type ExportShipment = typeof exportShipments.$inferSelect;
+export type InsertExportShipment = z.infer<typeof insertExportShipmentSchema>;

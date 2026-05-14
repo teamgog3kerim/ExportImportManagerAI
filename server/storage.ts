@@ -3,7 +3,9 @@ import type {
   User, InsertUser, LC, InsertLC, Shipment, InsertShipment,
   InventoryItem, InsertInventoryItem, ExchangeRate, Bank, InsertBank,
   Supplier, InsertSupplier, Certification, InsertCertification,
-  CompanySettings, NotificationSettings
+  CompanySettings, NotificationSettings,
+  ExportPurchase, InsertExportPurchase, Cad, InsertCad,
+  ExportShipment, InsertExportShipment,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -47,6 +49,24 @@ export interface IStorage {
   upsertCompanySettings(settings: Partial<CompanySettings>): Promise<CompanySettings>;
   getNotificationSettings(): Promise<NotificationSettings | undefined>;
   upsertNotificationSettings(settings: Partial<NotificationSettings>): Promise<NotificationSettings>;
+  // Export Purchases
+  getExportPurchases(): Promise<ExportPurchase[]>;
+  getExportPurchase(id: string): Promise<ExportPurchase | undefined>;
+  createExportPurchase(p: InsertExportPurchase): Promise<ExportPurchase>;
+  updateExportPurchase(id: string, p: Partial<InsertExportPurchase>): Promise<ExportPurchase | undefined>;
+  deleteExportPurchase(id: string): Promise<boolean>;
+  // CADs
+  getCads(): Promise<Cad[]>;
+  getCad(id: string): Promise<Cad | undefined>;
+  createCad(c: InsertCad): Promise<Cad>;
+  updateCad(id: string, c: Partial<InsertCad>): Promise<Cad | undefined>;
+  deleteCad(id: string): Promise<boolean>;
+  // Export Shipments
+  getExportShipments(): Promise<ExportShipment[]>;
+  getExportShipment(id: string): Promise<ExportShipment | undefined>;
+  createExportShipment(s: InsertExportShipment): Promise<ExportShipment>;
+  updateExportShipment(id: string, s: Partial<InsertExportShipment>): Promise<ExportShipment | undefined>;
+  deleteExportShipment(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -60,6 +80,9 @@ export class MemStorage implements IStorage {
   private certifications = new Map<string, Certification>();
   private companySettings: CompanySettings | undefined;
   private notificationSettings: NotificationSettings | undefined;
+  private exportPurchases = new Map<string, ExportPurchase>();
+  private cads = new Map<string, Cad>();
+  private exportShipments = new Map<string, ExportShipment>();
 
   constructor() { this.seed(); }
 
@@ -129,6 +152,30 @@ export class MemStorage implements IStorage {
 
     // Notification Settings
     this.notificationSettings = { id: randomUUID(), shipmentUpdates: "true", lcExpiryAlerts: "true", paymentNotifications: "true", marketRateAlerts: "false" };
+
+    // Seed Export Purchases (sourcing local Ethiopian goods for export)
+    const purchaseData: ExportPurchase[] = [
+      { id: randomUUID(), purchaseRef: "PUR-EXP-001", supplierName: "Yirgacheffe Coffee Cooperative", supplierLocation: "Yirgacheffe, SNNPR", productName: "Yirgacheffe Coffee Grade 1", productCategory: "Coffee", qualityGrade: "Grade 1", quantityKg: "12000", unitPriceEtb: "385", totalCostEtb: "4620000", warehouse: "Modjo Dry Port", certifications: '["Organic (USDA)","Fairtrade","Rainforest Alliance"]', status: "Ready for Export", paymentStatus: "Paid", purchaseDate: "2024-04-02", notes: "Premium washed Arabica, harvest 2024", createdAt: now },
+      { id: randomUUID(), purchaseRef: "PUR-EXP-002", supplierName: "Humera Sesame Union", supplierLocation: "Humera, Tigray", productName: "White Humera Sesame Seeds", productCategory: "Sesame", qualityGrade: "Premium", quantityKg: "25000", unitPriceEtb: "92", totalCostEtb: "2300000", warehouse: "Addis Ababa Central", certifications: '["Organic (USDA)"]', status: "In Storage", paymentStatus: "Paid", purchaseDate: "2024-04-08", notes: "99.5% purity, 50% oil content", createdAt: now },
+      { id: randomUUID(), purchaseRef: "PUR-EXP-003", supplierName: "Modjo Tannery PLC", supplierLocation: "Modjo, Oromia", productName: "Wet Blue Sheep Skin", productCategory: "Leather", qualityGrade: "Grade A", quantityKg: "8000", unitPriceEtb: "240", totalCostEtb: "1920000", warehouse: "Modjo Dry Port", certifications: '["Leather Working Group (LWG)"]', status: "Sourced", paymentStatus: "Partial", purchaseDate: "2024-04-12", notes: "Pickled, ready for finishing", createdAt: now },
+    ];
+    purchaseData.forEach(p => this.exportPurchases.set(p.id, p));
+
+    // Seed CADs (Cash Against Documents)
+    const cadData: Cad[] = [
+      { id: randomUUID(), cadNumber: "CAD-2024-001", buyerName: "Hamburg Coffee Roasters GmbH", buyerAddress: "Hafenstraße 12, 20359 Hamburg", buyerCountry: "Germany", buyerBank: "Deutsche Bank AG", buyerSwift: "DEUTDEFF", productDescription: "Yirgacheffe Coffee Grade 1 — 12,000 kg", quantityKg: "12000", unitPriceUsd: "5.80", fobValueUsd: "69600", freightUsd: "4200", insuranceUsd: "850", totalContractUsd: "74650", exchangeRate: "129.6892", bankCommissionPct: "1", nbeRetentionPct: "30", paymentTerms: "Sight", documentsRequired: '["Commercial Invoice","Bill of Lading","Certificate of Origin","Phytosanitary Certificate","Quality Certificate (ECX)","Packing List"]', contractDate: "2024-04-15", shipmentDate: "2024-05-01", status: "Documents Sent", paidStatus: "unpaid", createdAt: now },
+      { id: randomUUID(), cadNumber: "CAD-2024-002", buyerName: "Jeddah Spice Trading Co.", buyerAddress: "King Abdullah Road, Jeddah 21442", buyerCountry: "Saudi Arabia", buyerBank: "Al Rajhi Bank", buyerSwift: "RJHISARI", productDescription: "White Humera Sesame Seeds — 25,000 kg", quantityKg: "25000", unitPriceUsd: "1.45", fobValueUsd: "36250", freightUsd: "2100", insuranceUsd: "420", totalContractUsd: "38770", exchangeRate: "129.6500", bankCommissionPct: "1", nbeRetentionPct: "30", paymentTerms: "30 Days", documentsRequired: '["Commercial Invoice","Bill of Lading","Certificate of Origin","Phytosanitary Certificate"]', contractDate: "2024-04-20", shipmentDate: "2024-05-15", status: "Awaiting Payment", paidStatus: "unpaid", createdAt: now },
+      { id: randomUUID(), cadNumber: "CAD-2024-003", buyerName: "Milano Pelle SRL", buyerAddress: "Via della Moda 45, Milan", buyerCountry: "Italy", buyerBank: "Intesa Sanpaolo", buyerSwift: "BCITITMM", productDescription: "Wet Blue Sheep Skin — 8,000 kg", quantityKg: "8000", unitPriceUsd: "3.20", fobValueUsd: "25600", freightUsd: "1800", insuranceUsd: "350", totalContractUsd: "27750", exchangeRate: "129.6741", bankCommissionPct: "1", nbeRetentionPct: "30", paymentTerms: "Sight", documentsRequired: '["Commercial Invoice","Bill of Lading","Certificate of Origin"]', contractDate: "2024-04-25", shipmentDate: "2024-06-01", status: "Draft", paidStatus: "unpaid", createdAt: now },
+    ];
+    cadData.forEach(c => this.cads.set(c.id, c));
+
+    // Seed Export Shipments
+    const exportShipmentData: ExportShipment[] = [
+      { id: randomUUID(), exportRef: "EXP-001", cadId: null, origin: "Modjo Dry Port", port: "Djibouti", destination: "Hamburg Port", destinationCountry: "Germany", buyerName: "Hamburg Coffee Roasters GmbH", status: "Sea Transit", etdDate: "2024-05-01", etaDate: "2024-06-15", vesselName: "MAERSK SEMARANG", containerNumber: "MSKU-7783201", blNumber: "BL-EXP-2024-001", declarationNumber: "EXP-DEC-44521", productDescription: "Yirgacheffe Coffee Grade 1", quantityKg: "12000", fobValueUsd: "69600", freightUsd: "4200", insuranceEtb: "110000", inlandTransportEtb: "85000", customsClearanceEtb: "42000", portHandlingEtb: "65000", documents: '["Commercial Invoice","Bill of Lading","Certificate of Origin","Phytosanitary Certificate","ECX Quality Certificate"]', certifications: '["Organic (USDA)","Fairtrade"]', createdAt: now },
+      { id: randomUUID(), exportRef: "EXP-002", cadId: null, origin: "Addis Ababa Central", port: "Djibouti", destination: "Jeddah Islamic Port", destinationCountry: "Saudi Arabia", buyerName: "Jeddah Spice Trading Co.", status: "At Djibouti Port", etdDate: "2024-05-15", etaDate: "2024-06-02", vesselName: "CMA CGM JEDDAH", containerNumber: "TGHU-4421890", blNumber: "BL-EXP-2024-002", declarationNumber: "EXP-DEC-44598", productDescription: "White Humera Sesame Seeds", quantityKg: "25000", fobValueUsd: "36250", freightUsd: "2100", insuranceEtb: "55000", inlandTransportEtb: "120000", customsClearanceEtb: "38000", portHandlingEtb: "52000", documents: '["Commercial Invoice","Bill of Lading","Certificate of Origin"]', certifications: '["Organic (USDA)"]', createdAt: now },
+      { id: randomUUID(), exportRef: "EXP-003", cadId: null, origin: "Modjo Dry Port", port: "Djibouti", destination: "Genoa Port", destinationCountry: "Italy", buyerName: "Milano Pelle SRL", status: "Preparing", etdDate: "2024-06-01", etaDate: "2024-07-08", vesselName: "", containerNumber: "", blNumber: "", declarationNumber: "EXP-DEC-44612", productDescription: "Wet Blue Sheep Skin", quantityKg: "8000", fobValueUsd: "25600", freightUsd: "1800", insuranceEtb: "45000", inlandTransportEtb: "62000", customsClearanceEtb: "28000", portHandlingEtb: "38000", documents: '["Commercial Invoice"]', certifications: '["Leather Working Group (LWG)"]', createdAt: now },
+    ];
+    exportShipmentData.forEach(s => this.exportShipments.set(s.id, s));
   }
 
   async getUser(id: string) { return this.users.get(id); }
@@ -240,6 +287,116 @@ export class MemStorage implements IStorage {
     }
     return this.notificationSettings;
   }
+
+  // === Export Purchases ===
+  async getExportPurchases() { return Array.from(this.exportPurchases.values()); }
+  async getExportPurchase(id: string) { return this.exportPurchases.get(id); }
+  async createExportPurchase(p: InsertExportPurchase): Promise<ExportPurchase> {
+    const id = randomUUID();
+    const ref = p.purchaseRef || `PUR-EXP-${String(this.exportPurchases.size + 1).padStart(3, "0")}`;
+    const n: ExportPurchase = {
+      ...p, id, purchaseRef: ref,
+      supplierLocation: p.supplierLocation ?? null,
+      productCategory: p.productCategory ?? null,
+      qualityGrade: p.qualityGrade ?? null,
+      quantityKg: p.quantityKg ?? "0",
+      unitPriceEtb: p.unitPriceEtb ?? "0",
+      totalCostEtb: p.totalCostEtb ?? "0",
+      warehouse: p.warehouse ?? null,
+      certifications: p.certifications ?? "[]",
+      status: p.status ?? "Sourced",
+      paymentStatus: p.paymentStatus ?? "Unpaid",
+      purchaseDate: p.purchaseDate ?? null,
+      notes: p.notes ?? null,
+      createdAt: new Date().toISOString(),
+    };
+    this.exportPurchases.set(id, n);
+    return n;
+  }
+  async updateExportPurchase(id: string, updates: Partial<InsertExportPurchase>) {
+    const e = this.exportPurchases.get(id); if (!e) return undefined;
+    const u = { ...e, ...updates }; this.exportPurchases.set(id, u); return u;
+  }
+  async deleteExportPurchase(id: string) { return this.exportPurchases.delete(id); }
+
+  // === CADs ===
+  async getCads() { return Array.from(this.cads.values()); }
+  async getCad(id: string) { return this.cads.get(id); }
+  async createCad(c: InsertCad): Promise<Cad> {
+    const id = randomUUID();
+    const num = c.cadNumber || `CAD-${new Date().getFullYear()}-${String(this.cads.size + 1).padStart(3, "0")}`;
+    const n: Cad = {
+      ...c, id, cadNumber: num,
+      buyerAddress: c.buyerAddress ?? null,
+      buyerCountry: c.buyerCountry ?? null,
+      buyerBank: c.buyerBank ?? null,
+      buyerSwift: c.buyerSwift ?? null,
+      productDescription: c.productDescription ?? null,
+      quantityKg: c.quantityKg ?? "0",
+      unitPriceUsd: c.unitPriceUsd ?? "0",
+      fobValueUsd: c.fobValueUsd ?? "0",
+      freightUsd: c.freightUsd ?? "0",
+      insuranceUsd: c.insuranceUsd ?? "0",
+      totalContractUsd: c.totalContractUsd ?? "0",
+      exchangeRate: c.exchangeRate ?? "129.67",
+      bankCommissionPct: c.bankCommissionPct ?? "1",
+      nbeRetentionPct: c.nbeRetentionPct ?? "30",
+      paymentTerms: c.paymentTerms ?? "Sight",
+      documentsRequired: c.documentsRequired ?? "[]",
+      contractDate: c.contractDate ?? null,
+      shipmentDate: c.shipmentDate ?? null,
+      status: c.status ?? "Draft",
+      paidStatus: c.paidStatus ?? "unpaid",
+      createdAt: new Date().toISOString(),
+    };
+    this.cads.set(id, n);
+    return n;
+  }
+  async updateCad(id: string, updates: Partial<InsertCad>) {
+    const e = this.cads.get(id); if (!e) return undefined;
+    const u = { ...e, ...updates }; this.cads.set(id, u); return u;
+  }
+  async deleteCad(id: string) { return this.cads.delete(id); }
+
+  // === Export Shipments ===
+  async getExportShipments() { return Array.from(this.exportShipments.values()); }
+  async getExportShipment(id: string) { return this.exportShipments.get(id); }
+  async createExportShipment(s: InsertExportShipment): Promise<ExportShipment> {
+    const id = randomUUID();
+    const ref = s.exportRef || `EXP-${String(this.exportShipments.size + 1).padStart(3, "0")}`;
+    const n: ExportShipment = {
+      ...s, id, exportRef: ref,
+      cadId: s.cadId ?? null,
+      port: s.port ?? "Djibouti",
+      destinationCountry: s.destinationCountry ?? null,
+      buyerName: s.buyerName ?? null,
+      status: s.status ?? "Preparing",
+      etdDate: s.etdDate ?? null,
+      etaDate: s.etaDate ?? null,
+      vesselName: s.vesselName ?? null,
+      containerNumber: s.containerNumber ?? null,
+      blNumber: s.blNumber ?? null,
+      declarationNumber: s.declarationNumber ?? null,
+      productDescription: s.productDescription ?? null,
+      quantityKg: s.quantityKg ?? "0",
+      fobValueUsd: s.fobValueUsd ?? "0",
+      freightUsd: s.freightUsd ?? "0",
+      insuranceEtb: s.insuranceEtb ?? "0",
+      inlandTransportEtb: s.inlandTransportEtb ?? "0",
+      customsClearanceEtb: s.customsClearanceEtb ?? "0",
+      portHandlingEtb: s.portHandlingEtb ?? "0",
+      documents: s.documents ?? "[]",
+      certifications: s.certifications ?? "[]",
+      createdAt: new Date().toISOString(),
+    };
+    this.exportShipments.set(id, n);
+    return n;
+  }
+  async updateExportShipment(id: string, updates: Partial<InsertExportShipment>) {
+    const e = this.exportShipments.get(id); if (!e) return undefined;
+    const u = { ...e, ...updates }; this.exportShipments.set(id, u); return u;
+  }
+  async deleteExportShipment(id: string) { return this.exportShipments.delete(id); }
 }
 
 export const storage = new MemStorage();

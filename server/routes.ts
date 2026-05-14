@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { generateAIResponse, generateDailySummary } from "./openai";
+import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard
@@ -169,6 +170,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/settings/notifications", async (req, res) => {
     const s = await storage.upsertNotificationSettings(req.body);
     res.json(s);
+  });
+
+  // === Export Purchases ===
+  app.get("/api/export/purchases", async (_req, res) => res.json(await storage.getExportPurchases()));
+  app.get("/api/export/purchases/:id", async (req, res) => {
+    const p = await storage.getExportPurchase(req.params.id);
+    if (!p) return res.status(404).json({ message: "Purchase not found" });
+    res.json(p);
+  });
+  app.post("/api/export/purchases", async (req, res) => {
+    const parsed = insertExportPurchaseSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid purchase", errors: parsed.error.flatten() });
+    res.status(201).json(await storage.createExportPurchase(parsed.data));
+  });
+  app.patch("/api/export/purchases/:id", async (req, res) => {
+    const parsed = insertExportPurchaseSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid purchase update", errors: parsed.error.flatten() });
+    const u = await storage.updateExportPurchase(req.params.id, parsed.data);
+    if (!u) return res.status(404).json({ message: "Purchase not found" });
+    res.json(u);
+  });
+  app.delete("/api/export/purchases/:id", async (req, res) => {
+    const existing = await storage.getExportPurchase(req.params.id);
+    if (!existing) return res.status(404).json({ message: "Purchase not found" });
+    await storage.deleteExportPurchase(req.params.id);
+    res.status(204).end();
+  });
+
+  // === CADs ===
+  app.get("/api/export/cads", async (_req, res) => res.json(await storage.getCads()));
+  app.get("/api/export/cads/:id", async (req, res) => {
+    const c = await storage.getCad(req.params.id);
+    if (!c) return res.status(404).json({ message: "CAD not found" });
+    res.json(c);
+  });
+  app.post("/api/export/cads", async (req, res) => {
+    const parsed = insertCadSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid CAD", errors: parsed.error.flatten() });
+    res.status(201).json(await storage.createCad(parsed.data));
+  });
+  app.patch("/api/export/cads/:id", async (req, res) => {
+    const parsed = insertCadSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid CAD update", errors: parsed.error.flatten() });
+    const u = await storage.updateCad(req.params.id, parsed.data);
+    if (!u) return res.status(404).json({ message: "CAD not found" });
+    res.json(u);
+  });
+  app.delete("/api/export/cads/:id", async (req, res) => {
+    const existing = await storage.getCad(req.params.id);
+    if (!existing) return res.status(404).json({ message: "CAD not found" });
+    await storage.deleteCad(req.params.id);
+    res.status(204).end();
+  });
+
+  // === Export Shipments ===
+  app.get("/api/export/shipments", async (_req, res) => res.json(await storage.getExportShipments()));
+  app.get("/api/export/shipments/:id", async (req, res) => {
+    const s = await storage.getExportShipment(req.params.id);
+    if (!s) return res.status(404).json({ message: "Shipment not found" });
+    res.json(s);
+  });
+  app.post("/api/export/shipments", async (req, res) => {
+    const parsed = insertExportShipmentSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid shipment", errors: parsed.error.flatten() });
+    res.status(201).json(await storage.createExportShipment(parsed.data));
+  });
+  app.patch("/api/export/shipments/:id", async (req, res) => {
+    const parsed = insertExportShipmentSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid shipment update", errors: parsed.error.flatten() });
+    const u = await storage.updateExportShipment(req.params.id, parsed.data);
+    if (!u) return res.status(404).json({ message: "Shipment not found" });
+    res.json(u);
+  });
+  app.delete("/api/export/shipments/:id", async (req, res) => {
+    const existing = await storage.getExportShipment(req.params.id);
+    if (!existing) return res.status(404).json({ message: "Shipment not found" });
+    await storage.deleteExportShipment(req.params.id);
+    res.status(204).end();
   });
 
   // AI

@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard, BrainCircuit, Wallet, TrendingUp, FileText, Ship, Package,
-  Calculator, Settings, ChevronDown, ChevronRight,
+  Calculator, Settings, ChevronDown, ChevronRight, ShoppingCart, Banknote, Send,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -22,6 +22,12 @@ const importItems = [
   { title: "Inventory", url: "/import/inventory", icon: Package },
 ];
 
+const exportItems = [
+  { title: "Purchase / Sourcing", url: "/export/purchases", icon: ShoppingCart },
+  { title: "CAD Management", url: "/export/cads", icon: Banknote },
+  { title: "Export Shipments", url: "/export/shipments", icon: Send },
+];
+
 const otherItems = [
   { title: "Customs Engine", url: "/customs", icon: Calculator },
   { title: "Settings", url: "/settings", icon: Settings },
@@ -30,6 +36,7 @@ const otherItems = [
 export function AppSidebar() {
   const [location] = useLocation();
   const [importOpen, setImportOpen] = useState(true);
+  const [exportOpen, setExportOpen] = useState(true);
 
   return (
     <Sidebar>
@@ -78,6 +85,32 @@ export function AppSidebar() {
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild isActive={location === item.url}>
                       <a href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
+                        <item.icon className="h-4 w-4 shrink-0" />
+                        <span>{item.title}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          )}
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel
+            className="flex items-center justify-between cursor-pointer select-none"
+            onClick={() => setExportOpen(!exportOpen)}
+          >
+            <span>Export</span>
+            {exportOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          </SidebarGroupLabel>
+          {exportOpen && (
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {exportItems.map(item => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild isActive={location === item.url}>
+                      <a href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/[\s/]+/g, "-")}`}>
                         <item.icon className="h-4 w-4 shrink-0" />
                         <span>{item.title}</span>
                       </a>

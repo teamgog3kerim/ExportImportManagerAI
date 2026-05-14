@@ -19,6 +19,9 @@ import ImportShipments from "@/pages/ImportShipments";
 import InventoryPage from "@/pages/Inventory";
 import CustomsEngine from "@/pages/CustomsEngine";
 import Settings from "@/pages/Settings";
+import ExportPurchases from "@/pages/ExportPurchases";
+import CADManagement from "@/pages/CADManagement";
+import ExportShipments from "@/pages/ExportShipments";
 
 function Router() {
   return (
@@ -30,6 +33,9 @@ function Router() {
       <Route path="/import/lc-management" component={LCManagement} />
       <Route path="/import/shipments" component={ImportShipments} />
       <Route path="/import/inventory" component={InventoryPage} />
+      <Route path="/export/purchases" component={ExportPurchases} />
+      <Route path="/export/cads" component={CADManagement} />
+      <Route path="/export/shipments" component={ExportShipments} />
       <Route path="/customs" component={CustomsEngine} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
