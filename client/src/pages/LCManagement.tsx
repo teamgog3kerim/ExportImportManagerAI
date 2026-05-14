@@ -279,6 +279,47 @@ export default function LCManagement() {
 
           <p className="text-xs text-muted-foreground -mt-1">Fields marked <span className="text-destructive">*</span> are required to issue the LC. All other fields can be filled in or updated later.</p>
           <div className="space-y-5 py-2">
+            {/* Invoice & Supplier */}
+            <div>
+              <h3 className="text-xs font-semibold text-primary mb-3">Invoice & Supplier Details</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Proforma Invoice No. <span className="text-destructive">*</span></Label>
+                  <Input value={form.proformaInvoiceNo ?? ""} onChange={e => field("proformaInvoiceNo", e.target.value)} placeholder="PI-2024-001" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Proforma Invoice Date <span className="text-destructive">*</span></Label>
+                  <Input type="date" value={form.proformaInvoiceDate ?? ""} onChange={e => field("proformaInvoiceDate", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Supplier Name <span className="text-destructive">*</span></Label>
+                  <Select
+                    value={suppliers.some(s => s.name === form.supplierName) ? form.supplierName : ""}
+                    onValueChange={applySupplier}
+                    disabled={suppliers.length === 0}
+                  >
+                    <SelectTrigger data-testid="select-supplier-name">
+                      <SelectValue placeholder={suppliers.length === 0 ? "Add a supplier in Settings → Suppliers first" : "Select a saved supplier"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {suppliers.map(s => (
+                        <SelectItem key={s.id} value={s.name}>
+                          {s.name}{s.products && s.products.length > 0 ? ` · ${s.products.length} product${s.products.length === 1 ? "" : "s"}` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {suppliers.length === 0 && (
+                    <p className="text-[0.65rem] text-muted-foreground">No saved suppliers yet — add them under Settings → Suppliers to be able to issue an LC.</p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Supplier Address <span className="text-destructive">*</span></Label>
+                  <Input value={form.supplierAddress ?? ""} onChange={e => field("supplierAddress", e.target.value)} placeholder="Shanghai Tech Park, Bldg 4" />
+                </div>
+              </div>
+            </div>
+
             {/* General LC Info */}
             <div>
               <h3 className="text-xs font-semibold text-primary mb-3 flex items-center gap-1.5">
@@ -338,47 +379,6 @@ export default function LCManagement() {
                   <Label className="text-xs">Expiry Date</Label>
                   <Input type="date" value={form.expiryDate} onChange={e => field("expiryDate", e.target.value)} />
                   <p className="text-xs text-muted-foreground">Set to 90 days from issue date.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Invoice & Supplier */}
-            <div>
-              <h3 className="text-xs font-semibold text-primary mb-3">Invoice & Supplier Details</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-xs">Proforma Invoice No. <span className="text-destructive">*</span></Label>
-                  <Input value={form.proformaInvoiceNo ?? ""} onChange={e => field("proformaInvoiceNo", e.target.value)} placeholder="PI-2024-001" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Proforma Invoice Date <span className="text-destructive">*</span></Label>
-                  <Input type="date" value={form.proformaInvoiceDate ?? ""} onChange={e => field("proformaInvoiceDate", e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Supplier Name <span className="text-destructive">*</span></Label>
-                  <Select
-                    value={suppliers.some(s => s.name === form.supplierName) ? form.supplierName : ""}
-                    onValueChange={applySupplier}
-                    disabled={suppliers.length === 0}
-                  >
-                    <SelectTrigger data-testid="select-supplier-name">
-                      <SelectValue placeholder={suppliers.length === 0 ? "Add a supplier in Settings → Suppliers first" : "Select a saved supplier"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {suppliers.map(s => (
-                        <SelectItem key={s.id} value={s.name}>
-                          {s.name}{s.products && s.products.length > 0 ? ` · ${s.products.length} product${s.products.length === 1 ? "" : "s"}` : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {suppliers.length === 0 && (
-                    <p className="text-[0.65rem] text-muted-foreground">No saved suppliers yet — add them under Settings → Suppliers to be able to issue an LC.</p>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Supplier Address <span className="text-destructive">*</span></Label>
-                  <Input value={form.supplierAddress ?? ""} onChange={e => field("supplierAddress", e.target.value)} placeholder="Shanghai Tech Park, Bldg 4" />
                 </div>
               </div>
             </div>
