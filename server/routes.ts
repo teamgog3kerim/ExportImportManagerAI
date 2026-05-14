@@ -116,8 +116,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).end();
   });
 
-  // Exchange Rates
-  app.get("/api/exchange-rates", async (_req, res) => res.json(await storage.getExchangeRates()));
+  // Exchange Rates — ticks every 10s on the server
+  setInterval(() => { storage.tickExchangeRates().catch(() => {}); }, 10000);
+  app.get("/api/exchange-rates", async (_req, res) => {
+    const rates = await storage.getExchangeRates();
+    const txnBuys = rates.map(r => Number(r.buyingEtb));
+    const txnSells = rates.map(r => Number(r.sellingEtb));
+    const cashBuys = rates.map(r => Number(r.cashBuyingEtb));
+    const cashSells = rates.map(r => Number(r.cashSellingEtb));
+    const avg = (a: number[]) => a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0;
+    const bestTxnBuy = rates.length ? rates.reduce((m, r) => Number(r.buyingEtb) > Number(m.buyingEtb) ? r : m) : null;
+    const bestCashBuy = rates.length ? rates.reduce((m, r) => Number(r.cashBuyingEtb) > Number(m.cashBuyingEtb) ? r : m) : null;
+    const lowestSell = rates.length ? rates.reduce((m, r) => Number(r.sellingEtb) < Number(m.sellingEtb) ? r : m) : null;
+    const spread = avg(txnSells) - avg(txnBuys);
+    const insights = [
+      `Market mid-rate (transaction) sits near ETB ${avg(txnBuys).toFixed(2)} / USD across ${rates.length} banks.`,
+      `${bestTxnBuy?.bankName ?? "—"} leads transaction buying at ETB ${Number(bestTxnBuy?.buyingEtb ?? 0).toFixed(4)}.`,
+      `${bestCashBuy?.bankName ?? "—"} offers the best cash buying rate (ETB ${Number(bestCashBuy?.cashBuyingEtb ?? 0).toFixed(4)}).`,
+      `${lowestSell?.bankName ?? "—"} has the cheapest transaction selling at ETB ${Number(lowestSell?.sellingEtb ?? 0).toFixed(4)}.`,
+      `Average bank spread is ETB ${spread.toFixed(4)} — book FX early to lock in tighter pricing.`,
+      `Cash rates trail transaction rates by ~ETB ${(avg(txnBuys) - avg(cashBuys)).toFixed(2)} on the buy side.`,
+    ];
+    res.json({
+      rates,
+      lastUpdated: new Date().toISOString(),
+      stats: {
+        avgTxnBuy: avg(txnBuys), avgTxnSell: avg(txnSells),
+        avgCashBuy: avg(cashBuys), avgCashSell: avg(cashSells),
+        bestTxnBuy, bestCashBuy, lowestSell, spread,
+      },
+      insight: insights[Math.floor(Date.now() / 10000) % insights.length],
+    });
+  });
 
   // Banks
   app.get("/api/settings/banks", async (_req, res) => res.json(await storage.getBanks()));

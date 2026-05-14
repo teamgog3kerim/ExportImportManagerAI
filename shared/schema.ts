@@ -85,6 +85,8 @@ export const exchangeRates = pgTable("exchange_rates", {
   bankCode: text("bank_code").notNull(),
   buyingEtb: numeric("buying_etb").notNull(),
   sellingEtb: numeric("selling_etb").notNull(),
+  cashBuyingEtb: numeric("cash_buying_etb").notNull().default("0"),
+  cashSellingEtb: numeric("cash_selling_etb").notNull().default("0"),
   currency: text("currency").default("USD"),
   updatedAt: text("updated_at").notNull(),
 });

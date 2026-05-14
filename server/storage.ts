@@ -32,6 +32,7 @@ export interface IStorage {
   deleteInventoryItem(id: string): Promise<boolean>;
   // Exchange Rates
   getExchangeRates(): Promise<ExchangeRate[]>;
+  tickExchangeRates(): Promise<void>;
   // Banks
   getBanks(): Promise<Bank[]>;
   createBank(bank: InsertBank): Promise<Bank>;
@@ -111,17 +112,52 @@ export class MemStorage implements IStorage {
     ];
     inventoryData.forEach(i => this.inventory.set(i.id, i));
 
-    // Seed Exchange Rates (Ethiopian banks - Addis Fortune data)
-    const rateData: ExchangeRate[] = [
-      { id: randomUUID(), bankName: "Amhara Bank", bankCode: "AM", buyingEtb: "129.6892", sellingEtb: "135.4494", currency: "USD", updatedAt: now },
-      { id: randomUUID(), bankName: "Berhan Bank", bankCode: "BE", buyingEtb: "129.6875", sellingEtb: "135.4480", currency: "USD", updatedAt: now },
-      { id: randomUUID(), bankName: "Hijra Bank", bankCode: "HI", buyingEtb: "129.6790", sellingEtb: "135.4412", currency: "USD", updatedAt: now },
-      { id: randomUUID(), bankName: "Hibret Bank", bankCode: "HB", buyingEtb: "129.6741", sellingEtb: "135.4373", currency: "USD", updatedAt: now },
-      { id: randomUUID(), bankName: "Dashen Bank", bankCode: "DA", buyingEtb: "129.6690", sellingEtb: "135.4332", currency: "USD", updatedAt: now },
-      { id: randomUUID(), bankName: "ZamZam Bank", bankCode: "ZA", buyingEtb: "129.6625", sellingEtb: "135.4280", currency: "USD", updatedAt: now },
-      { id: randomUUID(), bankName: "Oromia Bank", bankCode: "OR", buyingEtb: "129.6577", sellingEtb: "135.4242", currency: "USD", updatedAt: now },
-      { id: randomUUID(), bankName: "Commercial Bank of Ethiopia (CBE)", bankCode: "CB", buyingEtb: "129.6500", sellingEtb: "135.4100", currency: "USD", updatedAt: now },
+    // Seed Exchange Rates — all major Ethiopian banks (Addis Fortune board)
+    const seedBanks: Array<[string, string, number]> = [
+      ["Commercial Bank of Ethiopia", "CBE", 129.6500],
+      ["Awash Bank", "AWB", 129.6815],
+      ["Dashen Bank", "DAS", 129.6690],
+      ["Bank of Abyssinia", "BOA", 129.6620],
+      ["Wegagen Bank", "WEG", 129.6555],
+      ["Nib International Bank", "NIB", 129.6480],
+      ["United Bank (Hibret)", "HIB", 129.6741],
+      ["Cooperative Bank of Oromia", "CBO", 129.6577],
+      ["Lion International Bank", "LIB", 129.6510],
+      ["Zemen Bank", "ZEM", 129.6720],
+      ["Oromia International Bank", "OIB", 129.6448],
+      ["Berhan Bank", "BER", 129.6875],
+      ["Bunna Bank", "BUN", 129.6390],
+      ["Abay Bank", "ABA", 129.6610],
+      ["Addis International Bank", "ADD", 129.6360],
+      ["Debub Global Bank", "DGB", 129.6280],
+      ["Enat Bank", "ENA", 129.6540],
+      ["Amhara Bank", "AMB", 129.6892],
+      ["Hijra Bank", "HIJ", 129.6790],
+      ["ZamZam Bank", "ZAM", 129.6625],
+      ["Goh Betoch Bank", "GOH", 129.6300],
+      ["Tsehay Bank", "TSE", 129.6420],
+      ["Siinqee Bank", "SIQ", 129.6470],
+      ["Shabelle Bank", "SHA", 129.6510],
+      ["Gadaa Bank", "GAD", 129.6360],
+      ["Ahadu Bank", "AHB", 129.6510],
     ];
+    const rateData: ExchangeRate[] = seedBanks.map(([name, code, mid]) => {
+      const txnBuy = mid + (Math.random() - 0.5) * 0.04;
+      const txnSell = txnBuy * 1.0444 + (Math.random() - 0.5) * 0.03;
+      const cashBuy = txnBuy - 0.05 - Math.random() * 0.08;
+      const cashSell = txnSell + 0.04 + Math.random() * 0.08;
+      return {
+        id: randomUUID(),
+        bankName: name,
+        bankCode: code,
+        buyingEtb: txnBuy.toFixed(4),
+        sellingEtb: txnSell.toFixed(4),
+        cashBuyingEtb: cashBuy.toFixed(4),
+        cashSellingEtb: cashSell.toFixed(4),
+        currency: "USD",
+        updatedAt: now,
+      };
+    });
     rateData.forEach(r => this.exchangeRates.set(r.id, r));
 
     // Seed Banks (Settings)
@@ -240,6 +276,24 @@ export class MemStorage implements IStorage {
   async deleteInventoryItem(id: string) { return this.inventory.delete(id); }
 
   async getExchangeRates() { return Array.from(this.exchangeRates.values()); }
+  async tickExchangeRates() {
+    const now = new Date().toISOString();
+    for (const r of Array.from(this.exchangeRates.values())) {
+      const jitter = () => (Math.random() - 0.5) * 0.06;
+      const tb = Math.max(1, Number(r.buyingEtb) + jitter());
+      const ts = Math.max(tb + 0.5, Number(r.sellingEtb) + jitter());
+      const cb = Math.max(1, Number(r.cashBuyingEtb) + jitter());
+      const cs = Math.max(cb + 0.5, Number(r.cashSellingEtb) + jitter());
+      this.exchangeRates.set(r.id, {
+        ...r,
+        buyingEtb: tb.toFixed(4),
+        sellingEtb: ts.toFixed(4),
+        cashBuyingEtb: cb.toFixed(4),
+        cashSellingEtb: cs.toFixed(4),
+        updatedAt: now,
+      });
+    }
+  }
 
   async getBanks() { return Array.from(this.banks.values()); }
   async createBank(bank: InsertBank): Promise<Bank> {
