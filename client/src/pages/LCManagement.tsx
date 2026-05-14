@@ -58,7 +58,7 @@ export default function LCManagement() {
     lcNumber: "", issuingBank: "", currency: "USD", fobValueUsd: "0", freightValueUsd: "0",
     issueDate: "", expiryDate: "", proformaInvoiceNo: "", proformaInvoiceDate: "",
     supplierName: "", supplierAddress: "", descriptionOfGoods: "", totalQuantity: "",
-    entryCertificateLetter: "", entryCertificateDate: "", insurancePaidEtb: "0",
+    entryCertificateLetter: "", entryCertificateDate: "", insuranceReferenceNo: "", insurancePaidEtb: "0",
     certificatePaidEtb: "0", marginOpenedPct: "30", paymentTerm: "CIF",
     partialShipmentAllowed: "false", partialShipmentUnits: "", transshipmentAllowed: "false", status: "Draft",
     openingPaidStatus: "unpaid", settlementPaidStatus: "unpaid",
@@ -424,6 +424,14 @@ export default function LCManagement() {
                 <div className="space-y-1">
                   <Label className="text-xs">Entry Certificate Issued Date</Label>
                   <Input type="date" value={form.entryCertificateDate ?? ""} onChange={e => field("entryCertificateDate", e.target.value)} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Insurance Reference No.</Label>
+                  <Input value={form.insuranceReferenceNo ?? ""} onChange={e => field("insuranceReferenceNo", e.target.value)} placeholder="INS-2024-001" data-testid="input-insurance-reference-no" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Insurance Amount (ETB)</Label>
+                  <Input type="number" min={0} value={form.insurancePaidEtb ?? "0"} onChange={e => field("insurancePaidEtb", e.target.value)} placeholder="0.00" data-testid="input-insurance-amount-etb" />
                 </div>
               </div>
             </div>

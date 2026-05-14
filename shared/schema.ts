@@ -27,6 +27,7 @@ export const lcs = pgTable("lcs", {
   totalQuantity: text("total_quantity"),
   entryCertificateLetter: text("entry_certificate_letter"),
   entryCertificateDate: text("entry_certificate_date"),
+  insuranceReferenceNo: text("insurance_reference_no"),
   insurancePaidEtb: numeric("insurance_paid_etb").default("0"),
   certificatePaidEtb: numeric("certificate_paid_etb").default("0"),
   marginOpenedPct: numeric("margin_opened_pct").default("30"),
