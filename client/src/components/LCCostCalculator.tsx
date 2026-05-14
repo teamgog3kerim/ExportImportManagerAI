@@ -303,10 +303,6 @@ export function LCCostCalculator(props: Props) {
       <Section title="Document Header" badge="Required">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-border/40">
           <div className="bg-card p-3">
-            <label className="text-[0.62rem] uppercase tracking-[0.1em] text-muted-foreground block mb-1.5">LC / Document Ref No.</label>
-            <Input className={inputClass} value={s.lc_number} onChange={e => set("lc_number", e.target.value)} placeholder="e.g. AIB1000283ET" data-testid="input-calc-lcref" />
-          </div>
-          <div className="bg-card p-3">
             <label className="text-[0.62rem] uppercase tracking-[0.1em] text-muted-foreground block mb-1.5">Total Units (Qty)</label>
             <Input type="number" className={inputClass} value={s.total_units} onChange={e => set("total_units", e.target.value)} placeholder="0" data-testid="input-calc-total-units" />
           </div>
