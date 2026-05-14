@@ -431,7 +431,24 @@ export default function LCManagement() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Insurance Amount (ETB)</Label>
-                  <Input type="number" min={0} value={form.insurancePaidEtb ?? "0"} onChange={e => field("insurancePaidEtb", e.target.value)} placeholder="0.00" data-testid="input-insurance-amount-etb" />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">ETB</span>
+                    <Input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      inputMode="decimal"
+                      className="pl-12 tabular-nums"
+                      value={form.insurancePaidEtb ?? "0"}
+                      onChange={e => field("insurancePaidEtb", e.target.value)}
+                      onBlur={e => {
+                        const n = parseFloat(e.target.value);
+                        field("insurancePaidEtb", isNaN(n) ? "0.00" : n.toFixed(2));
+                      }}
+                      placeholder="0.00"
+                      data-testid="input-insurance-amount-etb"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
