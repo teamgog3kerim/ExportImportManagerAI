@@ -327,27 +327,23 @@ export default function LCManagement() {
                 <div className="space-y-1">
                   <Label className="text-xs">Supplier Name <span className="text-destructive">*</span></Label>
                   <Select
-                    value={suppliers.some(s => s.name === form.supplierName) ? form.supplierName : (form.supplierName ? SUPPLIER_OTHER : "")}
+                    value={suppliers.some(s => s.name === form.supplierName) ? form.supplierName : ""}
                     onValueChange={applySupplier}
+                    disabled={suppliers.length === 0}
                   >
-                    <SelectTrigger data-testid="select-supplier-name"><SelectValue placeholder="Select a saved supplier" /></SelectTrigger>
+                    <SelectTrigger data-testid="select-supplier-name">
+                      <SelectValue placeholder={suppliers.length === 0 ? "Add a supplier in Settings → Suppliers first" : "Select a saved supplier"} />
+                    </SelectTrigger>
                     <SelectContent>
                       {suppliers.map(s => (
                         <SelectItem key={s.id} value={s.name}>
                           {s.name}{s.products && s.products.length > 0 ? ` · ${s.products.length} product${s.products.length === 1 ? "" : "s"}` : ""}
                         </SelectItem>
                       ))}
-                      <SelectItem value={SUPPLIER_OTHER}>Other (enter manually)</SelectItem>
                     </SelectContent>
                   </Select>
-                  {!suppliers.some(s => s.name === form.supplierName) && (
-                    <Input
-                      className="mt-2"
-                      value={form.supplierName}
-                      onChange={e => field("supplierName", e.target.value)}
-                      placeholder="Type supplier name"
-                      data-testid="input-supplier-name"
-                    />
+                  {suppliers.length === 0 && (
+                    <p className="text-[0.65rem] text-muted-foreground">No saved suppliers yet — add them under Settings → Suppliers to be able to issue an LC.</p>
                   )}
                 </div>
                 <div className="space-y-1">
