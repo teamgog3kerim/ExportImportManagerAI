@@ -10,7 +10,7 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "AI Insights", url: "/ai-insights", icon: BrainCircuit },
   { title: "Finance", url: "/finance", icon: Wallet },
   { title: "Exchange Rates", url: "/exchange-rates", icon: TrendingUp },
