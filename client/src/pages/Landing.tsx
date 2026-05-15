@@ -96,32 +96,71 @@ export default function Landing() {
           <div className="relative">
             <Card className="shadow-xl">
               <CardContent className="p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="font-display text-sm font-semibold tracking-tight">Live LC Snapshot</p>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center">
+                      <BrainCircuit className="h-4 w-4 text-primary" />
+                    </div>
+                    <p className="font-display text-sm font-semibold tracking-tight">Live AI Insights</p>
+                  </div>
                   <span className="inline-flex items-center gap-1 text-[0.65rem] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Active
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                    </span>
+                    Live
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-md border p-3">
-                    <p className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">FOB Value</p>
-                    <p className="font-display text-xl font-semibold tabular-nums mt-1">$ 124,500.00</p>
+
+                <div className="space-y-2.5">
+                  <div className="rounded-md border p-3 flex items-start gap-3">
+                    <div className="h-7 w-7 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0">
+                      <FileText className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-semibold">LC Expiry Alert</p>
+                        <span className="text-[0.6rem] uppercase tracking-[0.16em] text-amber-700 dark:text-amber-400">High</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                        LC #LC-22041 expires in 12 days. Confirm vessel ETA and prepare shipping documents.
+                      </p>
+                    </div>
                   </div>
-                  <div className="rounded-md border p-3">
-                    <p className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">ETB Equivalent</p>
-                    <p className="font-display text-xl font-semibold tabular-nums mt-1">19,608,750.00</p>
+
+                  <div className="rounded-md border p-3 flex items-start gap-3">
+                    <div className="h-7 w-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                      <Wallet className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-semibold">FX Volatility</p>
+                        <span className="text-[0.6rem] uppercase tracking-[0.16em] text-muted-foreground">Medium</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                        ETB/USD weakened 1.8% this week — locking the next LC at today's rate saves ≈ 412,000 ETB.
+                      </p>
+                    </div>
                   </div>
-                  <div className="rounded-md border p-3">
-                    <p className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">Margin Opened</p>
-                    <p className="font-display text-xl font-semibold tabular-nums mt-1">30%</p>
-                  </div>
-                  <div className="rounded-md border p-3">
-                    <p className="text-[0.65rem] uppercase tracking-[0.16em] text-muted-foreground">Shipment</p>
-                    <p className="font-display text-xl font-semibold tabular-nums mt-1">In Transit</p>
+
+                  <div className="rounded-md border p-3 flex items-start gap-3">
+                    <div className="h-7 w-7 rounded-md bg-emerald-500/10 flex items-center justify-center shrink-0">
+                      <Ship className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-semibold">Shipment On Track</p>
+                        <span className="text-[0.6rem] uppercase tracking-[0.16em] text-emerald-700 dark:text-emerald-400">Good</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                        MV Addis Star arriving Djibouti in 4 days — customs pre-clearance ready to file.
+                      </p>
+                    </div>
                   </div>
                 </div>
+
                 <div className="rounded-md bg-primary/5 border border-primary/20 p-3 text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">AI Insight:</span> LC #LC-22041 expires in 12 days. Recommended action: confirm vessel ETA and prepare shipping documents.
+                  <span className="font-semibold text-foreground">AI Summary:</span> 3 active LCs · 1 priority alert · projected savings 412K ETB this week.
                 </div>
               </CardContent>
             </Card>
