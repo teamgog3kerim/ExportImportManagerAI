@@ -54,7 +54,7 @@ function AppLayout() {
   };
 
   const signOut = () => {
-    try { localStorage.removeItem("eximer_session"); } catch {}
+    try { localStorage.removeItem("eximman_session"); } catch {}
     setLocation("/");
   };
 

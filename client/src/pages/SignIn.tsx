@@ -20,7 +20,7 @@ export default function SignIn() {
       return;
     }
     try {
-      localStorage.setItem("eximer_session", JSON.stringify({ email, signedInAt: Date.now() }));
+      localStorage.setItem("eximman_session", JSON.stringify({ email, signedInAt: Date.now() }));
     } catch {}
     setLocation("/dashboard");
   };
@@ -41,7 +41,7 @@ export default function SignIn() {
               </svg>
             </div>
             <div>
-              <p className="font-display font-semibold tracking-tight text-[19px] leading-none">EXIMER</p>
+              <p className="font-display font-semibold tracking-tight text-[19px] leading-none">EXIMMAN</p>
               <p className="text-[0.6rem] tracking-[0.18em] uppercase text-muted-foreground leading-tight mt-0.5">My Import & Export Manager</p>
             </div>
           </Link>
@@ -58,7 +58,7 @@ export default function SignIn() {
             <CardContent className="p-6 sm:p-8">
               <div className="mb-6">
                 <h1 className="font-display text-2xl font-semibold tracking-tight">Welcome back</h1>
-                <p className="text-sm text-muted-foreground mt-1">Sign in to access your EXIMER workspace.</p>
+                <p className="text-sm text-muted-foreground mt-1">Sign in to access your EXIMMAN workspace.</p>
               </div>
               <form onSubmit={submit} className="space-y-4">
                 <div className="space-y-1.5">
@@ -104,7 +104,7 @@ export default function SignIn() {
                 </Button>
               </form>
               <p className="text-[0.7rem] text-muted-foreground text-center mt-5">
-                By signing in you agree to EXIMER's terms of service and privacy policy.
+                By signing in you agree to EXIMMAN's terms of service and privacy policy.
               </p>
             </CardContent>
           </Card>
@@ -112,7 +112,7 @@ export default function SignIn() {
       </main>
 
       <footer className="border-t py-5">
-        <p className="text-center text-xs text-muted-foreground">© {new Date().getFullYear()} EXIMER Software · Addis Ababa, Ethiopia</p>
+        <p className="text-center text-xs text-muted-foreground">© {new Date().getFullYear()} EXIMMAN Software · Addis Ababa, Ethiopia</p>
       </footer>
     </div>
   );

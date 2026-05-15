@@ -43,7 +43,7 @@ export default function Landing() {
               </svg>
             </div>
             <div className="min-w-0">
-              <p className="font-display font-semibold tracking-tight text-[19px] leading-none" data-testid="text-brand">EXIMER</p>
+              <p className="font-display font-semibold tracking-tight text-[19px] leading-none" data-testid="text-brand">EXIMMAN</p>
               <p className="text-[0.6rem] tracking-[0.18em] uppercase text-muted-foreground leading-tight mt-0.5">My Import & Export Manager</p>
             </div>
           </div>
@@ -173,7 +173,7 @@ export default function Landing() {
           <div className="max-w-2xl">
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">What's Inside</p>
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2">Everything trade operations need, under one roof.</h2>
-            <p className="mt-3 text-muted-foreground">From the moment a Proforma Invoice arrives to the day goods leave the warehouse — EXIMER handles the paperwork, the math, and the follow-ups.</p>
+            <p className="mt-3 text-muted-foreground">From the moment a Proforma Invoice arrives to the day goods leave the warehouse — EXIMMAN handles the paperwork, the math, and the follow-ups.</p>
           </div>
           <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {features.map(f => (
@@ -190,17 +190,17 @@ export default function Landing() {
           </div>
         </div>
       </section>
-      {/* About EXIMER */}
+      {/* About EXIMMAN */}
       <section id="about" className="py-20 sm:py-24 border-b bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-12 items-start">
           <div>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">About EXIMER</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">About EXIMMAN</p>
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2" data-testid="text-about-title">
               Software built for the way Ethiopian businesses actually trade.
             </h2>
             <div className="mt-5 space-y-4 text-muted-foreground leading-relaxed">
               <p>
-                EXIMER is a software company founded by <span className="text-foreground font-semibold">Abdulkerim Mohammed</span>, engaged in
+                EXIMMAN is a software company founded by <span className="text-foreground font-semibold">Abdulkerim Mohammed</span>, engaged in
                 building web and mobile applications for companies and organizations active in import and export, manufacturing,
                 restaurants, and beyond.
               </p>
@@ -235,16 +235,16 @@ export default function Landing() {
                 </div>
                 <div>
                   <p className="font-display font-semibold text-lg">Abdulkerim Mohammed</p>
-                  <p className="text-xs text-muted-foreground tracking-[0.14em] uppercase">Founder, EXIMER</p>
+                  <p className="text-xs text-muted-foreground tracking-[0.14em] uppercase">Founder, EXIMMAN</p>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">"Ethiopian businesses deserve software's and digital technologies that speaks their language — integrated both with local habits and global trade standards. EXIMER is our commitment to that bridge."</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">"Ethiopian businesses deserve software's and digital technologies that speaks their language — integrated both with local habits and global trade standards. EXIMMAN is our commitment to that bridge."</p>
               <div className="border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="flex items-start gap-2">
                   <Building2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                   <div>
                     <p className="font-semibold">Company</p>
-                    <p className="text-muted-foreground">EXIMER Software</p>
+                    <p className="text-muted-foreground">EXIMMAN Software</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
@@ -267,7 +267,7 @@ export default function Landing() {
               Ready to run your trade operations with confidence?
             </h2>
             <p className="mt-3 text-muted-foreground">
-              Sign in to your EXIMER dashboard and bring every LC, shipment and customs filing into one workspace.
+              Sign in to your EXIMMAN dashboard and bring every LC, shipment and customs filing into one workspace.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Button asChild size="lg" data-testid="button-signin-cta">
@@ -283,7 +283,7 @@ export default function Landing() {
             <CardContent className="p-6 sm:p-8">
               <div className="text-center mb-6">
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">Contact Us</p>
-                <h3 className="font-display text-2xl font-semibold tracking-tight mt-2">Get in touch with EXIMER</h3>
+                <h3 className="font-display text-2xl font-semibold tracking-tight mt-2">Get in touch with EXIMMAN</h3>
               </div>
 
               <div className="grid sm:grid-cols-3 gap-4">
@@ -337,7 +337,7 @@ export default function Landing() {
                     <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">Address</p>
                   </div>
                   <p className="text-sm font-semibold" data-testid="text-address">Addis Ababa, Ethiopia</p>
-                  <p className="text-xs text-muted-foreground mt-2">EXIMER Software — by appointment.</p>
+                  <p className="text-xs text-muted-foreground mt-2">EXIMMAN Software — by appointment.</p>
                 </div>
               </div>
             </CardContent>
@@ -347,7 +347,7 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} EXIMER Software — Founded by Abdulkerim Mohammed. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} EXIMMAN Software — Founded by Abdulkerim Mohammed. All rights reserved.</p>
           <p>Addis Ababa, Ethiopia · merisamarketingsolutions@gmail.com</p>
         </div>
       </footer>
