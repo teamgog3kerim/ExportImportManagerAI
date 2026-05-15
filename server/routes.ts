@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { generateAIResponse, generateDailySummary } from "./openai";
-import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema } from "@shared/schema";
+import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema } from "@shared/schema";
 import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
 
 let lastScrapeAt = 0;
@@ -344,6 +344,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const existing = await storage.getExportShipment(req.params.id);
     if (!existing) return res.status(404).json({ message: "Shipment not found" });
     await storage.deleteExportShipment(req.params.id);
+    res.status(204).end();
+  });
+
+  // === FINANCE — Expenses ===
+  app.get("/api/finance/expenses", async (_req, res) => res.json(await storage.getExpenses()));
+  app.post("/api/finance/expenses", async (req, res) => {
+    const parsed = insertExpenseSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid expense", errors: parsed.error.flatten() });
+    res.status(201).json(await storage.createExpense(parsed.data));
+  });
+  app.patch("/api/finance/expenses/:id", async (req, res) => {
+    const parsed = insertExpenseSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid update", errors: parsed.error.flatten() });
+    const u = await storage.updateExpense(req.params.id, parsed.data);
+    if (!u) return res.status(404).json({ message: "Expense not found" });
+    res.json(u);
+  });
+  app.delete("/api/finance/expenses/:id", async (req, res) => {
+    const ok = await storage.deleteExpense(req.params.id);
+    if (!ok) return res.status(404).json({ message: "Expense not found" });
+    res.status(204).end();
+  });
+
+  // === FINANCE — Petty Cash Accounts ===
+  app.get("/api/finance/petty-cash/accounts", async (_req, res) => res.json(await storage.getPettyCashAccounts()));
+  app.post("/api/finance/petty-cash/accounts", async (req, res) => {
+    const parsed = insertPettyCashAccountSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid account", errors: parsed.error.flatten() });
+    res.status(201).json(await storage.createPettyCashAccount(parsed.data));
+  });
+  app.patch("/api/finance/petty-cash/accounts/:id", async (req, res) => {
+    const parsed = insertPettyCashAccountSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid update", errors: parsed.error.flatten() });
+    const u = await storage.updatePettyCashAccount(req.params.id, parsed.data);
+    if (!u) return res.status(404).json({ message: "Account not found" });
+    res.json(u);
+  });
+  app.delete("/api/finance/petty-cash/accounts/:id", async (req, res) => {
+    const ok = await storage.deletePettyCashAccount(req.params.id);
+    if (!ok) return res.status(404).json({ message: "Account not found" });
+    res.status(204).end();
+  });
+
+  // === FINANCE — Petty Cash Transactions ===
+  app.get("/api/finance/petty-cash/transactions", async (req, res) => {
+    const accountId = typeof req.query.accountId === "string" ? req.query.accountId : undefined;
+    res.json(await storage.getPettyCashTransactions(accountId));
+  });
+  app.post("/api/finance/petty-cash/transactions", async (req, res) => {
+    const parsed = insertPettyCashTransactionSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid transaction", errors: parsed.error.flatten() });
+    try {
+      res.status(201).json(await storage.createPettyCashTransaction(parsed.data));
+    } catch (e) { res.status(400).json({ message: (e as Error).message }); }
+  });
+
+  // === FINANCE — Supplier Payments (A/P) ===
+  app.get("/api/finance/payables", async (_req, res) => res.json(await storage.getSupplierPayments()));
+  app.post("/api/finance/payables", async (req, res) => {
+    const parsed = insertSupplierPaymentSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid payable", errors: parsed.error.flatten() });
+    res.status(201).json(await storage.createSupplierPayment(parsed.data));
+  });
+  app.patch("/api/finance/payables/:id", async (req, res) => {
+    const parsed = insertSupplierPaymentSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid update", errors: parsed.error.flatten() });
+    const u = await storage.updateSupplierPayment(req.params.id, parsed.data);
+    if (!u) return res.status(404).json({ message: "Payable not found" });
+    res.json(u);
+  });
+  app.delete("/api/finance/payables/:id", async (req, res) => {
+    const ok = await storage.deleteSupplierPayment(req.params.id);
+    if (!ok) return res.status(404).json({ message: "Payable not found" });
+    res.status(204).end();
+  });
+
+  // === FINANCE — Customer Payments (A/R) ===
+  app.get("/api/finance/receivables", async (_req, res) => res.json(await storage.getCustomerPayments()));
+  app.post("/api/finance/receivables", async (req, res) => {
+    const parsed = insertCustomerPaymentSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid receivable", errors: parsed.error.flatten() });
+    res.status(201).json(await storage.createCustomerPayment(parsed.data));
+  });
+  app.patch("/api/finance/receivables/:id", async (req, res) => {
+    const parsed = insertCustomerPaymentSchema.partial().safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid update", errors: parsed.error.flatten() });
+    const u = await storage.updateCustomerPayment(req.params.id, parsed.data);
+    if (!u) return res.status(404).json({ message: "Receivable not found" });
+    res.json(u);
+  });
+  app.delete("/api/finance/receivables/:id", async (req, res) => {
+    const ok = await storage.deleteCustomerPayment(req.params.id);
+    if (!ok) return res.status(404).json({ message: "Receivable not found" });
     res.status(204).end();
   });
 

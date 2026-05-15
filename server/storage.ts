@@ -21,6 +21,11 @@ import type {
   CompanySettings, NotificationSettings,
   ExportPurchase, InsertExportPurchase, Cad, InsertCad,
   ExportShipment, InsertExportShipment,
+  Expense, InsertExpense,
+  PettyCashAccount, InsertPettyCashAccount,
+  PettyCashTransaction, InsertPettyCashTransaction,
+  SupplierPayment, InsertSupplierPayment,
+  CustomerPayment, InsertCustomerPayment,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -89,6 +94,29 @@ export interface IStorage {
   createExportShipment(s: InsertExportShipment): Promise<ExportShipment>;
   updateExportShipment(id: string, s: Partial<InsertExportShipment>): Promise<ExportShipment | undefined>;
   deleteExportShipment(id: string): Promise<boolean>;
+  // Expenses
+  getExpenses(): Promise<Expense[]>;
+  createExpense(e: InsertExpense): Promise<Expense>;
+  updateExpense(id: string, e: Partial<InsertExpense>): Promise<Expense | undefined>;
+  deleteExpense(id: string): Promise<boolean>;
+  // Petty Cash
+  getPettyCashAccounts(): Promise<PettyCashAccount[]>;
+  getPettyCashAccount(id: string): Promise<PettyCashAccount | undefined>;
+  createPettyCashAccount(a: InsertPettyCashAccount): Promise<PettyCashAccount>;
+  updatePettyCashAccount(id: string, a: Partial<InsertPettyCashAccount>): Promise<PettyCashAccount | undefined>;
+  deletePettyCashAccount(id: string): Promise<boolean>;
+  getPettyCashTransactions(accountId?: string): Promise<PettyCashTransaction[]>;
+  createPettyCashTransaction(t: InsertPettyCashTransaction): Promise<PettyCashTransaction>;
+  // Supplier Payments (A/P)
+  getSupplierPayments(): Promise<SupplierPayment[]>;
+  createSupplierPayment(p: InsertSupplierPayment): Promise<SupplierPayment>;
+  updateSupplierPayment(id: string, p: Partial<InsertSupplierPayment>): Promise<SupplierPayment | undefined>;
+  deleteSupplierPayment(id: string): Promise<boolean>;
+  // Customer Payments (A/R)
+  getCustomerPayments(): Promise<CustomerPayment[]>;
+  createCustomerPayment(p: InsertCustomerPayment): Promise<CustomerPayment>;
+  updateCustomerPayment(id: string, p: Partial<InsertCustomerPayment>): Promise<CustomerPayment | undefined>;
+  deleteCustomerPayment(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -106,6 +134,11 @@ export class MemStorage implements IStorage {
   private exportPurchases = new Map<string, ExportPurchase>();
   private cads = new Map<string, Cad>();
   private exportShipments = new Map<string, ExportShipment>();
+  private expenses = new Map<string, Expense>();
+  private pettyCashAccounts = new Map<string, PettyCashAccount>();
+  private pettyCashTransactions = new Map<string, PettyCashTransaction>();
+  private supplierPayments = new Map<string, SupplierPayment>();
+  private customerPayments = new Map<string, CustomerPayment>();
 
   constructor() { this.seed(); }
 
@@ -238,6 +271,50 @@ export class MemStorage implements IStorage {
       { id: randomUUID(), exportRef: "EXP-003", cadId: null, origin: "Modjo Dry Port", port: "Djibouti", destination: "Genoa Port", destinationCountry: "Italy", buyerName: "Milano Pelle SRL", status: "Preparing", etdDate: "2024-06-01", etaDate: "2024-07-08", vesselName: "", containerNumber: "", blNumber: "", declarationNumber: "EXP-DEC-44612", productDescription: "Wet Blue Sheep Skin", quantityKg: "8000", fobValueUsd: "25600", freightUsd: "1800", insuranceEtb: "45000", inlandTransportEtb: "62000", customsClearanceEtb: "28000", portHandlingEtb: "38000", documents: '["Commercial Invoice"]', certifications: '["Leather Working Group (LWG)"]', createdAt: now },
     ];
     exportShipmentData.forEach(s => this.exportShipments.set(s.id, s));
+
+    // Seed Expenses
+    const expenseData: Expense[] = [
+      { id: randomUUID(), expenseTitle: "Office Rent — April", category: "Office Rent", expenseDate: "2024-04-01", amountEtb: "85000", vatAmountEtb: "12750", currency: "ETB", paymentMethod: "Bank Transfer", paidBy: "Finance Dept", department: "Administration", referenceNumber: "RNT-2024-04", description: "Monthly office rent — Bole HQ", approvalStatus: "Approved", createdAt: now },
+      { id: randomUUID(), expenseTitle: "Customs Clearance — SHP-001", category: "Customs & Clearance", expenseDate: "2024-04-18", amountEtb: "42000", vatAmountEtb: "0", currency: "ETB", paymentMethod: "Bank Transfer", paidBy: "Operations", department: "Logistics", referenceNumber: "CL-SHP-001", description: "Clearing agent fees for industrial machinery shipment", approvalStatus: "Approved", createdAt: now },
+      { id: randomUUID(), expenseTitle: "Inland Trucking — Modjo to AA", category: "Transportation", expenseDate: "2024-04-22", amountEtb: "65000", vatAmountEtb: "9750", currency: "ETB", paymentMethod: "Cash", paidBy: "Operations", department: "Logistics", referenceNumber: "TR-2024-019", description: "Container haulage", approvalStatus: "Approved", createdAt: now },
+      { id: randomUUID(), expenseTitle: "Bank LC Opening Charges", category: "Bank Charges", expenseDate: "2024-04-12", amountEtb: "18500", vatAmountEtb: "0", currency: "ETB", paymentMethod: "Bank Transfer", paidBy: "Finance Dept", department: "Finance", referenceNumber: "CBE-LC-78921", description: "CBE LC opening & margin commission", approvalStatus: "Approved", createdAt: now },
+      { id: randomUUID(), expenseTitle: "Staff Salaries — April", category: "Salaries & Wages", expenseDate: "2024-04-28", amountEtb: "320000", vatAmountEtb: "0", currency: "ETB", paymentMethod: "Bank Transfer", paidBy: "HR", department: "Administration", referenceNumber: "PAY-04-2024", description: "Monthly payroll", approvalStatus: "Approved", createdAt: now },
+    ];
+    expenseData.forEach(e => this.expenses.set(e.id, e));
+
+    // Seed Petty Cash Accounts
+    const pcAccData: PettyCashAccount[] = [
+      { id: randomUUID(), holderName: "Tigist Alemu", department: "Operations", assignedAmountEtb: "50000", balanceEtb: "32400", lowBalanceThresholdEtb: "5000", status: "Active", createdAt: now },
+      { id: randomUUID(), holderName: "Yonas Bekele", department: "Logistics", assignedAmountEtb: "30000", balanceEtb: "4200", lowBalanceThresholdEtb: "5000", status: "Active", createdAt: now },
+    ];
+    pcAccData.forEach(a => this.pettyCashAccounts.set(a.id, a));
+    const accIds = pcAccData.map(a => a.id);
+
+    // Seed Petty Cash Transactions (consistent with balances)
+    const pcTxData: PettyCashTransaction[] = [
+      { id: randomUUID(), accountId: accIds[0], transactionType: "credit", amountEtb: "50000", purpose: "Initial allocation", category: "Allocation", remarks: "Q2 float", transactionDate: "2024-04-01", createdAt: now },
+      { id: randomUUID(), accountId: accIds[0], transactionType: "debit", amountEtb: "8600", purpose: "Office supplies", category: "Office Supplies", remarks: "Stationery & toner", transactionDate: "2024-04-10", createdAt: now },
+      { id: randomUUID(), accountId: accIds[0], transactionType: "debit", amountEtb: "9000", purpose: "Local courier", category: "Transportation", remarks: "Document deliveries", transactionDate: "2024-04-15", createdAt: now },
+      { id: randomUUID(), accountId: accIds[1], transactionType: "credit", amountEtb: "30000", purpose: "Initial allocation", category: "Allocation", remarks: "Logistics float", transactionDate: "2024-04-01", createdAt: now },
+      { id: randomUUID(), accountId: accIds[1], transactionType: "debit", amountEtb: "25800", purpose: "Port handling fees", category: "Port Charges", remarks: "Djibouti port misc", transactionDate: "2024-04-18", createdAt: now },
+    ];
+    pcTxData.forEach(t => this.pettyCashTransactions.set(t.id, t));
+
+    // Seed Supplier Payments (A/P)
+    const apData: SupplierPayment[] = [
+      { id: randomUUID(), supplierName: "Global Heavy Industries", linkedLcId: null, linkedShipmentId: null, invoiceNumber: "INV-GHI-2024-04", invoiceDate: "2024-04-12", dueDate: "2024-05-15", paidDate: null, totalAmountEtb: "70875000", paidAmountEtb: "21262500", currency: "USD", paymentMethod: "LC Settlement", status: "Partial", notes: "30% margin paid; balance on docs", createdAt: now },
+      { id: randomUUID(), supplierName: "Shenzhen Electronics Ltd", linkedLcId: null, linkedShipmentId: null, invoiceNumber: "INV-SEL-2024-10", invoiceDate: "2024-10-01", dueDate: "2024-12-15", paidDate: null, totalAmountEtb: "23625000", paidAmountEtb: "0", currency: "USD", paymentMethod: "LC Settlement", status: "Pending", notes: "Awaiting LC opening", createdAt: now },
+      { id: randomUUID(), supplierName: "Modjo Tannery PLC", linkedLcId: null, linkedShipmentId: null, invoiceNumber: "INV-MT-014", invoiceDate: "2024-04-12", dueDate: "2024-05-12", paidDate: null, totalAmountEtb: "1920000", paidAmountEtb: "960000", currency: "ETB", paymentMethod: "Bank Transfer", status: "Partial", notes: "50% advance settled", createdAt: now },
+    ];
+    apData.forEach(p => this.supplierPayments.set(p.id, p));
+
+    // Seed Customer Payments (A/R)
+    const arData: CustomerPayment[] = [
+      { id: randomUUID(), buyerName: "Hamburg Coffee Roasters GmbH", linkedCadId: null, invoiceNumber: "EXP-INV-001", invoiceDate: "2024-05-01", dueDate: "2024-05-30", receivedDate: null, totalAmountEtb: "11754655", receivedAmountEtb: "0", currency: "USD", paymentMethod: "CAD — Sight", status: "Pending", notes: "Documents at buyer's bank", createdAt: now },
+      { id: randomUUID(), buyerName: "Jeddah Spice Trading Co.", linkedCadId: null, invoiceNumber: "EXP-INV-002", invoiceDate: "2024-05-15", dueDate: "2024-06-15", receivedDate: null, totalAmountEtb: "6094396", receivedAmountEtb: "0", currency: "USD", paymentMethod: "CAD — 30 Days", status: "Pending", notes: "Awaiting acceptance", createdAt: now },
+      { id: randomUUID(), buyerName: "Milano Pelle SRL", linkedCadId: null, invoiceNumber: "EXP-INV-003", invoiceDate: "2024-04-25", dueDate: "2024-05-25", receivedDate: "2024-05-20", totalAmountEtb: "4382220", receivedAmountEtb: "4382220", currency: "USD", paymentMethod: "CAD — Sight", status: "Received", notes: "Settled in full", createdAt: now },
+    ];
+    arData.forEach(p => this.customerPayments.set(p.id, p));
   }
 
   async getUser(id: string) { return this.users.get(id); }
@@ -520,6 +597,142 @@ export class MemStorage implements IStorage {
     const u = { ...e, ...updates }; this.exportShipments.set(id, u); return u;
   }
   async deleteExportShipment(id: string) { return this.exportShipments.delete(id); }
+
+  // === Expenses ===
+  async getExpenses() { return Array.from(this.expenses.values()); }
+  async createExpense(e: InsertExpense): Promise<Expense> {
+    const id = randomUUID();
+    const n: Expense = {
+      ...e, id,
+      amountEtb: e.amountEtb ?? "0",
+      vatAmountEtb: e.vatAmountEtb ?? "0",
+      currency: e.currency ?? "ETB",
+      paymentMethod: e.paymentMethod ?? "Cash",
+      paidBy: e.paidBy ?? null,
+      department: e.department ?? null,
+      referenceNumber: e.referenceNumber ?? null,
+      description: e.description ?? null,
+      approvalStatus: e.approvalStatus ?? "Approved",
+      createdAt: new Date().toISOString(),
+    };
+    this.expenses.set(id, n);
+    return n;
+  }
+  async updateExpense(id: string, updates: Partial<InsertExpense>) {
+    const cur = this.expenses.get(id); if (!cur) return undefined;
+    const u = { ...cur, ...updates }; this.expenses.set(id, u); return u;
+  }
+  async deleteExpense(id: string) { return this.expenses.delete(id); }
+
+  // === Petty Cash ===
+  async getPettyCashAccounts() { return Array.from(this.pettyCashAccounts.values()); }
+  async getPettyCashAccount(id: string) { return this.pettyCashAccounts.get(id); }
+  async createPettyCashAccount(a: InsertPettyCashAccount): Promise<PettyCashAccount> {
+    const id = randomUUID();
+    const assigned = a.assignedAmountEtb ?? "0";
+    const n: PettyCashAccount = {
+      ...a, id,
+      department: a.department ?? null,
+      assignedAmountEtb: assigned,
+      balanceEtb: a.balanceEtb ?? assigned,
+      lowBalanceThresholdEtb: a.lowBalanceThresholdEtb ?? "1000",
+      status: a.status ?? "Active",
+      createdAt: new Date().toISOString(),
+    };
+    this.pettyCashAccounts.set(id, n);
+    return n;
+  }
+  async updatePettyCashAccount(id: string, updates: Partial<InsertPettyCashAccount>) {
+    const cur = this.pettyCashAccounts.get(id); if (!cur) return undefined;
+    const u = { ...cur, ...updates }; this.pettyCashAccounts.set(id, u); return u;
+  }
+  async deletePettyCashAccount(id: string) { return this.pettyCashAccounts.delete(id); }
+
+  async getPettyCashTransactions(accountId?: string) {
+    const all = Array.from(this.pettyCashTransactions.values());
+    return accountId ? all.filter(t => t.accountId === accountId) : all;
+  }
+  async createPettyCashTransaction(t: InsertPettyCashTransaction): Promise<PettyCashTransaction> {
+    const acct = this.pettyCashAccounts.get(t.accountId);
+    if (!acct) throw new Error("Petty cash account not found");
+    const amount = Number(t.amountEtb ?? 0);
+    if (!isFinite(amount) || amount <= 0) throw new Error("Amount must be positive");
+    const balance = Number(acct.balanceEtb);
+    if (t.transactionType === "debit" && amount > balance) {
+      throw new Error(`Insufficient balance — available ETB ${balance.toFixed(2)}`);
+    }
+    const newBalance = t.transactionType === "credit" ? balance + amount : balance - amount;
+    this.pettyCashAccounts.set(acct.id, { ...acct, balanceEtb: newBalance.toFixed(2) });
+
+    const id = randomUUID();
+    const n: PettyCashTransaction = {
+      ...t, id,
+      amountEtb: amount.toFixed(2),
+      purpose: t.purpose ?? null,
+      category: t.category ?? null,
+      remarks: t.remarks ?? null,
+      createdAt: new Date().toISOString(),
+    };
+    this.pettyCashTransactions.set(id, n);
+    return n;
+  }
+
+  // === Supplier Payments (A/P) ===
+  async getSupplierPayments() { return Array.from(this.supplierPayments.values()); }
+  async createSupplierPayment(p: InsertSupplierPayment): Promise<SupplierPayment> {
+    const id = randomUUID();
+    const n: SupplierPayment = {
+      ...p, id,
+      linkedLcId: p.linkedLcId ?? null,
+      linkedShipmentId: p.linkedShipmentId ?? null,
+      invoiceNumber: p.invoiceNumber ?? null,
+      invoiceDate: p.invoiceDate ?? null,
+      dueDate: p.dueDate ?? null,
+      paidDate: p.paidDate ?? null,
+      totalAmountEtb: p.totalAmountEtb ?? "0",
+      paidAmountEtb: p.paidAmountEtb ?? "0",
+      currency: p.currency ?? "ETB",
+      paymentMethod: p.paymentMethod ?? null,
+      status: p.status ?? "Pending",
+      notes: p.notes ?? null,
+      createdAt: new Date().toISOString(),
+    };
+    this.supplierPayments.set(id, n);
+    return n;
+  }
+  async updateSupplierPayment(id: string, updates: Partial<InsertSupplierPayment>) {
+    const cur = this.supplierPayments.get(id); if (!cur) return undefined;
+    const u = { ...cur, ...updates }; this.supplierPayments.set(id, u); return u;
+  }
+  async deleteSupplierPayment(id: string) { return this.supplierPayments.delete(id); }
+
+  // === Customer Payments (A/R) ===
+  async getCustomerPayments() { return Array.from(this.customerPayments.values()); }
+  async createCustomerPayment(p: InsertCustomerPayment): Promise<CustomerPayment> {
+    const id = randomUUID();
+    const n: CustomerPayment = {
+      ...p, id,
+      linkedCadId: p.linkedCadId ?? null,
+      invoiceNumber: p.invoiceNumber ?? null,
+      invoiceDate: p.invoiceDate ?? null,
+      dueDate: p.dueDate ?? null,
+      receivedDate: p.receivedDate ?? null,
+      totalAmountEtb: p.totalAmountEtb ?? "0",
+      receivedAmountEtb: p.receivedAmountEtb ?? "0",
+      currency: p.currency ?? "ETB",
+      paymentMethod: p.paymentMethod ?? null,
+      status: p.status ?? "Pending",
+      notes: p.notes ?? null,
+      createdAt: new Date().toISOString(),
+    };
+    this.customerPayments.set(id, n);
+    return n;
+  }
+  async updateCustomerPayment(id: string, updates: Partial<InsertCustomerPayment>) {
+    const cur = this.customerPayments.get(id); if (!cur) return undefined;
+    const u = { ...cur, ...updates }; this.customerPayments.set(id, u); return u;
+  }
+  async deleteCustomerPayment(id: string) { return this.customerPayments.delete(id); }
 }
 
 export const storage = new MemStorage();

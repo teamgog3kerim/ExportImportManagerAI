@@ -1,0 +1,770 @@
+# Ethiopian Import & Export Manager App
+
+# Finance Module – Full Production JSON Prompt for Replit AI
+
+```json
+{
+  "project": {
+    "name": "Ethio Import Export Finance Module",
+    "version": "1.0.0",
+    "purpose": "A complete finance and accounting module integrated into an Ethiopian Import & Export ERP system for tracking purchases, sales, expenses, petty cash, LC-linked transactions, payable/receivable balances, profit analysis, and financial reporting.",
+    "target_users": [
+      "Import Managers",
+      "Export Managers",
+      "Finance Officers",
+      "Accountants",
+      "CEOs",
+      "Cashiers",
+      "Operations Managers"
+    ],
+    "country_context": "Ethiopia",
+    "currency": "ETB",
+    "supported_currencies": [
+      "ETB",
+      "USD",
+      "EUR",
+      "AED",
+      "CNY"
+    ],
+    "business_types": [
+      "Import",
+      "Export",
+      "Trading",
+      "Freight Forwarding",
+      "Manufacturing"
+    ]
+  },
+
+  "technology_stack": {
+    "frontend": {
+      "framework": "React + TypeScript",
+      "ui": "TailwindCSS + Shadcn UI",
+      "charts": "Recharts",
+      "state_management": "Zustand",
+      "form_library": "React Hook Form",
+      "validation": "Zod"
+    },
+    "backend": {
+      "framework": "Node.js + Express",
+      "language": "TypeScript",
+      "authentication": "JWT + Role Based Access",
+      "file_upload": "Multer",
+      "notifications": "Socket.IO + Email"
+    },
+    "database": {
+      "type": "PostgreSQL",
+      "orm": "Prisma"
+    },
+    "deployment": {
+      "platform": "Replit",
+      "storage": "Cloudinary + PostgreSQL",
+      "backup": "Automated daily backup"
+    }
+  },
+
+  "core_modules": [
+    {
+      "module_name": "Finance Dashboard",
+      "description": "Central finance overview dashboard with all financial KPIs.",
+      "features": [
+        "Total Purchases",
+        "Total Sales",
+        "Total Expenses",
+        "Net Profit",
+        "Petty Cash Balance",
+        "Outstanding Payables",
+        "Outstanding Receivables",
+        "LC Settlement Overview",
+        "Import Shipment Cost Summary",
+        "Export Revenue Summary",
+        "Currency Conversion Summary",
+        "Expense Trends",
+        "Monthly Cash Flow",
+        "Expense Category Analytics",
+        "Real-time Notifications"
+      ],
+      "dashboard_cards": [
+        {
+          "title": "Total Import Purchases",
+          "type": "currency_card",
+          "currency": "ETB"
+        },
+        {
+          "title": "Total Export Sales",
+          "type": "currency_card",
+          "currency": "ETB"
+        },
+        {
+          "title": "Net Profit",
+          "type": "profit_card"
+        },
+        {
+          "title": "Petty Cash Available",
+          "type": "balance_card"
+        },
+        {
+          "title": "Pending Supplier Payments",
+          "type": "payable_card"
+        },
+        {
+          "title": "Pending Customer Payments",
+          "type": "receivable_card"
+        }
+      ],
+      "dashboard_charts": [
+        "Monthly Revenue Chart",
+        "Expense Breakdown Pie Chart",
+        "Import Cost Analysis",
+        "Cash Flow Line Chart",
+        "Top Expense Categories",
+        "Profit Margin Analysis"
+      ]
+    },
+
+    {
+      "module_name": "Import Purchase Transactions",
+      "description": "Manage all import purchase records and supplier financial transactions.",
+      "features": [
+        "Create Purchase Record",
+        "Track Supplier Payments",
+        "Link Purchase to LC",
+        "Attach Shipping Documents",
+        "Freight Cost Recording",
+        "Insurance Cost Tracking",
+        "Customs Cost Tracking",
+        "Warehouse Charges",
+        "Port Charges",
+        "Partial Shipment Tracking",
+        "Currency Conversion",
+        "Import Cost Allocation"
+      ],
+      "fields": [
+        {
+          "name": "purchase_id",
+          "type": "auto_generated"
+        },
+        {
+          "name": "supplier_name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "country",
+          "type": "dropdown"
+        },
+        {
+          "name": "purchase_date",
+          "type": "date"
+        },
+        {
+          "name": "invoice_number",
+          "type": "text"
+        },
+        {
+          "name": "shipment_type",
+          "type": "dropdown",
+          "options": [
+            "Full Shipment",
+            "Partial Shipment"
+          ]
+        },
+        {
+          "name": "currency",
+          "type": "dropdown"
+        },
+        {
+          "name": "exchange_rate",
+          "type": "number"
+        },
+        {
+          "name": "total_purchase_amount",
+          "type": "currency"
+        },
+        {
+          "name": "freight_cost",
+          "type": "currency"
+        },
+        {
+          "name": "insurance_cost",
+          "type": "currency"
+        },
+        {
+          "name": "customs_cost",
+          "type": "currency"
+        },
+        {
+          "name": "warehouse_cost",
+          "type": "currency"
+        },
+        {
+          "name": "bank_charge",
+          "type": "currency"
+        },
+        {
+          "name": "total_landed_cost",
+          "type": "auto_calculated"
+        },
+        {
+          "name": "payment_status",
+          "type": "status",
+          "options": [
+            "Paid",
+            "Partial",
+            "Pending"
+          ]
+        },
+        {
+          "name": "remarks",
+          "type": "textarea"
+        }
+      ]
+    },
+
+    {
+      "module_name": "Export Sales Transactions",
+      "description": "Track export sales, customer invoices, and export profitability.",
+      "features": [
+        "Create Export Invoice",
+        "Track Customer Payments",
+        "Multi-Currency Sales",
+        "Export Shipment Tracking",
+        "Profitability Analysis",
+        "Export Tax Calculation",
+        "Export Revenue Reporting",
+        "Payment Due Alerts"
+      ],
+      "fields": [
+        "invoice_id",
+        "customer_name",
+        "country",
+        "invoice_date",
+        "shipment_reference",
+        "currency",
+        "exchange_rate",
+        "product_name",
+        "quantity",
+        "unit_price",
+        "total_amount",
+        "received_amount",
+        "balance_amount",
+        "payment_status",
+        "remarks"
+      ]
+    },
+
+    {
+      "module_name": "Expense Manager",
+      "description": "Track all operational, logistics, administrative, and import/export related expenses.",
+      "features": [
+        "Expense Recording",
+        "Expense Categorization",
+        "Expense Approval Workflow",
+        "Expense Receipt Upload",
+        "Recurring Expenses",
+        "Expense Analytics",
+        "Department Expense Tracking",
+        "Branch Expense Tracking",
+        "Supplier Expense Tracking",
+        "VAT Tracking",
+        "Expense Budget Monitoring"
+      ],
+      "expense_categories": [
+        "Freight",
+        "Transport",
+        "Fuel",
+        "Warehouse",
+        "Customs",
+        "Port Charges",
+        "Bank Charges",
+        "Office Rent",
+        "Utilities",
+        "Internet",
+        "Salary",
+        "Commission",
+        "Maintenance",
+        "Marketing",
+        "Travel",
+        "Hotel",
+        "Per Diem",
+        "Legal",
+        "Insurance",
+        "Miscellaneous"
+      ],
+      "fields": [
+        {
+          "name": "expense_id",
+          "type": "auto_generated"
+        },
+        {
+          "name": "expense_title",
+          "type": "text"
+        },
+        {
+          "name": "expense_category",
+          "type": "dropdown"
+        },
+        {
+          "name": "expense_date",
+          "type": "date"
+        },
+        {
+          "name": "amount",
+          "type": "currency"
+        },
+        {
+          "name": "currency",
+          "type": "dropdown"
+        },
+        {
+          "name": "vat_amount",
+          "type": "currency"
+        },
+        {
+          "name": "payment_method",
+          "type": "dropdown",
+          "options": [
+            "Cash",
+            "Bank",
+            "Telebirr",
+            "CBE",
+            "Awash",
+            "Cheque"
+          ]
+        },
+        {
+          "name": "paid_by",
+          "type": "dropdown"
+        },
+        {
+          "name": "department",
+          "type": "dropdown"
+        },
+        {
+          "name": "reference_number",
+          "type": "text"
+        },
+        {
+          "name": "receipt_upload",
+          "type": "file"
+        },
+        {
+          "name": "description",
+          "type": "textarea"
+        },
+        {
+          "name": "approval_status",
+          "type": "status",
+          "options": [
+            "Pending",
+            "Approved",
+            "Rejected"
+          ]
+        }
+      ],
+      "automation": {
+        "monthly_summary": true,
+        "category_alerts": true,
+        "budget_warning": true,
+        "duplicate_detection": true
+      }
+    },
+
+    {
+      "module_name": "Petty Cash Manager",
+      "description": "Manage petty cash allocation, debit records, balance tracking, and low balance alerts.",
+      "features": [
+        "Assign Petty Cash",
+        "Petty Cash Credit Entries",
+        "Petty Cash Debit Entries",
+        "Automatic Balance Deduction",
+        "Low Balance Notification",
+        "Expense Attachments",
+        "Cashier Tracking",
+        "Branch Petty Cash",
+        "Daily Reconciliation",
+        "Petty Cash Approval",
+        "Cash Audit Trail"
+      ],
+      "petty_cash_credit_fields": [
+        {
+          "name": "credit_id",
+          "type": "auto_generated"
+        },
+        {
+          "name": "assigned_to",
+          "type": "employee_dropdown"
+        },
+        {
+          "name": "credit_date",
+          "type": "date"
+        },
+        {
+          "name": "credit_amount",
+          "type": "currency"
+        },
+        {
+          "name": "currency",
+          "type": "dropdown"
+        },
+        {
+          "name": "approved_by",
+          "type": "employee_dropdown"
+        },
+        {
+          "name": "remarks",
+          "type": "textarea"
+        }
+      ],
+      "petty_cash_debit_fields": [
+        {
+          "name": "debit_id",
+          "type": "auto_generated"
+        },
+        {
+          "name": "assigned_cash_holder",
+          "type": "employee_dropdown"
+        },
+        {
+          "name": "transaction_date",
+          "type": "date"
+        },
+        {
+          "name": "purpose_description",
+          "type": "textarea"
+        },
+        {
+          "name": "expense_category",
+          "type": "dropdown"
+        },
+        {
+          "name": "amount",
+          "type": "currency"
+        },
+        {
+          "name": "remarks",
+          "type": "textarea"
+        },
+        {
+          "name": "receipt_upload",
+          "type": "file"
+        }
+      ],
+      "automation_logic": {
+        "auto_balance_deduction": "When debit entry is recorded, system automatically deducts amount from assigned petty cash balance.",
+        "low_balance_threshold": "User configurable minimum balance threshold.",
+        "low_balance_notification": [
+          "Dashboard Notification",
+          "Email Alert",
+          "Mobile Push Notification"
+        ],
+        "overspending_prevention": "System blocks transactions exceeding available petty cash balance.",
+        "daily_reconciliation": "Automatically generates daily petty cash balance summary.",
+        "audit_logs": true
+      },
+      "petty_cash_dashboard": {
+        "cards": [
+          "Total Assigned Petty Cash",
+          "Remaining Balance",
+          "Total Debits",
+          "Low Balance Accounts",
+          "Pending Approvals"
+        ],
+        "tables": [
+          "Recent Transactions",
+          "Employee Balances",
+          "Expense Categories"
+        ]
+      }
+    },
+
+    {
+      "module_name": "Accounts Payable",
+      "description": "Track supplier liabilities and pending payments.",
+      "features": [
+        "Supplier Ledger",
+        "Due Date Alerts",
+        "Partial Payments",
+        "Bank Payment Records",
+        "Aging Analysis",
+        "Payment Approval"
+      ]
+    },
+
+    {
+      "module_name": "Accounts Receivable",
+      "description": "Track customer receivables and payment collections.",
+      "features": [
+        "Customer Ledger",
+        "Outstanding Invoice Tracking",
+        "Collection Reminders",
+        "Payment History",
+        "Credit Limit Tracking"
+      ]
+    },
+
+    {
+      "module_name": "Financial Reports",
+      "description": "Generate detailed financial and management reports.",
+      "reports": [
+        "Profit and Loss Statement",
+        "Cash Flow Report",
+        "Expense Summary Report",
+        "Petty Cash Report",
+        "Supplier Payment Report",
+        "Customer Receivable Report",
+        "Import Cost Analysis Report",
+        "Export Revenue Report",
+        "VAT Report",
+        "Department Expense Report",
+        "Monthly Financial Summary",
+        "Annual Financial Summary"
+      ],
+      "export_formats": [
+        "PDF",
+        "Excel",
+        "CSV"
+      ],
+      "filters": [
+        "Date Range",
+        "Branch",
+        "Department",
+        "Currency",
+        "Expense Category",
+        "Supplier",
+        "Customer"
+      ]
+    }
+  ],
+
+  "database_schema": {
+    "tables": [
+      {
+        "table_name": "users",
+        "fields": [
+          "id",
+          "full_name",
+          "email",
+          "phone",
+          "role",
+          "branch_id",
+          "status",
+          "password_hash",
+          "created_at"
+        ]
+      },
+      {
+        "table_name": "purchase_transactions",
+        "fields": [
+          "id",
+          "supplier_name",
+          "invoice_number",
+          "currency",
+          "exchange_rate",
+          "purchase_amount",
+          "freight_cost",
+          "insurance_cost",
+          "customs_cost",
+          "warehouse_cost",
+          "bank_charge",
+          "total_landed_cost",
+          "payment_status",
+          "created_by",
+          "created_at"
+        ]
+      },
+      {
+        "table_name": "sales_transactions",
+        "fields": [
+          "id",
+          "customer_name",
+          "invoice_number",
+          "currency",
+          "exchange_rate",
+          "sales_amount",
+          "received_amount",
+          "balance_amount",
+          "payment_status",
+          "created_by",
+          "created_at"
+        ]
+      },
+      {
+        "table_name": "expenses",
+        "fields": [
+          "id",
+          "expense_title",
+          "expense_category",
+          "amount",
+          "vat_amount",
+          "currency",
+          "payment_method",
+          "receipt_url",
+          "description",
+          "approval_status",
+          "created_by",
+          "created_at"
+        ]
+      },
+      {
+        "table_name": "petty_cash_accounts",
+        "fields": [
+          "id",
+          "employee_id",
+          "assigned_amount",
+          "remaining_balance",
+          "low_balance_threshold",
+          "status",
+          "created_at"
+        ]
+      },
+      {
+        "table_name": "petty_cash_transactions",
+        "fields": [
+          "id",
+          "petty_cash_account_id",
+          "transaction_type",
+          "amount",
+          "purpose_description",
+          "remarks",
+          "receipt_url",
+          "transaction_date",
+          "created_by"
+        ]
+      }
+    ]
+  },
+
+  "user_roles": [
+    {
+      "role": "Super Admin",
+      "permissions": "Full Access"
+    },
+    {
+      "role": "Finance Manager",
+      "permissions": "Finance Management + Reports"
+    },
+    {
+      "role": "Accountant",
+      "permissions": "Record Transactions + Reports"
+    },
+    {
+      "role": "Cashier",
+      "permissions": "Petty Cash + Expenses"
+    },
+    {
+      "role": "CEO",
+      "permissions": "View All Financial Dashboards"
+    }
+  ],
+
+  "system_automation": {
+    "scheduled_jobs": [
+      "Daily Financial Backup",
+      "Monthly Financial Closing",
+      "Daily Expense Summary",
+      "Petty Cash Reconciliation",
+      "Outstanding Payment Reminder"
+    ],
+    "notifications": {
+      "channels": [
+        "In-App",
+        "Email",
+        "SMS"
+      ],
+      "events": [
+        "Low Petty Cash Balance",
+        "Pending Supplier Payment",
+        "Customer Payment Due",
+        "Budget Exceeded",
+        "Expense Approval Needed"
+      ]
+    }
+  },
+
+  "security": {
+    "features": [
+      "Role Based Access Control",
+      "Encrypted Passwords",
+      "Audit Logs",
+      "Two Factor Authentication",
+      "Session Timeout",
+      "IP Login Tracking",
+      "Secure File Upload",
+      "Database Backup"
+    ]
+  },
+
+  "ui_ux_requirements": {
+    "theme": "Modern Ethiopian Enterprise ERP",
+    "layout": "Responsive Sidebar Layout",
+    "design_features": [
+      "Dark and Light Mode",
+      "Mobile Responsive",
+      "Large Finance KPI Cards",
+      "Interactive Charts",
+      "Quick Add Buttons",
+      "Floating Notifications",
+      "Advanced Filters",
+      "Export Buttons",
+      "Search Everywhere",
+      "Pagination",
+      "Sticky Table Headers"
+    ]
+  },
+
+  "advanced_features": {
+    "ai_features": [
+      "Expense Pattern Detection",
+      "Duplicate Expense Detection",
+      "Cash Flow Prediction",
+      "Supplier Risk Analysis",
+      "Profit Forecasting"
+    ],
+    "integration": [
+      "Bank Statement Import",
+      "Telebirr Integration",
+      "ERP Integration",
+      "LC Module Integration",
+      "Inventory Module Integration"
+    ]
+  },
+
+  "developer_instructions": {
+    "requirements": [
+      "Build fully responsive UI",
+      "Use reusable components",
+      "Implement proper form validation",
+      "Use financial precision calculations",
+      "Support multi-currency conversion",
+      "Optimize dashboard performance",
+      "Enable offline draft saving",
+      "Add loading skeletons",
+      "Implement pagination",
+      "Use clean modular architecture",
+      "Use REST API architecture",
+      "Use Prisma migrations",
+      "Implement transaction rollback for finance operations"
+    ],
+    "coding_standards": [
+      "Clean Architecture",
+      "SOLID Principles",
+      "Service Layer Pattern",
+      "Repository Pattern",
+      "Reusable Hooks",
+      "Reusable Table Components"
+    ]
+  },
+
+  "future_scalability": {
+    "planned_extensions": [
+      "Mobile App",
+      "Barcode Inventory Integration",
+      "AI Accounting Assistant",
+      "Automated Tax Filing",
+      "Ethiopian Bank API Integration",
+      "Multi-Company Management",
+      "Branch Consolidation Reporting"
+    ]
+  }
+}
+```

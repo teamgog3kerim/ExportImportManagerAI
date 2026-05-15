@@ -239,6 +239,88 @@ export const exportShipments = pgTable("export_shipments", {
   createdAt: text("created_at").notNull(),
 });
 
+// === FINANCE MODULE ===
+
+// Expenses
+export const expenses = pgTable("expenses", {
+  id: varchar("id").primaryKey(),
+  expenseTitle: text("expense_title").notNull(),
+  category: text("category").notNull(),
+  expenseDate: text("expense_date").notNull(),
+  amountEtb: numeric("amount_etb").notNull().default("0"),
+  vatAmountEtb: numeric("vat_amount_etb").default("0"),
+  currency: text("currency").default("ETB"),
+  paymentMethod: text("payment_method").default("Cash"),
+  paidBy: text("paid_by"),
+  department: text("department"),
+  referenceNumber: text("reference_number"),
+  description: text("description"),
+  approvalStatus: text("approval_status").default("Approved"),
+  createdAt: text("created_at").notNull(),
+});
+
+// Petty Cash Accounts
+export const pettyCashAccounts = pgTable("petty_cash_accounts", {
+  id: varchar("id").primaryKey(),
+  holderName: text("holder_name").notNull(),
+  department: text("department"),
+  assignedAmountEtb: numeric("assigned_amount_etb").notNull().default("0"),
+  balanceEtb: numeric("balance_etb").notNull().default("0"),
+  lowBalanceThresholdEtb: numeric("low_balance_threshold_etb").default("1000"),
+  status: text("status").default("Active"),
+  createdAt: text("created_at").notNull(),
+});
+
+// Petty Cash Transactions
+export const pettyCashTransactions = pgTable("petty_cash_transactions", {
+  id: varchar("id").primaryKey(),
+  accountId: varchar("account_id").notNull(),
+  transactionType: text("transaction_type").notNull(),
+  amountEtb: numeric("amount_etb").notNull().default("0"),
+  purpose: text("purpose"),
+  category: text("category"),
+  remarks: text("remarks"),
+  transactionDate: text("transaction_date").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+// Supplier Payments (Accounts Payable)
+export const supplierPayments = pgTable("supplier_payments", {
+  id: varchar("id").primaryKey(),
+  supplierName: text("supplier_name").notNull(),
+  linkedLcId: varchar("linked_lc_id"),
+  linkedShipmentId: varchar("linked_shipment_id"),
+  invoiceNumber: text("invoice_number"),
+  invoiceDate: text("invoice_date"),
+  dueDate: text("due_date"),
+  paidDate: text("paid_date"),
+  totalAmountEtb: numeric("total_amount_etb").notNull().default("0"),
+  paidAmountEtb: numeric("paid_amount_etb").default("0"),
+  currency: text("currency").default("ETB"),
+  paymentMethod: text("payment_method"),
+  status: text("status").default("Pending"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull(),
+});
+
+// Customer Payments (Accounts Receivable)
+export const customerPayments = pgTable("customer_payments", {
+  id: varchar("id").primaryKey(),
+  buyerName: text("buyer_name").notNull(),
+  linkedCadId: varchar("linked_cad_id"),
+  invoiceNumber: text("invoice_number"),
+  invoiceDate: text("invoice_date"),
+  dueDate: text("due_date"),
+  receivedDate: text("received_date"),
+  totalAmountEtb: numeric("total_amount_etb").notNull().default("0"),
+  receivedAmountEtb: numeric("received_amount_etb").default("0"),
+  currency: text("currency").default("ETB"),
+  paymentMethod: text("payment_method"),
+  status: text("status").default("Pending"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull(),
+});
+
 // Schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertLcSchema = createInsertSchema(lcs).omit({ id: true, createdAt: true });
@@ -251,6 +333,35 @@ export const insertCertificationSchema = createInsertSchema(certifications).omit
 export const insertExportPurchaseSchema = createInsertSchema(exportPurchases).omit({ id: true, createdAt: true });
 export const insertCadSchema = createInsertSchema(cads).omit({ id: true, createdAt: true });
 export const insertExportShipmentSchema = createInsertSchema(exportShipments).omit({ id: true, createdAt: true });
+export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true });
+export const insertPettyCashAccountSchema = createInsertSchema(pettyCashAccounts).omit({ id: true, createdAt: true });
+export const insertPettyCashTransactionSchema = createInsertSchema(pettyCashTransactions)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    transactionType: z.enum(["credit", "debit"]),
+    amountEtb: z.string().refine(v => Number(v) > 0, { message: "Amount must be > 0" }),
+  });
+const nonNegativeNumericStr = z.string().refine(v => Number(v) >= 0 && isFinite(Number(v)), { message: "Must be a non-negative number" });
+export const insertSupplierPaymentSchema = createInsertSchema(supplierPayments)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    totalAmountEtb: nonNegativeNumericStr,
+    paidAmountEtb: nonNegativeNumericStr.optional(),
+  })
+  .refine(d => Number(d.paidAmountEtb ?? 0) <= Number(d.totalAmountEtb), {
+    message: "Paid amount cannot exceed total amount",
+    path: ["paidAmountEtb"],
+  });
+export const insertCustomerPaymentSchema = createInsertSchema(customerPayments)
+  .omit({ id: true, createdAt: true })
+  .extend({
+    totalAmountEtb: nonNegativeNumericStr,
+    receivedAmountEtb: nonNegativeNumericStr.optional(),
+  })
+  .refine(d => Number(d.receivedAmountEtb ?? 0) <= Number(d.totalAmountEtb), {
+    message: "Received amount cannot exceed total amount",
+    path: ["receivedAmountEtb"],
+  });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -278,3 +389,13 @@ export type Cad = typeof cads.$inferSelect;
 export type InsertCad = z.infer<typeof insertCadSchema>;
 export type ExportShipment = typeof exportShipments.$inferSelect;
 export type InsertExportShipment = z.infer<typeof insertExportShipmentSchema>;
+export type Expense = typeof expenses.$inferSelect;
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type PettyCashAccount = typeof pettyCashAccounts.$inferSelect;
+export type InsertPettyCashAccount = z.infer<typeof insertPettyCashAccountSchema>;
+export type PettyCashTransaction = typeof pettyCashTransactions.$inferSelect;
+export type InsertPettyCashTransaction = z.infer<typeof insertPettyCashTransactionSchema>;
+export type SupplierPayment = typeof supplierPayments.$inferSelect;
+export type InsertSupplierPayment = z.infer<typeof insertSupplierPaymentSchema>;
+export type CustomerPayment = typeof customerPayments.$inferSelect;
+export type InsertCustomerPayment = z.infer<typeof insertCustomerPaymentSchema>;
