@@ -12,11 +12,11 @@ import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/PageHeader";
 import { Plus, Search, Send, Pencil, Trash2, Ship, MapPin, Anchor, FileText } from "lucide-react";
 import type { ExportShipment, Cad } from "@shared/schema";
+import { countriesWith } from "@/lib/countries";
 
 const ORIGINS = ["Modjo Dry Port", "Addis Ababa Central", "Awasa Hub", "Kality A1", "Dire Dawa Warehouse"];
 const PORTS = ["Djibouti", "Berbera", "Port Sudan", "Mombasa"];
 const DESTINATIONS = ["Hamburg Port", "Rotterdam Port", "Antwerp Port", "Genoa Port", "Jeddah Islamic Port", "Jebel Ali Port", "Shanghai Port", "Mundra Port", "New York Port"];
-const COUNTRIES = ["Germany", "Netherlands", "Belgium", "Italy", "Saudi Arabia", "UAE", "China", "India", "USA", "United Kingdom"];
 const STATUSES = ["Preparing", "At Origin Warehouse", "In Transit to Port", "At Djibouti Port", "Sea Transit", "Arrived at Destination", "Delivered"];
 const DOC_OPTIONS = ["Commercial Invoice", "Bill of Lading", "Certificate of Origin", "Phytosanitary Certificate", "ECX Quality Certificate", "Packing List", "Insurance Certificate", "SGS Inspection", "Fumigation Certificate"];
 const CERT_OPTIONS = ["Organic (USDA)", "Fairtrade", "Rainforest Alliance", "UTZ", "Leather Working Group (LWG)", "Halal", "ISO 22000"];
@@ -330,9 +330,11 @@ export default function ExportShipments() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Destination Country</Label>
-                  <Select value={form.destinationCountry ?? "Germany"} onValueChange={v => field("destinationCountry", v)}>
+                  <Select value={form.destinationCountry || "Germany"} onValueChange={v => field("destinationCountry", v)}>
                     <SelectTrigger data-testid="select-dest-country"><SelectValue /></SelectTrigger>
-                    <SelectContent>{COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>
+                      {countriesWith(form.destinationCountry).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1">

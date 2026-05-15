@@ -14,6 +14,7 @@ import { Building2, BanknoteIcon, Users, UserCheck, Award, Bell, Trash2, Plus, P
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ETHIOPIAN_BANKS, swiftForBank } from "@/lib/ethiopianBanks";
 import type { CompanySettings, NotificationSettings, Bank, Supplier, Buyer, Certification } from "@shared/schema";
+import { countriesWith } from "@/lib/countries";
 
 const OTHER_BANK = "__other__";
 
@@ -566,7 +567,15 @@ export default function Settings() {
           <DialogHeader><DialogTitle>{editingSupplierId ? "Edit Supplier" : "Add Supplier"}</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1"><Label className="text-xs">Name</Label><Input value={supplierForm.name} onChange={e => setSupplierForm(p => ({ ...p, name: e.target.value }))} data-testid="input-supplier-name-settings" /></div>
-            <div className="space-y-1"><Label className="text-xs">Country</Label><Input value={supplierForm.country} onChange={e => setSupplierForm(p => ({ ...p, country: e.target.value }))} /></div>
+            <div className="space-y-1">
+              <Label className="text-xs">Country</Label>
+              <Select value={supplierForm.country || undefined} onValueChange={v => setSupplierForm(p => ({ ...p, country: v }))}>
+                <SelectTrigger data-testid="select-supplier-country"><SelectValue placeholder="Select country" /></SelectTrigger>
+                <SelectContent>
+                  {countriesWith(supplierForm.country).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1"><Label className="text-xs">Email</Label><Input type="email" value={supplierForm.email} onChange={e => setSupplierForm(p => ({ ...p, email: e.target.value }))} /></div>
             <div className="space-y-1"><Label className="text-xs">Phone</Label><Input value={supplierForm.phone} onChange={e => setSupplierForm(p => ({ ...p, phone: e.target.value }))} /></div>
             <div className="space-y-1"><Label className="text-xs">Address</Label><Input value={supplierForm.address} onChange={e => setSupplierForm(p => ({ ...p, address: e.target.value }))} /></div>
@@ -624,7 +633,15 @@ export default function Settings() {
           <DialogHeader><DialogTitle>{editingBuyerId ? "Edit Buyer" : "Add Foreign Buyer"}</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1"><Label className="text-xs">Name</Label><Input value={buyerForm.name} onChange={e => setBuyerForm(p => ({ ...p, name: e.target.value }))} data-testid="input-buyer-name-settings" /></div>
-            <div className="space-y-1"><Label className="text-xs">Country</Label><Input value={buyerForm.country} onChange={e => setBuyerForm(p => ({ ...p, country: e.target.value }))} data-testid="input-buyer-country-settings" /></div>
+            <div className="space-y-1">
+              <Label className="text-xs">Country</Label>
+              <Select value={buyerForm.country || undefined} onValueChange={v => setBuyerForm(p => ({ ...p, country: v }))}>
+                <SelectTrigger data-testid="input-buyer-country-settings"><SelectValue placeholder="Select country" /></SelectTrigger>
+                <SelectContent>
+                  {countriesWith(buyerForm.country).map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1"><Label className="text-xs">Email</Label><Input type="email" value={buyerForm.email} onChange={e => setBuyerForm(p => ({ ...p, email: e.target.value }))} data-testid="input-buyer-email-settings" /></div>
             <div className="space-y-1"><Label className="text-xs">Phone</Label><Input value={buyerForm.phone} onChange={e => setBuyerForm(p => ({ ...p, phone: e.target.value }))} data-testid="input-buyer-phone-settings" /></div>
             <div className="space-y-1"><Label className="text-xs">Address</Label><Input value={buyerForm.address} onChange={e => setBuyerForm(p => ({ ...p, address: e.target.value }))} data-testid="input-buyer-address-settings" /></div>

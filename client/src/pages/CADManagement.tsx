@@ -12,8 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/PageHeader";
 import { Plus, Search, Banknote, Pencil, Trash2, FileCheck, Globe, TrendingUp } from "lucide-react";
 import type { Cad, Buyer } from "@shared/schema";
+import { COUNTRIES, countriesWith } from "@/lib/countries";
 
-const COUNTRIES = ["Germany", "Italy", "Netherlands", "Belgium", "France", "Saudi Arabia", "UAE", "China", "Japan", "USA", "United Kingdom", "Sudan"];
 const BUYER_OTHER = "__other__";
 const PAYMENT_TERMS = ["Sight", "30 Days", "60 Days", "90 Days", "120 Days"];
 const STATUSES = ["Draft", "Documents Sent", "Awaiting Payment", "Paid", "Settled", "Disputed"];
@@ -331,10 +331,10 @@ export default function CADManagement() {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Country</Label>
-                  <Select value={form.buyerCountry ?? "Germany"} onValueChange={v => field("buyerCountry", v)}>
+                  <Select value={form.buyerCountry || "Germany"} onValueChange={v => field("buyerCountry", v)}>
                     <SelectTrigger data-testid="select-buyer-country"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {Array.from(new Set([...COUNTRIES, ...(form.buyerCountry ? [form.buyerCountry] : [])])).map(c => (
+                      {countriesWith(form.buyerCountry).map(c => (
                         <SelectItem key={c} value={c}>{c}</SelectItem>
                       ))}
                     </SelectContent>
