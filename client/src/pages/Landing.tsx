@@ -72,7 +72,7 @@ export default function Landing() {
               Built for Ethiopian trade, fluent in international terms
             </div>
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05]" data-testid="text-hero-title">
-              My Import / Export <span className="text-primary">Manager</span>
+              My Export / Import <span className="text-primary">Manager App</span>
             </h1>
             <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed" data-testid="text-hero-subtitle">
               A complete operating system for Ethiopian importers and exporters — Letters of Credit, customs duties, shipment tracking, inventory and FX, all in one place.
