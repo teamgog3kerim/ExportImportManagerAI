@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, BanknoteIcon, Users, UserCheck, Award, Bell, Trash2, Plus, Pencil, X } from "lucide-react";
+import { Building2, BanknoteIcon, Users, UserCheck, Award, Bell, Trash2, Plus, Pencil, X, Settings2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ETHIOPIAN_BANKS, swiftForBank } from "@/lib/ethiopianBanks";
 import type { CompanySettings, NotificationSettings, Bank, Supplier, Buyer, Certification } from "@shared/schema";
@@ -25,6 +25,7 @@ const TABS = [
   { id: "buyers", label: "Buyers", icon: UserCheck },
   { id: "certs", label: "Certifications", icon: Award },
   { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "configurations", label: "Configurations", icon: Settings2 },
 ];
 
 export default function Settings() {
@@ -516,6 +517,21 @@ export default function Settings() {
               <Button variant="outline" size="sm" onClick={() => notifMutation.mutate({ shipmentUpdates: "true", lcExpiryAlerts: "true", paymentNotifications: "true", marketRateAlerts: "false" })} data-testid="button-reset-notifications">
                 Reset to Default
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Configurations Tab */}
+      {tab === "configurations" && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold">Configurations</CardTitle>
+            <p className="text-xs text-muted-foreground">App-level configuration options will appear here.</p>
+          </CardHeader>
+          <CardContent>
+            <div className="py-12 text-center text-xs text-muted-foreground" data-testid="text-configurations-placeholder">
+              Coming soon.
             </div>
           </CardContent>
         </Card>
