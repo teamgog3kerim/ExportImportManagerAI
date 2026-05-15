@@ -17,7 +17,7 @@ function normalizeProducts(input: unknown): string[] {
 import type {
   User, InsertUser, LC, InsertLC, Shipment, InsertShipment,
   InventoryItem, InsertInventoryItem, ExchangeRate, Bank, InsertBank,
-  Supplier, InsertSupplier, Buyer, InsertBuyer, Certification, InsertCertification,
+  Supplier, InsertSupplier, Certification, InsertCertification,
   CompanySettings, NotificationSettings,
   ExportPurchase, InsertExportPurchase, Cad, InsertCad,
   ExportShipment, InsertExportShipment,
@@ -57,11 +57,6 @@ export interface IStorage {
   createSupplier(s: InsertSupplier): Promise<Supplier>;
   updateSupplier(id: string, patch: Partial<InsertSupplier>): Promise<Supplier | null>;
   deleteSupplier(id: string): Promise<boolean>;
-  // Buyers
-  getBuyers(): Promise<Buyer[]>;
-  createBuyer(b: InsertBuyer): Promise<Buyer>;
-  updateBuyer(id: string, patch: Partial<InsertBuyer>): Promise<Buyer | null>;
-  deleteBuyer(id: string): Promise<boolean>;
   // Certifications
   getCertifications(): Promise<Certification[]>;
   createCertification(c: InsertCertification): Promise<Certification>;
@@ -99,7 +94,6 @@ export class MemStorage implements IStorage {
   private exchangeRates = new Map<string, ExchangeRate>();
   private banks = new Map<string, Bank>();
   private suppliers = new Map<string, Supplier>();
-  private buyers = new Map<string, Buyer>();
   private certifications = new Map<string, Certification>();
   private companySettings: CompanySettings | undefined;
   private notificationSettings: NotificationSettings | undefined;
@@ -340,57 +334,6 @@ export class MemStorage implements IStorage {
     return next;
   }
   async deleteSupplier(id: string) { return this.suppliers.delete(id); }
-
-  async getBuyers() { return Array.from(this.buyers.values()); }
-  async createBuyer(b: InsertBuyer): Promise<Buyer> {
-    const trim = (v: unknown) => typeof v === "string" ? v.trim() : v;
-    const blankToNull = (v: unknown) => {
-      const t = trim(v);
-      return typeof t === "string" && t.length === 0 ? null : (t as string | null | undefined) ?? null;
-    };
-    const name = String(trim(b.name) ?? "");
-    if (!name) throw new Error("Buyer name is required");
-    const id = randomUUID();
-    const n: Buyer = {
-      id,
-      name,
-      country: blankToNull(b.country),
-      email: blankToNull(b.email),
-      phone: blankToNull(b.phone),
-      address: blankToNull(b.address),
-      products: normalizeProducts(b.products),
-      createdAt: new Date().toISOString(),
-    };
-    this.buyers.set(id, n);
-    return n;
-  }
-  async updateBuyer(id: string, patch: Partial<InsertBuyer>): Promise<Buyer | null> {
-    const cur = this.buyers.get(id);
-    if (!cur) return null;
-    const trim = (v: unknown) => typeof v === "string" ? v.trim() : v;
-    const blankToNull = (v: unknown) => {
-      const t = trim(v);
-      return typeof t === "string" && t.length === 0 ? null : (t as string | null | undefined) ?? null;
-    };
-    let nextName = cur.name;
-    if (patch.name !== undefined) {
-      const trimmed = String(trim(patch.name) ?? "");
-      if (!trimmed) throw new Error("Buyer name is required");
-      nextName = trimmed;
-    }
-    const next: Buyer = {
-      ...cur,
-      name: nextName,
-      ...(patch.country !== undefined ? { country: blankToNull(patch.country) } : {}),
-      ...(patch.email !== undefined ? { email: blankToNull(patch.email) } : {}),
-      ...(patch.phone !== undefined ? { phone: blankToNull(patch.phone) } : {}),
-      ...(patch.address !== undefined ? { address: blankToNull(patch.address) } : {}),
-      ...(patch.products !== undefined ? { products: normalizeProducts(patch.products) } : {}),
-    };
-    this.buyers.set(id, next);
-    return next;
-  }
-  async deleteBuyer(id: string) { return this.buyers.delete(id); }
 
   async getCertifications() { return Array.from(this.certifications.values()); }
   async createCertification(c: InsertCertification): Promise<Certification> {

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { generateAIResponse, generateDailySummary } from "./openai";
-import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema } from "@shared/schema";
+import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema } from "@shared/schema";
 import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
 
 let lastScrapeAt = 0;
@@ -215,30 +215,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   app.delete("/api/settings/suppliers/:id", async (req, res) => {
     await storage.deleteSupplier(req.params.id);
-    res.status(204).end();
-  });
-
-  // Buyers
-  app.get("/api/settings/buyers", async (_req, res) => res.json(await storage.getBuyers()));
-  app.post("/api/settings/buyers", async (req, res) => {
-    const parsed = insertBuyerSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid buyer", errors: parsed.error.flatten() });
-    try {
-      const b = await storage.createBuyer(parsed.data);
-      res.status(201).json(b);
-    } catch (e) { res.status(400).json({ message: String(e) }); }
-  });
-  app.patch("/api/settings/buyers/:id", async (req, res) => {
-    const parsed = insertBuyerSchema.partial().safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ message: "Invalid buyer", errors: parsed.error.flatten() });
-    try {
-      const updated = await storage.updateBuyer(req.params.id, parsed.data);
-      if (!updated) return res.status(404).json({ message: "Buyer not found" });
-      res.json(updated);
-    } catch (e) { res.status(400).json({ message: String(e) }); }
-  });
-  app.delete("/api/settings/buyers/:id", async (req, res) => {
-    await storage.deleteBuyer(req.params.id);
     res.status(204).end();
   });
 

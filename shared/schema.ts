@@ -115,18 +115,6 @@ export const suppliers = pgTable("suppliers", {
   createdAt: text("created_at").notNull(),
 });
 
-// Buyers (Settings) — international customers we export to
-export const buyers = pgTable("buyers", {
-  id: varchar("id").primaryKey(),
-  name: text("name").notNull(),
-  country: text("country"),
-  email: text("email"),
-  phone: text("phone"),
-  address: text("address"),
-  products: text("products").array(),
-  createdAt: text("created_at").notNull(),
-});
-
 // Certifications (Settings)
 export const certifications = pgTable("certifications", {
   id: varchar("id").primaryKey(),
@@ -246,7 +234,6 @@ export const insertShipmentSchema = createInsertSchema(shipments).omit({ id: tru
 export const insertInventorySchema = createInsertSchema(inventory).omit({ id: true, createdAt: true });
 export const insertBankSchema = createInsertSchema(banks).omit({ id: true, createdAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
-export const insertBuyerSchema = createInsertSchema(buyers).omit({ id: true, createdAt: true });
 export const insertCertificationSchema = createInsertSchema(certifications).omit({ id: true, createdAt: true });
 export const insertExportPurchaseSchema = createInsertSchema(exportPurchases).omit({ id: true, createdAt: true });
 export const insertCadSchema = createInsertSchema(cads).omit({ id: true, createdAt: true });
@@ -266,8 +253,6 @@ export type Bank = typeof banks.$inferSelect;
 export type InsertBank = z.infer<typeof insertBankSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
-export type Buyer = typeof buyers.$inferSelect;
-export type InsertBuyer = z.infer<typeof insertBuyerSchema>;
 export type Certification = typeof certifications.$inferSelect;
 export type InsertCertification = z.infer<typeof insertCertificationSchema>;
 export type CompanySettings = typeof companySettings.$inferSelect;
