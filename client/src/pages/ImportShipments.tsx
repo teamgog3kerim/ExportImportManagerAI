@@ -133,8 +133,8 @@ export default function ImportShipments() {
               <thead className="border-b">
                 <tr>
                   <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Shipment ID</th>
-                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Route</th>
                   <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Goods & Quantity</th>
+                  <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Route</th>
                   <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Status</th>
                   <th className="text-left px-4 py-3 font-semibold text-muted-foreground">ETA</th>
                   <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Details</th>
@@ -158,12 +158,12 @@ export default function ImportShipments() {
                   >
                     <td className="px-4 py-3 font-semibold text-primary">SHP-{String(i + 1).padStart(3, "0")}</td>
                     <td className="px-4 py-3">
-                      <p className="font-medium">{s.origin}</p>
-                      <p className="text-muted-foreground flex items-center gap-0.5"><ChevronRight className="h-3 w-3" />{s.destination}</p>
-                    </td>
-                    <td className="px-4 py-3">
                       <p className="font-medium truncate max-w-[180px]" data-testid={`text-shipment-goods-${i}`}>{s.descriptionOfGoods ?? "—"}</p>
                       <p className="text-muted-foreground" data-testid={`text-shipment-quantity-${i}`}>{qty ? `${qty} units` : "—"}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="font-medium">{s.origin}</p>
+                      <p className="text-muted-foreground flex items-center gap-0.5"><ChevronRight className="h-3 w-3" />{s.destination}</p>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={statusColor(s.status) as any} className="text-xs max-w-[130px] truncate">
