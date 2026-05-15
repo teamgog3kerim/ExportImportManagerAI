@@ -17,7 +17,7 @@ function normalizeProducts(input: unknown): string[] {
 import type {
   User, InsertUser, LC, InsertLC, Shipment, InsertShipment,
   InventoryItem, InsertInventoryItem, ExchangeRate, Bank, InsertBank,
-  Supplier, InsertSupplier, Certification, InsertCertification,
+  Supplier, InsertSupplier, Buyer, InsertBuyer, Certification, InsertCertification,
   CompanySettings, NotificationSettings,
   ExportPurchase, InsertExportPurchase, Cad, InsertCad,
   ExportShipment, InsertExportShipment,
@@ -57,6 +57,11 @@ export interface IStorage {
   createSupplier(s: InsertSupplier): Promise<Supplier>;
   updateSupplier(id: string, patch: Partial<InsertSupplier>): Promise<Supplier | null>;
   deleteSupplier(id: string): Promise<boolean>;
+  // Buyers
+  getBuyers(): Promise<Buyer[]>;
+  createBuyer(b: InsertBuyer): Promise<Buyer>;
+  updateBuyer(id: string, patch: Partial<InsertBuyer>): Promise<Buyer | null>;
+  deleteBuyer(id: string): Promise<boolean>;
   // Certifications
   getCertifications(): Promise<Certification[]>;
   createCertification(c: InsertCertification): Promise<Certification>;
@@ -94,6 +99,7 @@ export class MemStorage implements IStorage {
   private exchangeRates = new Map<string, ExchangeRate>();
   private banks = new Map<string, Bank>();
   private suppliers = new Map<string, Supplier>();
+  private buyers = new Map<string, Buyer>();
   private certifications = new Map<string, Certification>();
   private companySettings: CompanySettings | undefined;
   private notificationSettings: NotificationSettings | undefined;
@@ -186,6 +192,14 @@ export class MemStorage implements IStorage {
       { id: randomUUID(), name: "Shenzhen Electronics Ltd", address: "Shenzhen Industrial Zone", country: "China", email: "export@sel.cn", phone: "+86 755 8765 4321", products: ["Electronic Components", "LED Lighting", "Solar Panels"], createdAt: now },
     ];
     supplierData.forEach(s => this.suppliers.set(s.id, s));
+
+    // Seed Buyers (foreign buyers — used by the Export CAD module)
+    const buyerData: Buyer[] = [
+      { id: randomUUID(), name: "Hamburg Coffee Roasters GmbH", country: "Germany", email: "imports@hh-roasters.de", phone: "+49 40 1234 5678", address: "Hafenstraße 12, 20359 Hamburg", products: ["Yirgacheffe Coffee Grade 1", "Sidamo Coffee Grade 2", "Guji Natural Coffee"], createdAt: now },
+      { id: randomUUID(), name: "Jeddah Spice Trading Co.", country: "Saudi Arabia", email: "buying@jeddahspice.sa", phone: "+966 12 234 5678", address: "King Abdullah Road, Jeddah 21442", products: ["White Humera Sesame Seeds", "Wollega Red Sesame", "Niger Seed"], createdAt: now },
+      { id: randomUUID(), name: "Milano Pelle SRL", country: "Italy", email: "acquisti@milanopelle.it", phone: "+39 02 8765 4321", address: "Via della Moda 45, Milan", products: ["Wet Blue Sheep Skin", "Pickled Goat Skin", "Finished Leather"], createdAt: now },
+    ];
+    buyerData.forEach(b => this.buyers.set(b.id, b));
 
     // Seed Certifications
     const certData: Certification[] = [
@@ -334,6 +348,39 @@ export class MemStorage implements IStorage {
     return next;
   }
   async deleteSupplier(id: string) { return this.suppliers.delete(id); }
+
+  async getBuyers() { return Array.from(this.buyers.values()); }
+  async createBuyer(b: InsertBuyer): Promise<Buyer> {
+    const id = randomUUID();
+    const n: Buyer = {
+      id,
+      name: b.name,
+      country: b.country ?? null,
+      email: b.email ?? null,
+      phone: b.phone ?? null,
+      address: b.address ?? null,
+      products: normalizeProducts(b.products),
+      createdAt: new Date().toISOString(),
+    };
+    this.buyers.set(id, n);
+    return n;
+  }
+  async updateBuyer(id: string, patch: Partial<InsertBuyer>): Promise<Buyer | null> {
+    const cur = this.buyers.get(id);
+    if (!cur) return null;
+    const next: Buyer = {
+      ...cur,
+      ...(patch.name !== undefined ? { name: patch.name } : {}),
+      ...(patch.country !== undefined ? { country: patch.country ?? null } : {}),
+      ...(patch.email !== undefined ? { email: patch.email ?? null } : {}),
+      ...(patch.phone !== undefined ? { phone: patch.phone ?? null } : {}),
+      ...(patch.address !== undefined ? { address: patch.address ?? null } : {}),
+      ...(patch.products !== undefined ? { products: normalizeProducts(patch.products) } : {}),
+    };
+    this.buyers.set(id, next);
+    return next;
+  }
+  async deleteBuyer(id: string) { return this.buyers.delete(id); }
 
   async getCertifications() { return Array.from(this.certifications.values()); }
   async createCertification(c: InsertCertification): Promise<Certification> {

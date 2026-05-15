@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Building2, BanknoteIcon, Users, UserCheck, Award, Bell, Trash2, Plus, Pencil, X } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ETHIOPIAN_BANKS, swiftForBank } from "@/lib/ethiopianBanks";
-import type { CompanySettings, NotificationSettings, Bank, Supplier, Certification } from "@shared/schema";
+import type { CompanySettings, NotificationSettings, Bank, Supplier, Buyer, Certification } from "@shared/schema";
 
 const OTHER_BANK = "__other__";
 
@@ -21,6 +21,7 @@ const TABS = [
   { id: "company", label: "Company", icon: Building2 },
   { id: "banks", label: "Banks", icon: BanknoteIcon },
   { id: "suppliers", label: "Suppliers", icon: Users },
+  { id: "buyers", label: "Buyers", icon: UserCheck },
   { id: "certs", label: "Certifications", icon: Award },
   { id: "notifications", label: "Notifications", icon: Bell },
 ];
@@ -126,6 +127,62 @@ export default function Settings() {
   const deleteSupplierMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/settings/suppliers/${id}`),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/settings/suppliers"] }); toast({ title: "Supplier removed" }); },
+  });
+
+  // Buyers (foreign buyers for export)
+  const { data: buyers = [] } = useQuery<Buyer[]>({ queryKey: ["/api/settings/buyers"] });
+  const [buyerModal, setBuyerModal] = useState(false);
+  const [editingBuyerId, setEditingBuyerId] = useState<string | null>(null);
+  const [buyerForm, setBuyerForm] = useState<{ name: string; country: string; email: string; phone: string; address: string; products: string[] }>({ name: "", country: "", email: "", phone: "", address: "", products: [] });
+  const [buyerProductInput, setBuyerProductInput] = useState("");
+  function resetBuyerForm() {
+    setBuyerForm({ name: "", country: "", email: "", phone: "", address: "", products: [] });
+    setBuyerProductInput("");
+    setEditingBuyerId(null);
+  }
+  function openAddBuyer() { resetBuyerForm(); setBuyerModal(true); }
+  function openEditBuyer(b: Buyer) {
+    setEditingBuyerId(b.id);
+    setBuyerForm({
+      name: b.name,
+      country: b.country ?? "",
+      email: b.email ?? "",
+      phone: b.phone ?? "",
+      address: b.address ?? "",
+      products: b.products ?? [],
+    });
+    setBuyerProductInput("");
+    setBuyerModal(true);
+  }
+  function addBuyerProduct() {
+    const v = buyerProductInput.trim();
+    if (!v) return;
+    if (buyerForm.products.includes(v)) { setBuyerProductInput(""); return; }
+    setBuyerForm(p => ({ ...p, products: [...p.products, v] }));
+    setBuyerProductInput("");
+  }
+  function removeBuyerProduct(name: string) {
+    setBuyerForm(p => ({ ...p, products: p.products.filter(x => x !== name) }));
+  }
+  const addBuyerMutation = useMutation({
+    mutationFn: (body: any) => apiRequest("POST", "/api/settings/buyers", body),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/settings/buyers"] }); setBuyerModal(false); resetBuyerForm(); toast({ title: "Buyer added" }); },
+  });
+  const updateBuyerMutation = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: any }) => apiRequest("PATCH", `/api/settings/buyers/${id}`, body),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/settings/buyers"] }); setBuyerModal(false); resetBuyerForm(); toast({ title: "Buyer updated" }); },
+  });
+  function submitBuyer() {
+    if (!buyerForm.name.trim()) {
+      toast({ title: "Buyer name is required", variant: "destructive" });
+      return;
+    }
+    if (editingBuyerId) updateBuyerMutation.mutate({ id: editingBuyerId, body: buyerForm });
+    else addBuyerMutation.mutate(buyerForm);
+  }
+  const deleteBuyerMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/settings/buyers/${id}`),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/settings/buyers"] }); toast({ title: "Buyer removed" }); },
   });
 
   // Certifications
@@ -321,6 +378,65 @@ export default function Settings() {
         </Card>
       )}
 
+      {/* Buyers Tab */}
+      {tab === "buyers" && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <CardTitle className="text-sm font-semibold">Foreign Buyers</CardTitle>
+                <p className="text-xs text-muted-foreground">Manage your international buyers. Their products will auto-appear when selected on a new CAD.</p>
+              </div>
+              <Button size="sm" onClick={openAddBuyer} data-testid="button-add-buyer">
+                <Plus className="h-3.5 w-3.5 mr-1.5" /> Add Buyer
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="border-b">
+                  <tr>
+                    <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Name</th>
+                    <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Country</th>
+                    <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Products</th>
+                    <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Email</th>
+                    <th className="text-left py-2 pr-4 font-semibold text-muted-foreground">Phone</th>
+                    <th className="text-right py-2 font-semibold text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {buyers.map((b, i) => (
+                    <tr key={b.id} className="border-b last:border-0" data-testid={`row-buyer-${i}`}>
+                      <td className="py-2.5 pr-4 font-medium align-top">{b.name}</td>
+                      <td className="py-2.5 pr-4 text-muted-foreground align-top">{b.country ?? "—"}</td>
+                      <td className="py-2.5 pr-4 align-top">
+                        {b.products && b.products.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 max-w-[260px]">
+                            {b.products.map(p => <Badge key={p} variant="outline" className="text-[0.65rem]">{p}</Badge>)}
+                          </div>
+                        ) : <span className="text-muted-foreground">—</span>}
+                      </td>
+                      <td className="py-2.5 pr-4 text-muted-foreground align-top">{b.email ?? "—"}</td>
+                      <td className="py-2.5 pr-4 text-muted-foreground align-top">{b.phone ?? "—"}</td>
+                      <td className="py-2.5 text-right align-top">
+                        <Button size="icon" variant="ghost" onClick={() => openEditBuyer(b)} data-testid={`button-edit-buyer-${i}`}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => deleteBuyerMutation.mutate(b.id)} data-testid={`button-delete-buyer-${i}`}>
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                  {buyers.length === 0 && <tr><td colSpan={6} className="py-8 text-center text-muted-foreground">No buyers added</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Certs Tab */}
       {tab === "certs" && (
         <Card>
@@ -497,6 +613,64 @@ export default function Settings() {
               data-testid="button-submit-supplier"
             >
               {editingSupplierId ? "Save Changes" : "Add Supplier"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Buyer Modal */}
+      <Dialog open={buyerModal} onOpenChange={(o) => { setBuyerModal(o); if (!o) resetBuyerForm(); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>{editingBuyerId ? "Edit Buyer" : "Add Foreign Buyer"}</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1"><Label className="text-xs">Name</Label><Input value={buyerForm.name} onChange={e => setBuyerForm(p => ({ ...p, name: e.target.value }))} data-testid="input-buyer-name-settings" /></div>
+            <div className="space-y-1"><Label className="text-xs">Country</Label><Input value={buyerForm.country} onChange={e => setBuyerForm(p => ({ ...p, country: e.target.value }))} data-testid="input-buyer-country-settings" /></div>
+            <div className="space-y-1"><Label className="text-xs">Email</Label><Input type="email" value={buyerForm.email} onChange={e => setBuyerForm(p => ({ ...p, email: e.target.value }))} data-testid="input-buyer-email-settings" /></div>
+            <div className="space-y-1"><Label className="text-xs">Phone</Label><Input value={buyerForm.phone} onChange={e => setBuyerForm(p => ({ ...p, phone: e.target.value }))} data-testid="input-buyer-phone-settings" /></div>
+            <div className="space-y-1"><Label className="text-xs">Address</Label><Input value={buyerForm.address} onChange={e => setBuyerForm(p => ({ ...p, address: e.target.value }))} data-testid="input-buyer-address-settings" /></div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Buyer's Products</Label>
+              <p className="text-[0.65rem] text-muted-foreground">These products will appear automatically when this buyer is selected on a new CAD.</p>
+              <div className="flex gap-2">
+                <Input
+                  value={buyerProductInput}
+                  onChange={e => setBuyerProductInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addBuyerProduct(); } }}
+                  placeholder="e.g. Yirgacheffe Coffee Grade 1"
+                  data-testid="input-buyer-product"
+                />
+                <Button type="button" variant="outline" onClick={addBuyerProduct} data-testid="button-add-buyer-product">
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              {buyerForm.products.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1" data-testid="list-buyer-products">
+                  {buyerForm.products.map(p => (
+                    <Badge key={p} variant="secondary" className="gap-1 pr-1">
+                      {p}
+                      <button
+                        type="button"
+                        onClick={() => removeBuyerProduct(p)}
+                        className="rounded-sm hover-elevate p-0.5"
+                        data-testid={`button-remove-buyer-product-${p.toLowerCase().replace(/\s+/g, "-")}`}
+                        aria-label={`Remove ${p}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setBuyerModal(false); resetBuyerForm(); }}>Cancel</Button>
+            <Button
+              onClick={submitBuyer}
+              disabled={addBuyerMutation.isPending || updateBuyerMutation.isPending}
+              data-testid="button-submit-buyer"
+            >
+              {editingBuyerId ? "Save Changes" : "Add Buyer"}
             </Button>
           </DialogFooter>
         </DialogContent>

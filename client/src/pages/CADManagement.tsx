@@ -11,9 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/PageHeader";
 import { Plus, Search, Banknote, Pencil, Trash2, FileCheck, Globe, TrendingUp } from "lucide-react";
-import type { Cad } from "@shared/schema";
+import type { Cad, Buyer } from "@shared/schema";
 
 const COUNTRIES = ["Germany", "Italy", "Netherlands", "Belgium", "France", "Saudi Arabia", "UAE", "China", "Japan", "USA", "United Kingdom", "Sudan"];
+const BUYER_OTHER = "__other__";
 const PAYMENT_TERMS = ["Sight", "30 Days", "60 Days", "90 Days", "120 Days"];
 const STATUSES = ["Draft", "Documents Sent", "Awaiting Payment", "Paid", "Settled", "Disputed"];
 const DOC_OPTIONS = ["Commercial Invoice", "Bill of Lading", "Certificate of Origin", "Phytosanitary Certificate", "Quality Certificate (ECX)", "Packing List", "Insurance Certificate", "Inspection Certificate (SGS)", "Fumigation Certificate", "Weight Certificate"];
@@ -28,6 +29,7 @@ function statusVariant(s: string): any {
 export default function CADManagement() {
   const { toast } = useToast();
   const { data: cads = [], isLoading } = useQuery<Cad[]>({ queryKey: ["/api/export/cads"] });
+  const { data: buyers = [] } = useQuery<Buyer[]>({ queryKey: ["/api/settings/buyers"] });
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [openModal, setOpenModal] = useState(false);
@@ -43,6 +45,28 @@ export default function CADManagement() {
   };
   const [form, setForm] = useState<any>(emptyForm);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const [selectedBuyerId, setSelectedBuyerId] = useState<string>("");
+  const [buyerProducts, setBuyerProducts] = useState<string[]>([]);
+
+  function handleBuyerSelect(value: string) {
+    setSelectedBuyerId(value);
+    if (value === BUYER_OTHER) {
+      setBuyerProducts([]);
+      setForm((p: any) => ({ ...p, buyerName: "", buyerAddress: "", productDescription: "" }));
+      return;
+    }
+    const b = buyers.find(x => x.id === value);
+    if (!b) return;
+    const products = b.products ?? [];
+    setBuyerProducts(products);
+    setForm((p: any) => ({
+      ...p,
+      buyerName: b.name,
+      buyerCountry: b.country || p.buyerCountry,
+      buyerAddress: b.address ?? "",
+      productDescription: products.join(", "),
+    }));
+  }
 
   const createMutation = useMutation({
     mutationFn: (body: any) => apiRequest("POST", "/api/export/cads", body),
@@ -58,10 +82,17 @@ export default function CADManagement() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["/api/export/cads"] }); toast({ title: "CAD deleted" }); },
   });
 
-  function openNew() { setEditItem(null); setForm(emptyForm); setSelectedDocs([]); setOpenModal(true); }
+  function openNew() {
+    setEditItem(null); setForm(emptyForm); setSelectedDocs([]);
+    setSelectedBuyerId(""); setBuyerProducts([]);
+    setOpenModal(true);
+  }
   function openEdit(c: Cad) {
     setEditItem(c); setForm({ ...c });
     try { setSelectedDocs(JSON.parse(c.documentsRequired ?? "[]")); } catch { setSelectedDocs([]); }
+    const match = buyers.find(b => b.name === c.buyerName);
+    setSelectedBuyerId(match ? match.id : BUYER_OTHER);
+    setBuyerProducts(match?.products ?? []);
     setOpenModal(true);
   }
   function field(k: string, v: any) {
@@ -272,6 +303,27 @@ export default function CADManagement() {
 
             <div className="rounded-md border p-3 space-y-3">
               <p className="text-xs font-semibold uppercase text-muted-foreground">Foreign Buyer Details</p>
+              <div className="space-y-1">
+                <Label className="text-xs">Select Buyer</Label>
+                <Select value={selectedBuyerId} onValueChange={handleBuyerSelect}>
+                  <SelectTrigger data-testid="select-buyer"><SelectValue placeholder="Choose a saved buyer or enter new" /></SelectTrigger>
+                  <SelectContent>
+                    {buyers.map(b => (
+                      <SelectItem key={b.id} value={b.id} data-testid={`option-buyer-${b.id}`}>
+                        {b.name}{b.country ? ` — ${b.country}` : ""}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={BUYER_OTHER}>Other (enter manually)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {buyerProducts.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-1.5" data-testid="list-buyer-products-cad">
+                    <span className="text-[0.65rem] text-muted-foreground mr-1 self-center">Products:</span>
+                    {buyerProducts.map(p => <Badge key={p} variant="outline" className="text-[0.65rem]">{p}</Badge>)}
+                  </div>
+                )}
+                <p className="text-[0.65rem] text-muted-foreground">Add or edit buyers in Settings → Buyers.</p>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Buyer Name</Label>
@@ -281,7 +333,11 @@ export default function CADManagement() {
                   <Label className="text-xs">Country</Label>
                   <Select value={form.buyerCountry ?? "Germany"} onValueChange={v => field("buyerCountry", v)}>
                     <SelectTrigger data-testid="select-buyer-country"><SelectValue /></SelectTrigger>
-                    <SelectContent>{COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                    <SelectContent>
+                      {Array.from(new Set([...COUNTRIES, ...(form.buyerCountry ? [form.buyerCountry] : [])])).map(c => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1 sm:col-span-2">
