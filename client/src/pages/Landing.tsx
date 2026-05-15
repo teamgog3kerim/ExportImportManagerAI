@@ -69,7 +69,7 @@ export default function Landing() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border bg-background/60 backdrop-blur px-3 py-1 text-xs text-muted-foreground mb-6">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
-              Built for Ethiopian trade, fluent in international terms
+              Built for Ethiopian businesses, fluent in local and international terms
             </div>
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05]" data-testid="text-hero-title">
               My Export / Import <span className="text-primary">Manager App</span>
