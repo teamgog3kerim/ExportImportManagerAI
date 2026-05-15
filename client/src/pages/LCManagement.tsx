@@ -181,6 +181,7 @@ export default function LCManagement() {
                     <tr>
                       <th className="text-left px-4 py-3 font-semibold text-muted-foreground">LC & Proforma</th>
                       <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Supplier & Bank</th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Goods & Quantity</th>
                       <th className="text-right px-4 py-3 font-semibold text-muted-foreground">Value (USD)</th>
                       <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Terms</th>
                       <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Status</th>
@@ -189,9 +190,9 @@ export default function LCManagement() {
                   </thead>
                   <tbody>
                     {isLoading ? (
-                      <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">Loading...</td></tr>
+                      <tr><td colSpan={7} className="text-center py-8 text-muted-foreground">Loading...</td></tr>
                     ) : filtered.length === 0 ? (
-                      <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">No LCs found</td></tr>
+                      <tr><td colSpan={7} className="text-center py-8 text-muted-foreground">No LCs found</td></tr>
                     ) : filtered.map((lc, i) => (
                       <tr key={lc.id} className="border-b last:border-0 hover-elevate" data-testid={`row-lc-${i}`}>
                         <td className="px-4 py-3">
@@ -201,6 +202,10 @@ export default function LCManagement() {
                         <td className="px-4 py-3">
                           <p className="font-medium">{lc.supplierName}</p>
                           <p className="text-muted-foreground truncate max-w-[140px]">{lc.issuingBank}</p>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="font-medium truncate max-w-[180px]" data-testid={`text-lc-goods-${i}`}>{lc.descriptionOfGoods ?? "—"}</p>
+                          <p className="text-muted-foreground" data-testid={`text-lc-quantity-${i}`}>{lc.totalQuantity ? `${lc.totalQuantity} units` : "—"}</p>
                         </td>
                         <td className="px-4 py-3 text-right font-medium">
                           ${Number(lc.fobValueUsd).toLocaleString()}
