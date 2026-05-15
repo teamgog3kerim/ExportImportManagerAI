@@ -1,26 +1,51 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArrowLeft, ArrowRight, Lock, Mail } from "lucide-react";
+
+const ALLOWED_EMAIL = "teamgog3@gmail.com";
+const ALLOWED_PASSWORD = "WeyMerSar@Hon13Ker29";
+const SESSION_KEY = "eximman_session";
 
 export default function SignIn() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [keepLoggedIn, setKeepLoggedIn] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    try {
+      const existing = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+      if (existing) setLocation("/dashboard");
+    } catch {}
+  }, [setLocation]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) {
+    const em = email.trim();
+    if (!em || !password.trim()) {
       setError("Please enter your email and password.");
       return;
     }
+    if (em.toLowerCase() !== ALLOWED_EMAIL || password !== ALLOWED_PASSWORD) {
+      setError("Invalid email or password. Please try again.");
+      return;
+    }
+    const session = JSON.stringify({ email: em, signedInAt: Date.now(), keepLoggedIn });
     try {
-      localStorage.setItem("eximman_session", JSON.stringify({ email, signedInAt: Date.now() }));
+      if (keepLoggedIn) {
+        localStorage.setItem(SESSION_KEY, session);
+        sessionStorage.removeItem(SESSION_KEY);
+      } else {
+        sessionStorage.setItem(SESSION_KEY, session);
+        localStorage.removeItem(SESSION_KEY);
+      }
     } catch {}
     setLocation("/dashboard");
   };
@@ -95,6 +120,17 @@ export default function SignIn() {
                       data-testid="input-password"
                     />
                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="keep-logged-in"
+                    checked={keepLoggedIn}
+                    onCheckedChange={v => setKeepLoggedIn(v === true)}
+                    data-testid="checkbox-keep-logged-in"
+                  />
+                  <Label htmlFor="keep-logged-in" className="text-xs cursor-pointer select-none">
+                    Keep me logged in
+                  </Label>
                 </div>
                 {error && (
                   <p className="text-xs text-destructive" data-testid="text-signin-error">{error}</p>

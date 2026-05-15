@@ -54,7 +54,10 @@ function AppLayout() {
   };
 
   const signOut = () => {
-    try { localStorage.removeItem("eximman_session"); } catch {}
+    try {
+      localStorage.removeItem("eximman_session");
+      sessionStorage.removeItem("eximman_session");
+    } catch {}
     setLocation("/");
   };
 
