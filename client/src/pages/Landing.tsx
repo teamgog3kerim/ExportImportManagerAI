@@ -59,7 +59,6 @@ export default function Landing() {
           </div>
         </div>
       </header>
-
       {/* Hero */}
       <section className="relative overflow-hidden border-b">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" />
@@ -167,7 +166,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
       {/* Features */}
       <section id="features" className="py-20 sm:py-24 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -191,7 +189,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
       {/* About EXIMER */}
       <section id="about" className="py-20 sm:py-24 border-b bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-12 items-start">
@@ -240,10 +237,7 @@ export default function Landing() {
                   <p className="text-xs text-muted-foreground tracking-[0.14em] uppercase">Founder, EXIMER</p>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                "Ethiopian businesses deserve software that speaks their language — both Amharic accounting habits and global
-                trade standards. EXIMER is our commitment to that bridge."
-              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">"Ethiopian businesses deserve software's and digital technologies that speaks their language — integrated both with local habits and global trade standards. EXIMER is our commitment to that bridge."</p>
               <div className="border-t pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="flex items-start gap-2">
                   <Building2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
@@ -264,7 +258,6 @@ export default function Landing() {
           </Card>
         </div>
       </section>
-
       {/* CTA */}
       <section id="contact" className="py-20 sm:py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
@@ -284,7 +277,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
       {/* Footer */}
       <footer className="border-t py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
