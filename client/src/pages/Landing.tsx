@@ -4,8 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   Ship, FileText, Calculator, BrainCircuit, Wallet, Package,
-  Globe2, ShieldCheck, Sparkles, ArrowRight, Building2, MapPin, Mail,
+  Globe2, ShieldCheck, Sparkles, ArrowRight, Building2, MapPin, Mail, Phone,
 } from "lucide-react";
+import { SiWhatsapp, SiTelegram } from "react-icons/si";
 
 const features = [
   { icon: FileText, title: "Letter of Credit Management", desc: "Issue, track and settle LCs with Ethiopian bank workflows and international UCP terminology built in." },
@@ -258,30 +259,96 @@ export default function Landing() {
           </Card>
         </div>
       </section>
-      {/* CTA */}
+      {/* CTA + Contact */}
       <section id="contact" className="py-20 sm:py-24">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
-            Ready to run your trade operations with confidence?
-          </h2>
-          <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
-            Sign in to your EXIMER dashboard and bring every LC, shipment and customs filing into one workspace.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button asChild size="lg" data-testid="button-signin-cta">
-              <Link href="/signin">Sign In <ArrowRight className="h-4 w-4 ml-1" /></Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" data-testid="button-contact">
-              <a href="mailto:hello@eximer.et"><Mail className="h-4 w-4 mr-1" /> Contact Us</a>
-            </Button>
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="text-center max-w-3xl mx-auto">
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
+              Ready to run your trade operations with confidence?
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Sign in to your EXIMER dashboard and bring every LC, shipment and customs filing into one workspace.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <Button asChild size="lg" data-testid="button-signin-cta">
+                <Link href="/signin">Sign In <ArrowRight className="h-4 w-4 ml-1" /></Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" data-testid="button-contact-email">
+                <a href="mailto:merisamarketingsolutions@gmail.com"><Mail className="h-4 w-4 mr-1" /> Email Us</a>
+              </Button>
+            </div>
           </div>
+
+          <Card className="mt-12">
+            <CardContent className="p-6 sm:p-8">
+              <div className="text-center mb-6">
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">Contact Us</p>
+                <h3 className="font-display text-2xl font-semibold tracking-tight mt-2">Get in touch with EXIMER</h3>
+              </div>
+
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div className="rounded-md border p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+                      <Phone className="h-4 w-4 text-primary" />
+                    </div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">Phone</p>
+                  </div>
+                  <div className="space-y-2">
+                    <a href="tel:+251912633329" className="block text-sm font-semibold tabular-nums hover:text-primary" data-testid="link-phone-1">
+                      +251 912 633 329
+                    </a>
+                    <a href="tel:+251967684490" className="block text-sm font-semibold tabular-nums hover:text-primary" data-testid="link-phone-2">
+                      +251 967 684 490
+                    </a>
+                    <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        <SiWhatsapp className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> WhatsApp
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <SiTelegram className="h-3.5 w-3.5 text-sky-600 dark:text-sky-400" /> Telegram
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-md border p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+                      <Mail className="h-4 w-4 text-primary" />
+                    </div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">Email</p>
+                  </div>
+                  <a
+                    href="mailto:merisamarketingsolutions@gmail.com"
+                    className="text-sm font-semibold break-all hover:text-primary"
+                    data-testid="link-email"
+                  >
+                    merisamarketingsolutions@gmail.com
+                  </a>
+                  <p className="text-xs text-muted-foreground mt-2">We typically reply within 24 hours.</p>
+                </div>
+
+                <div className="rounded-md border p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+                      <MapPin className="h-4 w-4 text-primary" />
+                    </div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">Address</p>
+                  </div>
+                  <p className="text-sm font-semibold" data-testid="text-address">Addis Ababa, Ethiopia</p>
+                  <p className="text-xs text-muted-foreground mt-2">EXIMER Software — by appointment.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
       {/* Footer */}
       <footer className="border-t py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
           <p>© {new Date().getFullYear()} EXIMER Software — Founded by Abdulkerim Mohammed. All rights reserved.</p>
-          <p>Addis Ababa, Ethiopia · hello@eximer.et</p>
+          <p>Addis Ababa, Ethiopia · merisamarketingsolutions@gmail.com</p>
         </div>
       </footer>
     </div>
