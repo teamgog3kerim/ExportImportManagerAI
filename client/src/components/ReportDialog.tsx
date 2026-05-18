@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Archive, Download, Share2, Loader2, Calendar as CalendarIcon, FileText, Sparkles, Trash2, ArrowLeft } from "lucide-react";
+import jsPDF from "jspdf";
 import type { Report } from "@shared/schema";
 
 type Section = { heading: string; paragraphs: string[] };
@@ -22,19 +22,20 @@ type GeneratedReport = {
   to: string;
   generatedAt: string;
   company: string;
+  compact: boolean;
   headline: string;
   metrics: Record<string, string | number>;
   sections: Section[];
 };
 
 const PRESETS: Array<{ key: string; label: string; compute: () => { from: string; to: string; periodLabel: string } }> = [
-  { key: "today",     label: "Today's Report",        compute: () => rangeFromOffset(0, 0, "Today") },
-  { key: "yesterday", label: "Yesterday's Report",    compute: () => rangeFromOffset(1, 1, "Yesterday") },
-  { key: "week",      label: "This Week",              compute: () => rangeOfWeek("This Week") },
-  { key: "month",     label: "This Month",             compute: () => rangeOfMonth(0, "This Month") },
-  { key: "quarter",   label: "This Quarter",           compute: () => rangeOfQuarter("This Quarter") },
-  { key: "half",      label: "Half-Year Report",       compute: () => rangeOfHalfYear("Half-Year") },
-  { key: "year",      label: "This Year",              compute: () => rangeOfYear("This Year") },
+  { key: "today",     label: "Today",          compute: () => rangeFromOffset(0, 0, "Today") },
+  { key: "yesterday", label: "Yesterday",      compute: () => rangeFromOffset(1, 1, "Yesterday") },
+  { key: "week",      label: "This Week",      compute: () => rangeOfWeek("This Week") },
+  { key: "month",     label: "This Month",     compute: () => rangeOfMonth(0, "This Month") },
+  { key: "quarter",   label: "This Quarter",   compute: () => rangeOfQuarter("This Quarter") },
+  { key: "half",      label: "Half-Year",      compute: () => rangeOfHalfYear("Half-Year") },
+  { key: "year",      label: "This Year",      compute: () => rangeOfYear("This Year") },
 ];
 
 function iso(d: Date) {
@@ -49,7 +50,7 @@ function rangeFromOffset(startDaysAgo: number, endDaysAgo: number, label: string
 }
 function rangeOfWeek(label: string) {
   const now = new Date();
-  const day = now.getDay(); // 0 = Sun
+  const day = now.getDay();
   const monOffset = day === 0 ? 6 : day - 1;
   const start = new Date(now); start.setDate(now.getDate() - monOffset);
   return { from: iso(start), to: iso(now), periodLabel: label };
@@ -77,51 +78,13 @@ function rangeOfYear(label: string) {
   const start = new Date(now.getFullYear(), 0, 1);
   return { from: iso(start), to: iso(now), periodLabel: label };
 }
-
 function fmtDate(s: string) {
-  return new Date(s + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-}
-
-function reportToHtml(r: GeneratedReport, companyLine: string) {
-  const sectionsHtml = r.sections.map(s => `
-    <section>
-      <h2>${escapeHtml(s.heading)}</h2>
-      ${s.paragraphs.map(p => `<p>${escapeHtml(p)}</p>`).join("")}
-    </section>`).join("");
-  const metricsHtml = Object.entries(r.metrics).map(([k, v]) => `
-    <div class="metric"><div class="m-label">${escapeHtml(k)}</div><div class="m-value">${escapeHtml(String(v))}</div></div>`).join("");
-  return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(r.title)}</title>
-    <style>
-      @page { size: A4; margin: 18mm 16mm; }
-      body { font-family: Georgia, 'Times New Roman', serif; color: #2a1d12; line-height: 1.55; font-size: 11.5pt; }
-      .eyebrow { letter-spacing: 0.18em; font-size: 9pt; color: #b07a4a; font-family: 'Helvetica Neue', Arial, sans-serif; text-transform: uppercase; font-weight: 600; }
-      h1 { font-size: 24pt; margin: 4px 0 6px; }
-      .meta { color: #7a6553; font-size: 10pt; font-family: 'Helvetica Neue', Arial, sans-serif; }
-      .rule { height: 3px; width: 56px; background: #d97a4a; margin: 14px 0 18px; }
-      .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 18px; margin: 14px 0 22px; font-family: 'Helvetica Neue', Arial, sans-serif; }
-      .metric { display: flex; justify-content: space-between; border-bottom: 1px dotted #e7d3bd; padding: 4px 0; font-size: 10pt; }
-      .m-label { color: #7a6553; }
-      .m-value { font-weight: 700; color: #2a1d12; }
-      h2 { font-size: 13pt; margin: 18px 0 6px; color: #2a1d12; border-left: 3px solid #d97a4a; padding-left: 10px; }
-      p { margin: 6px 0 10px; text-align: justify; }
-      .footer { margin-top: 26px; color: #9a8470; font-size: 9pt; font-family: 'Helvetica Neue', Arial, sans-serif; border-top: 1px solid #e7d3bd; padding-top: 10px; }
-    </style></head><body>
-    <div class="eyebrow">Executive Operations Report</div>
-    <h1>${escapeHtml(r.title)}</h1>
-    <div class="meta">${escapeHtml(companyLine)} &middot; Period: ${escapeHtml(fmtDate(r.from))} — ${escapeHtml(fmtDate(r.to))} &middot; Generated ${escapeHtml(new Date(r.generatedAt).toLocaleString())}</div>
-    <div class="rule"></div>
-    <div class="metrics">${metricsHtml}</div>
-    ${sectionsHtml}
-    <div class="footer">EXIMMAN &middot; My Import &amp; Export Manager &middot; This report was auto-generated from live operational data. All figures should be cross-referenced with the underlying transaction modules before external distribution.</div>
-    </body></html>`;
-}
-function escapeHtml(s: string) {
-  return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+  return new Date(s + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
 function reportToPlainText(r: GeneratedReport) {
   const lines: string[] = [];
   lines.push(r.title);
-  lines.push(`Period: ${fmtDate(r.from)} — ${fmtDate(r.to)}`);
+  lines.push(`Period: ${fmtDate(r.from)} – ${fmtDate(r.to)}`);
   lines.push(`Generated: ${new Date(r.generatedAt).toLocaleString()}`);
   lines.push("");
   for (const [k, v] of Object.entries(r.metrics)) lines.push(`${k}: ${v}`);
@@ -131,6 +94,120 @@ function reportToPlainText(r: GeneratedReport) {
     for (const p of s.paragraphs) { lines.push(p); lines.push(""); }
   }
   return lines.join("\n");
+}
+
+function generatePdf(r: GeneratedReport): jsPDF {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const marginX = 16;
+  const marginTop = 16;
+  const marginBottom = 14;
+  const contentW = pageW - marginX * 2;
+
+  // Compact reports (<=7 days) tuned to fit on a single page
+  const cfg = r.compact
+    ? { body: 9, head: 11, h2: 10, lh: 4.2, gapAfterPara: 1.5, gapAfterSection: 2.5, metricsGap: 2.5 }
+    : { body: 10.5, head: 14, h2: 11.5, lh: 5, gapAfterPara: 2, gapAfterSection: 4, metricsGap: 3 };
+
+  let y = marginTop;
+
+  const ensureSpace = (need: number) => {
+    if (y + need > pageH - marginBottom) {
+      doc.addPage();
+      y = marginTop;
+    }
+  };
+
+  // Header
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(176, 122, 74);
+  doc.setFontSize(8);
+  doc.text("EXECUTIVE OPERATIONS REPORT", marginX, y);
+  y += 4.5;
+
+  doc.setTextColor(42, 29, 18);
+  doc.setFontSize(cfg.head);
+  doc.text(r.title, marginX, y);
+  y += cfg.head * 0.45;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(122, 101, 83);
+  const metaLine = `${r.company}  ·  ${fmtDate(r.from)} – ${fmtDate(r.to)}  ·  Generated ${new Date(r.generatedAt).toLocaleString()}`;
+  doc.text(metaLine, marginX, y);
+  y += 3;
+
+  // Accent rule
+  doc.setDrawColor(217, 122, 74);
+  doc.setLineWidth(0.8);
+  doc.line(marginX, y, marginX + 18, y);
+  y += 5;
+
+  // Metrics grid: 2 columns
+  doc.setFontSize(cfg.body);
+  const entries = Object.entries(r.metrics);
+  const colW = contentW / 2;
+  const rowH = cfg.lh;
+  for (let i = 0; i < entries.length; i += 2) {
+    ensureSpace(rowH);
+    for (let c = 0; c < 2 && i + c < entries.length; c++) {
+      const [k, v] = entries[i + c];
+      const x = marginX + c * colW;
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(122, 101, 83);
+      doc.text(k, x, y);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(42, 29, 18);
+      doc.text(String(v), x + colW - 2, y, { align: "right", maxWidth: colW - 30 });
+    }
+    y += rowH;
+    doc.setDrawColor(231, 211, 189);
+    doc.setLineWidth(0.1);
+    doc.line(marginX, y - rowH + 1.5, marginX + contentW, y - rowH + 1.5);
+  }
+  y += cfg.metricsGap;
+
+  // Sections
+  for (const s of r.sections) {
+    ensureSpace(cfg.h2 + cfg.lh);
+    doc.setDrawColor(217, 122, 74);
+    doc.setLineWidth(1.2);
+    doc.line(marginX, y - cfg.h2 * 0.32, marginX, y + 1);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(cfg.h2);
+    doc.setTextColor(42, 29, 18);
+    doc.text(s.heading, marginX + 2.5, y);
+    y += cfg.h2 * 0.55;
+
+    doc.setFont("times", "normal");
+    doc.setFontSize(cfg.body);
+    doc.setTextColor(42, 29, 18);
+    for (const p of s.paragraphs) {
+      const wrapped = doc.splitTextToSize(p, contentW);
+      ensureSpace(wrapped.length * cfg.lh);
+      doc.text(wrapped, marginX, y);
+      y += wrapped.length * cfg.lh + cfg.gapAfterPara;
+    }
+    y += cfg.gapAfterSection - cfg.gapAfterPara;
+  }
+
+  // Footer on each page
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(154, 132, 112);
+    const footer = `EXIMMAN · My Import & Export Manager · Page ${i} of ${pageCount}`;
+    doc.text(footer, pageW / 2, pageH - 6, { align: "center" });
+  }
+
+  return doc;
+}
+
+function safeFilename(s: string) {
+  return s.replace(/[^a-z0-9-_]+/gi, "_").replace(/^_+|_+$/g, "");
 }
 
 export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
@@ -179,8 +256,7 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     const p = PRESETS.find(x => x.key === key);
     if (!p) return;
     setSelectedPreset(key);
-    const r = p.compute();
-    generate.mutate(r);
+    generate.mutate(p.compute());
   };
 
   const onCustomGenerate = () => {
@@ -189,18 +265,19 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       return;
     }
     setSelectedPreset("custom");
-    generate.mutate({ from: customFrom, to: customTo, periodLabel: `Custom Range` });
+    generate.mutate({ from: customFrom, to: customTo, periodLabel: "Custom Range" });
   };
 
   const downloadPdf = () => {
     if (!report) return;
-    const html = reportToHtml(report, "EXIMMAN · " + report.company);
-    const w = window.open("", "_blank");
-    if (!w) return toast({ title: "Pop-up blocked", description: "Allow pop-ups to download the PDF.", variant: "destructive" });
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    setTimeout(() => { try { w.print(); } catch {} }, 300);
+    try {
+      const doc = generatePdf(report);
+      const filename = `EXIMMAN_${safeFilename(report.periodLabel)}_${report.from}_to_${report.to}.pdf`;
+      doc.save(filename);
+      toast({ title: "PDF downloaded", description: filename });
+    } catch (e: any) {
+      toast({ title: "PDF failed", description: String(e?.message ?? e), variant: "destructive" });
+    }
   };
 
   const share = async () => {
@@ -223,6 +300,7 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   const openArchived = (a: Report) => {
     try {
       const parsed = JSON.parse(a.content) as GeneratedReport;
+      if (parsed.compact === undefined) parsed.compact = false;
       setReport(parsed);
       setActiveTab("new");
     } catch {
@@ -234,27 +312,27 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
-      <DialogContent className="max-w-4xl p-0 gap-0 max-h-[88vh] flex flex-col" data-testid="dialog-report">
-        <DialogHeader className="px-6 pt-5 pb-3 border-b">
+      <DialogContent className="max-w-4xl p-0 gap-0 max-h-[88vh] flex flex-col overflow-hidden" data-testid="dialog-report">
+        <DialogHeader className="px-6 pt-5 pb-3 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <FileText className="h-4 w-4" />
             {report ? report.title : "Generate Executive Report"}
           </DialogTitle>
           <DialogDescription>
             {report
-              ? `Period: ${fmtDate(report.from)} — ${fmtDate(report.to)} · Generated ${new Date(report.generatedAt).toLocaleString()}`
-              : "Choose a reporting period. The system will summarise every operation and financial activity in professional, paragraph-style language."}
+              ? `${fmtDate(report.from)} – ${fmtDate(report.to)} · Generated ${new Date(report.generatedAt).toLocaleString()}${report.compact ? " · single-page format" : ""}`
+              : "Pick a period. The system produces a precise, paragraph-style summary of every operation and financial movement."}
           </DialogDescription>
         </DialogHeader>
 
         {!report ? (
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col min-h-0">
-            <TabsList className="mx-6 mt-3 self-start">
+            <TabsList className="mx-6 mt-3 self-start shrink-0">
               <TabsTrigger value="new" data-testid="tab-new-report">New Report</TabsTrigger>
               <TabsTrigger value="archive" data-testid="tab-archive">Archive {archiveQuery.data?.length ? `(${archiveQuery.data.length})` : ""}</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="new" className="flex-1 overflow-auto px-6 pb-6 pt-2 mt-0">
+            <TabsContent value="new" className="flex-1 overflow-y-auto px-6 pb-6 pt-2 mt-0 min-h-0">
               <div className="space-y-5">
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Quick Periods</Label>
@@ -321,13 +399,13 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                 {generate.isPending && (
                   <div className="text-center py-8 text-sm text-muted-foreground flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Building professional summary from live data…
+                    Building summary from live data…
                   </div>
                 )}
               </div>
             </TabsContent>
 
-            <TabsContent value="archive" className="flex-1 overflow-auto px-6 pb-6 pt-2 mt-0">
+            <TabsContent value="archive" className="flex-1 overflow-y-auto px-6 pb-6 pt-2 mt-0 min-h-0">
               {archiveQuery.isLoading ? (
                 <div className="text-sm text-muted-foreground py-8 text-center">Loading archive…</div>
               ) : !archiveQuery.data || archiveQuery.data.length === 0 ? (
@@ -345,7 +423,7 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate">{a.title}</p>
                           <p className="text-xs text-muted-foreground truncate">
-                            {fmtDate(a.fromDate)} — {fmtDate(a.toDate)} · saved {new Date(a.createdAt).toLocaleDateString()}
+                            {fmtDate(a.fromDate)} – {fmtDate(a.toDate)} · saved {new Date(a.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                         <Badge variant="secondary" className="shrink-0">{a.periodLabel}</Badge>
@@ -362,9 +440,9 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           </Tabs>
         ) : (
           <>
-            <ScrollArea className="flex-1 px-6 py-4">
+            <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0" data-testid="report-scroll-area">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-5">
-                {Object.entries(report.metrics).slice(0, 10).map(([k, v]) => (
+                {Object.entries(report.metrics).map(([k, v]) => (
                   <Card key={k}>
                     <CardContent className="p-2.5">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">{k}</p>
@@ -379,15 +457,15 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                   <h3 className="text-sm font-bold uppercase tracking-wider text-primary border-l-2 border-primary pl-2 mb-2" data-testid={`section-heading-${i}`}>
                     {s.heading}
                   </h3>
-                  <div className="space-y-2.5 text-sm leading-relaxed text-foreground/90" style={{ fontFamily: "Georgia, serif" }}>
+                  <div className="space-y-2 text-sm leading-relaxed text-foreground/90" style={{ fontFamily: "Georgia, serif" }}>
                     {s.paragraphs.map((p, j) => (
                       <p key={j} className="text-justify">{p}</p>
                     ))}
                   </div>
                 </div>
               ))}
-            </ScrollArea>
-            <DialogFooter className="px-6 py-3 border-t flex-wrap gap-2 sm:gap-2">
+            </div>
+            <DialogFooter className="px-6 py-3 border-t flex-wrap gap-2 sm:gap-2 shrink-0">
               <Button variant="ghost" size="sm" onClick={reset} data-testid="button-back-to-presets">
                 <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back
               </Button>
