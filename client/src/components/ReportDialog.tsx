@@ -6,15 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Archive, Download, Share2, Loader2, Calendar as CalendarIcon, FileText, Sparkles, Trash2, ArrowLeft } from "lucide-react";
+import { Archive, Download, Share2, Loader2, Calendar as CalendarIcon, FileText, Sparkles, Trash2, ArrowLeft, BarChart3 } from "lucide-react";
 import jsPDF from "jspdf";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import type { Report } from "@shared/schema";
 
 type Section = { heading: string; paragraphs: string[] };
+type Chart = { title: string; unit: string; data: Array<{ label: string; value: number; valueLabel: string }> };
+type ReportMode = "detailed" | "precise";
 type GeneratedReport = {
   title: string;
   periodLabel: string;
@@ -22,10 +26,12 @@ type GeneratedReport = {
   to: string;
   generatedAt: string;
   company: string;
+  mode: ReportMode;
   compact: boolean;
   headline: string;
   metrics: Record<string, string | number>;
   sections: Section[];
+  charts: Chart[];
 };
 
 const PRESETS: Array<{ key: string; label: string; compute: () => { from: string; to: string; periodLabel: string } }> = [
@@ -81,6 +87,11 @@ function rangeOfYear(label: string) {
 function fmtDate(s: string) {
   return new Date(s + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 }
+function compactNum(n: number) {
+  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(1) + "k";
+  return String(n);
+}
 function reportToPlainText(r: GeneratedReport) {
   const lines: string[] = [];
   lines.push(r.title);
@@ -96,6 +107,64 @@ function reportToPlainText(r: GeneratedReport) {
   return lines.join("\n");
 }
 
+const CHART_COLORS = ["#d97a4a", "#b07a4a", "#8b5e3c", "#c89868", "#e3a87d"];
+
+function drawChartOnPdf(doc: jsPDF, chart: Chart, x: number, y: number, w: number): number {
+  const titleH = 5;
+  const rowH = 5.5;
+  const padTop = 1;
+  const padBottom = 3;
+  const labelW = 38;
+  const valueW = 26;
+  const barAreaW = w - labelW - valueW - 4;
+  const max = Math.max(...chart.data.map(d => d.value), 1);
+  const h = titleH + padTop + chart.data.length * rowH + padBottom;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(42, 29, 18);
+  doc.text(chart.title, x, y);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(154, 132, 112);
+  doc.text(`(${chart.unit})`, x + doc.getTextWidth(chart.title) + 2, y);
+
+  let yy = y + padTop + 3;
+  for (let i = 0; i < chart.data.length; i++) {
+    const d = chart.data[i];
+    const colorHex = CHART_COLORS[i % CHART_COLORS.length];
+    const [r, g, b] = hexToRgb(colorHex);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(60, 45, 30);
+    const labelTxt = doc.splitTextToSize(d.label, labelW)[0];
+    doc.text(labelTxt, x, yy + 2.5);
+
+    // bar background
+    doc.setFillColor(244, 230, 215);
+    doc.rect(x + labelW, yy, barAreaW, 3.2, "F");
+    // bar fill
+    const fillW = Math.max(0.5, (d.value / max) * barAreaW);
+    doc.setFillColor(r, g, b);
+    doc.rect(x + labelW, yy, fillW, 3.2, "F");
+
+    // value label on right
+    doc.setTextColor(42, 29, 18);
+    doc.setFont("helvetica", "bold");
+    doc.text(d.valueLabel, x + labelW + barAreaW + 2, yy + 2.5, { maxWidth: valueW });
+    yy += rowH;
+  }
+  return h;
+}
+function hexToRgb(hex: string): [number, number, number] {
+  const m = hex.replace("#", "");
+  return [
+    parseInt(m.slice(0, 2), 16),
+    parseInt(m.slice(2, 4), 16),
+    parseInt(m.slice(4, 6), 16),
+  ];
+}
+
 function generatePdf(r: GeneratedReport): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
@@ -105,13 +174,11 @@ function generatePdf(r: GeneratedReport): jsPDF {
   const marginBottom = 14;
   const contentW = pageW - marginX * 2;
 
-  // Compact reports (<=7 days) tuned to fit on a single page
   const cfg = r.compact
     ? { body: 9, head: 11, h2: 10, lh: 4.2, gapAfterPara: 1.5, gapAfterSection: 2.5, metricsGap: 2.5 }
     : { body: 10.5, head: 14, h2: 11.5, lh: 5, gapAfterPara: 2, gapAfterSection: 4, metricsGap: 3 };
 
   let y = marginTop;
-
   const ensureSpace = (need: number) => {
     if (y + need > pageH - marginBottom) {
       doc.addPage();
@@ -119,11 +186,10 @@ function generatePdf(r: GeneratedReport): jsPDF {
     }
   };
 
-  // Header
   doc.setFont("helvetica", "bold");
   doc.setTextColor(176, 122, 74);
   doc.setFontSize(8);
-  doc.text("EXECUTIVE OPERATIONS REPORT", marginX, y);
+  doc.text(r.mode === "detailed" ? "EXECUTIVE OPERATIONS REPORT" : "OPERATIONS REPORT (PRECISE)", marginX, y);
   y += 4.5;
 
   doc.setTextColor(42, 29, 18);
@@ -134,17 +200,15 @@ function generatePdf(r: GeneratedReport): jsPDF {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(122, 101, 83);
-  const metaLine = `${r.company}  ·  ${fmtDate(r.from)} – ${fmtDate(r.to)}  ·  Generated ${new Date(r.generatedAt).toLocaleString()}`;
-  doc.text(metaLine, marginX, y);
+  doc.text(`${r.company}  ·  ${fmtDate(r.from)} – ${fmtDate(r.to)}  ·  Generated ${new Date(r.generatedAt).toLocaleString()}`, marginX, y);
   y += 3;
 
-  // Accent rule
   doc.setDrawColor(217, 122, 74);
   doc.setLineWidth(0.8);
   doc.line(marginX, y, marginX + 18, y);
   y += 5;
 
-  // Metrics grid: 2 columns
+  // Metrics
   doc.setFontSize(cfg.body);
   const entries = Object.entries(r.metrics);
   const colW = contentW / 2;
@@ -167,6 +231,30 @@ function generatePdf(r: GeneratedReport): jsPDF {
     doc.line(marginX, y - rowH + 1.5, marginX + contentW, y - rowH + 1.5);
   }
   y += cfg.metricsGap;
+
+  // Charts (2-col grid)
+  if (r.charts.length > 0) {
+    ensureSpace(8);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(cfg.h2);
+    doc.setTextColor(42, 29, 18);
+    doc.text("Visual Snapshot", marginX, y);
+    y += cfg.h2 * 0.55;
+
+    const chartW = (contentW - 6) / 2;
+    for (let i = 0; i < r.charts.length; i += 2) {
+      const left = r.charts[i];
+      const right = r.charts[i + 1];
+      const leftH = 5 + 1 + left.data.length * 5.5 + 3;
+      const rightH = right ? 5 + 1 + right.data.length * 5.5 + 3 : 0;
+      const rowMax = Math.max(leftH, rightH);
+      ensureSpace(rowMax + 2);
+      drawChartOnPdf(doc, left, marginX, y, chartW);
+      if (right) drawChartOnPdf(doc, right, marginX + chartW + 6, y, chartW);
+      y += rowMax + 4;
+    }
+    y += 1;
+  }
 
   // Sections
   for (const s of r.sections) {
@@ -192,17 +280,14 @@ function generatePdf(r: GeneratedReport): jsPDF {
     y += cfg.gapAfterSection - cfg.gapAfterPara;
   }
 
-  // Footer on each page
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(154, 132, 112);
-    const footer = `EXIMMAN · My Import & Export Manager · Page ${i} of ${pageCount}`;
-    doc.text(footer, pageW / 2, pageH - 6, { align: "center" });
+    doc.text(`EXIMMAN · My Import & Export Manager · Page ${i} of ${pageCount}`, pageW / 2, pageH - 6, { align: "center" });
   }
-
   return doc;
 }
 
@@ -216,12 +301,13 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [customFrom, setCustomFrom] = useState(iso(new Date(new Date().setDate(new Date().getDate() - 30))));
   const [customTo, setCustomTo] = useState(iso(new Date()));
+  const [mode, setMode] = useState<ReportMode>("precise");
   const [report, setReport] = useState<GeneratedReport | null>(null);
 
   const archiveQuery = useQuery<Report[]>({ queryKey: ["/api/reports"], enabled: open });
 
   const generate = useMutation({
-    mutationFn: async (payload: { from: string; to: string; periodLabel: string }) => {
+    mutationFn: async (payload: { from: string; to: string; periodLabel: string; mode: ReportMode }) => {
       const res = await apiRequest("POST", "/api/reports/generate", payload);
       return (await res.json()) as GeneratedReport;
     },
@@ -243,7 +329,7 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
-      toast({ title: "Saved to archive", description: "The report is now available under Archive." });
+      toast({ title: "Saved to archive" });
     },
   });
 
@@ -256,7 +342,7 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     const p = PRESETS.find(x => x.key === key);
     if (!p) return;
     setSelectedPreset(key);
-    generate.mutate(p.compute());
+    generate.mutate({ ...p.compute(), mode });
   };
 
   const onCustomGenerate = () => {
@@ -265,14 +351,21 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       return;
     }
     setSelectedPreset("custom");
-    generate.mutate({ from: customFrom, to: customTo, periodLabel: "Custom Range" });
+    generate.mutate({ from: customFrom, to: customTo, periodLabel: "Custom Range", mode });
+  };
+
+  const regenerateWithMode = (newMode: ReportMode) => {
+    setMode(newMode);
+    if (report) {
+      generate.mutate({ from: report.from, to: report.to, periodLabel: report.periodLabel, mode: newMode });
+    }
   };
 
   const downloadPdf = () => {
     if (!report) return;
     try {
       const doc = generatePdf(report);
-      const filename = `EXIMMAN_${safeFilename(report.periodLabel)}_${report.from}_to_${report.to}.pdf`;
+      const filename = `EXIMMAN_${report.mode}_${safeFilename(report.periodLabel)}_${report.from}_to_${report.to}.pdf`;
       doc.save(filename);
       toast({ title: "PDF downloaded", description: filename });
     } catch (e: any) {
@@ -284,23 +377,22 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     if (!report) return;
     const text = reportToPlainText(report);
     try {
-      if (navigator.share) {
-        await navigator.share({ title: report.title, text });
-        return;
-      }
+      if (navigator.share) { await navigator.share({ title: report.title, text }); return; }
     } catch {}
     try {
       await navigator.clipboard.writeText(text);
-      toast({ title: "Copied to clipboard", description: "Report text is ready to paste anywhere." });
+      toast({ title: "Copied to clipboard" });
     } catch {
-      toast({ title: "Share unavailable", description: "Copy the report manually.", variant: "destructive" });
+      toast({ title: "Share unavailable", variant: "destructive" });
     }
   };
 
   const openArchived = (a: Report) => {
     try {
       const parsed = JSON.parse(a.content) as GeneratedReport;
-      if (parsed.compact === undefined) parsed.compact = false;
+      if (!parsed.charts) parsed.charts = [];
+      if (!parsed.mode) parsed.mode = "precise";
+      setMode(parsed.mode);
       setReport(parsed);
       setActiveTab("new");
     } catch {
@@ -308,7 +400,30 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     }
   };
 
-  const reset = () => { setReport(null); setSelectedPreset(null); };
+  const reset = () => { setReport(null); setSelectedPreset(null); setMode("precise"); };
+
+  const ModeChooser = (
+    <div className="flex items-center gap-4 text-sm" data-testid="mode-chooser">
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="mode-detailed"
+          checked={mode === "detailed"}
+          onCheckedChange={(v) => v && regenerateWithMode("detailed")}
+          data-testid="checkbox-detailed"
+        />
+        <Label htmlFor="mode-detailed" className="cursor-pointer">Detailed report</Label>
+      </div>
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="mode-precise"
+          checked={mode === "precise"}
+          onCheckedChange={(v) => v && regenerateWithMode("precise")}
+          data-testid="checkbox-precise"
+        />
+        <Label htmlFor="mode-precise" className="cursor-pointer">Precise report</Label>
+      </div>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
@@ -320,8 +435,8 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           </DialogTitle>
           <DialogDescription>
             {report
-              ? `${fmtDate(report.from)} – ${fmtDate(report.to)} · Generated ${new Date(report.generatedAt).toLocaleString()}${report.compact ? " · single-page format" : ""}`
-              : "Pick a period. The system produces a precise, paragraph-style summary of every operation and financial movement."}
+              ? `${fmtDate(report.from)} – ${fmtDate(report.to)} · ${report.mode === "detailed" ? "Detailed" : "Precise"} · Generated ${new Date(report.generatedAt).toLocaleString()}`
+              : "Choose a period and report style. The system summarises every operation and financial movement, with charts on periods longer than a week."}
           </DialogDescription>
         </DialogHeader>
 
@@ -334,6 +449,19 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
 
             <TabsContent value="new" className="flex-1 overflow-y-auto px-6 pb-6 pt-2 mt-0 min-h-0">
               <div className="space-y-5">
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Report Style</Label>
+                  <div className="mt-2">{ModeChooser}</div>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {mode === "detailed"
+                      ? "Detailed mode produces full narrative paragraphs across all modules."
+                      : "Precise mode produces short, factual one-line summaries per module."}
+                    {" "}Periods over 7 days include visual charts.
+                  </p>
+                </div>
+
+                <Separator />
+
                 <div>
                   <Label className="text-xs uppercase tracking-wider text-muted-foreground">Quick Periods</Label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">
@@ -362,33 +490,16 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                       <Label htmlFor="report-from" className="text-xs flex items-center gap-1.5 mb-1.5">
                         <CalendarIcon className="h-3 w-3" /> From
                       </Label>
-                      <Input
-                        id="report-from"
-                        type="date"
-                        value={customFrom}
-                        onChange={e => setCustomFrom(e.target.value)}
-                        data-testid="input-report-from"
-                      />
+                      <Input id="report-from" type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)} data-testid="input-report-from" />
                     </div>
                     <div>
                       <Label htmlFor="report-to" className="text-xs flex items-center gap-1.5 mb-1.5">
                         <CalendarIcon className="h-3 w-3" /> To
                       </Label>
-                      <Input
-                        id="report-to"
-                        type="date"
-                        value={customTo}
-                        onChange={e => setCustomTo(e.target.value)}
-                        data-testid="input-report-to"
-                      />
+                      <Input id="report-to" type="date" value={customTo} onChange={e => setCustomTo(e.target.value)} data-testid="input-report-to" />
                     </div>
                     <div className="flex items-end">
-                      <Button
-                        className="w-full"
-                        onClick={onCustomGenerate}
-                        disabled={generate.isPending}
-                        data-testid="button-generate-custom"
-                      >
+                      <Button className="w-full" onClick={onCustomGenerate} disabled={generate.isPending} data-testid="button-generate-custom">
                         {generate.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
                         Generate Report
                       </Button>
@@ -399,7 +510,7 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                 {generate.isPending && (
                   <div className="text-center py-8 text-sm text-muted-foreground flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Building summary from live data…
+                    Building {mode} summary from live data…
                   </div>
                 )}
               </div>
@@ -409,9 +520,7 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               {archiveQuery.isLoading ? (
                 <div className="text-sm text-muted-foreground py-8 text-center">Loading archive…</div>
               ) : !archiveQuery.data || archiveQuery.data.length === 0 ? (
-                <div className="text-sm text-muted-foreground py-12 text-center">
-                  No archived reports yet. Generate a report and save it to keep it here.
-                </div>
+                <div className="text-sm text-muted-foreground py-12 text-center">No archived reports yet. Generate a report and save it to keep it here.</div>
               ) : (
                 <div className="space-y-2">
                   {archiveQuery.data.map(a => (
@@ -440,6 +549,14 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           </Tabs>
         ) : (
           <>
+            <div className="px-6 py-2.5 border-b flex items-center justify-between flex-wrap gap-2 shrink-0 bg-muted/30">
+              {ModeChooser}
+              {generate.isPending && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Rebuilding…
+                </span>
+              )}
+            </div>
             <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0" data-testid="report-scroll-area">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-5">
                 {Object.entries(report.metrics).map(([k, v]) => (
@@ -452,15 +569,50 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                 ))}
               </div>
 
+              {report.charts.length > 0 && (
+                <div className="mb-5">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-foreground border-l-2 border-border pl-2 mb-3 flex items-center gap-2" data-testid="section-heading-charts">
+                    <BarChart3 className="h-3.5 w-3.5" /> Visual Snapshot
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {report.charts.map((c, i) => (
+                      <Card key={i} data-testid={`chart-${i}`}>
+                        <CardContent className="p-3">
+                          <div className="flex items-baseline justify-between mb-1.5">
+                            <p className="text-xs font-semibold">{c.title}</p>
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{c.unit}</span>
+                          </div>
+                          <div className="h-[140px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={c.data} layout="vertical" margin={{ top: 2, right: 10, bottom: 2, left: 4 }}>
+                                <XAxis type="number" hide tickFormatter={compactNum} />
+                                <YAxis type="category" dataKey="label" width={88} tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} interval={0} />
+                                <Tooltip
+                                  cursor={{ fill: "hsl(var(--muted) / 0.3)" }}
+                                  contentStyle={{ fontSize: 11, padding: "4px 8px", borderRadius: 6 }}
+                                  formatter={(_v: any, _n: any, p: any) => [p.payload.valueLabel, ""]}
+                                  labelFormatter={(l) => l}
+                                />
+                                <Bar dataKey="value" radius={[0, 3, 3, 0]}>
+                                  {c.data.map((_d, idx) => (
+                                    <Cell key={idx} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
+                                  ))}
+                                </Bar>
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {report.sections.map((s, i) => (
                 <div key={i} className="mb-5">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-primary border-l-2 border-primary pl-2 mb-2" data-testid={`section-heading-${i}`}>
-                    {s.heading}
-                  </h3>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-foreground border-l-2 border-border pl-2 mb-2" data-testid={`section-heading-${i}`}>{s.heading}</h3>
                   <div className="space-y-2 text-sm leading-relaxed text-foreground/90" style={{ fontFamily: "Georgia, serif" }}>
-                    {s.paragraphs.map((p, j) => (
-                      <p key={j} className="text-justify">{p}</p>
-                    ))}
+                    {s.paragraphs.map((p, j) => (<p key={j} className="text-justify">{p}</p>))}
                   </div>
                 </div>
               ))}

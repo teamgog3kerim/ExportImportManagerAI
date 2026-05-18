@@ -459,11 +459,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     periodLabel: z.string().min(1),
+    mode: z.enum(["detailed", "precise"]).optional(),
   });
   app.post("/api/reports/generate", async (req, res) => {
     const parsed = reportPeriodSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid period format" });
-    const { from, to, periodLabel } = parsed.data;
+    const { from, to, periodLabel, mode } = parsed.data;
     const fromDate = new Date(from + "T00:00:00Z");
     const toDate = new Date(to + "T00:00:00Z");
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
@@ -473,7 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "'From' date must be on or before 'To' date" });
     }
     try {
-      const report = await buildReport(from, to, periodLabel);
+      const report = await buildReport(from, to, periodLabel, mode ?? "precise");
       res.json(report);
     } catch (e) {
       console.error("Report error:", e);
