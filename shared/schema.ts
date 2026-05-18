@@ -321,8 +321,20 @@ export const customerPayments = pgTable("customer_payments", {
   createdAt: text("created_at").notNull(),
 });
 
+// Executive Reports (CEO archive)
+export const reports = pgTable("reports", {
+  id: varchar("id").primaryKey(),
+  title: text("title").notNull(),
+  periodLabel: text("period_label").notNull(),
+  fromDate: text("from_date").notNull(),
+  toDate: text("to_date").notNull(),
+  content: text("content").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
 // Schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true });
 export const insertLcSchema = createInsertSchema(lcs).omit({ id: true, createdAt: true });
 export const insertShipmentSchema = createInsertSchema(shipments).omit({ id: true, createdAt: true });
 export const insertInventorySchema = createInsertSchema(inventory).omit({ id: true, createdAt: true });
@@ -399,3 +411,5 @@ export type SupplierPayment = typeof supplierPayments.$inferSelect;
 export type InsertSupplierPayment = z.infer<typeof insertSupplierPaymentSchema>;
 export type CustomerPayment = typeof customerPayments.$inferSelect;
 export type InsertCustomerPayment = z.infer<typeof insertCustomerPaymentSchema>;
+export type Report = typeof reports.$inferSelect;
+export type InsertReport = z.infer<typeof insertReportSchema>;

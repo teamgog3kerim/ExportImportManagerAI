@@ -5,6 +5,7 @@ import { z } from "zod";
 import { generateAIResponse, generateDailySummary } from "./openai";
 import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema } from "@shared/schema";
 import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
+import { buildReport } from "./lib/reportNarrator";
 
 let lastScrapeAt = 0;
 let lastScrapeOk = false;
@@ -451,6 +452,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("AI error:", e);
       res.status(500).json({ message: "AI unavailable" });
     }
+  });
+
+  // Executive Reports
+  const reportPeriodSchema = z.object({
+    from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    periodLabel: z.string().min(1),
+  });
+  app.post("/api/reports/generate", async (req, res) => {
+    const parsed = reportPeriodSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid period format" });
+    const { from, to, periodLabel } = parsed.data;
+    const fromDate = new Date(from + "T00:00:00Z");
+    const toDate = new Date(to + "T00:00:00Z");
+    if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+      return res.status(400).json({ message: "Invalid calendar date" });
+    }
+    if (fromDate.getTime() > toDate.getTime()) {
+      return res.status(400).json({ message: "'From' date must be on or before 'To' date" });
+    }
+    try {
+      const report = await buildReport(from, to, periodLabel);
+      res.json(report);
+    } catch (e) {
+      console.error("Report error:", e);
+      res.status(500).json({ message: "Failed to generate report" });
+    }
+  });
+  app.get("/api/reports", async (_req, res) => res.json(await storage.getReports()));
+  app.get("/api/reports/:id", async (req, res) => {
+    const r = await storage.getReport(req.params.id);
+    if (!r) return res.status(404).json({ message: "Report not found" });
+    res.json(r);
+  });
+  app.post("/api/reports", async (req, res) => {
+    const parsed = z.object({
+      title: z.string().min(1),
+      periodLabel: z.string().min(1),
+      fromDate: z.string().min(1),
+      toDate: z.string().min(1),
+      content: z.string().min(1),
+    }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid report" });
+    const created = await storage.createReport(parsed.data);
+    res.status(201).json(created);
+  });
+  app.delete("/api/reports/:id", async (req, res) => {
+    const ok = await storage.deleteReport(req.params.id);
+    if (!ok) return res.status(404).json({ message: "Report not found" });
+    res.status(204).end();
   });
 
   const httpServer = createServer(app);

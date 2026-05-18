@@ -26,6 +26,7 @@ import type {
   PettyCashTransaction, InsertPettyCashTransaction,
   SupplierPayment, InsertSupplierPayment,
   CustomerPayment, InsertCustomerPayment,
+  Report, InsertReport,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -117,6 +118,11 @@ export interface IStorage {
   createCustomerPayment(p: InsertCustomerPayment): Promise<CustomerPayment>;
   updateCustomerPayment(id: string, p: Partial<InsertCustomerPayment>): Promise<CustomerPayment | undefined>;
   deleteCustomerPayment(id: string): Promise<boolean>;
+
+  getReports(): Promise<Report[]>;
+  getReport(id: string): Promise<Report | undefined>;
+  createReport(r: InsertReport): Promise<Report>;
+  deleteReport(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -139,6 +145,7 @@ export class MemStorage implements IStorage {
   private pettyCashTransactions = new Map<string, PettyCashTransaction>();
   private supplierPayments = new Map<string, SupplierPayment>();
   private customerPayments = new Map<string, CustomerPayment>();
+  private reports = new Map<string, Report>();
 
   constructor() { this.seed(); }
 
@@ -733,6 +740,20 @@ export class MemStorage implements IStorage {
     const u = { ...cur, ...updates }; this.customerPayments.set(id, u); return u;
   }
   async deleteCustomerPayment(id: string) { return this.customerPayments.delete(id); }
+
+  // === Reports (Executive Archive) ===
+  async getReports() {
+    return Array.from(this.reports.values()).sort((a, b) =>
+      (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+  }
+  async getReport(id: string) { return this.reports.get(id); }
+  async createReport(r: InsertReport): Promise<Report> {
+    const id = randomUUID();
+    const n: Report = { ...r, id, createdAt: new Date().toISOString() };
+    this.reports.set(id, n);
+    return n;
+  }
+  async deleteReport(id: string) { return this.reports.delete(id); }
 }
 
 export const storage = new MemStorage();

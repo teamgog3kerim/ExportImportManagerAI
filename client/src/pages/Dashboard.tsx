@@ -10,6 +10,8 @@ import {
   ArrowUpRight, ArrowDownRight, RefreshCw
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
+import { ReportDialog } from "@/components/ReportDialog";
+import { useState } from "react";
 
 function fmt(n: number | string) {
   return Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -17,6 +19,7 @@ function fmt(n: number | string) {
 
 export default function Dashboard() {
   const { data, isLoading } = useQuery<any>({ queryKey: ["/api/dashboard"] });
+  const [reportOpen, setReportOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -42,7 +45,7 @@ export default function Dashboard() {
         title="Dashboard"
         description="Real-time intelligence across your import and export operations."
         actions={
-          <Button variant="outline" data-testid="button-generate-report">
+          <Button variant="outline" onClick={() => setReportOpen(true)} data-testid="button-generate-report">
             <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Generate Report
           </Button>
         }
@@ -190,6 +193,8 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <ReportDialog open={reportOpen} onOpenChange={setReportOpen} />
     </div>
   );
 }
