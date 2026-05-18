@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "rK6bXHzicd9cIG-E8TJVm"
+uri = "file://exports/EXIMMAN_Pitch_Deck.pptx"
+type = "slides"
+title = "EXIMMAN — Pitch Deck (15 slides)"
