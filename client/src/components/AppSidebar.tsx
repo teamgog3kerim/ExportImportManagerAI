@@ -8,6 +8,7 @@ import {
   Calculator, Settings, ChevronDown, ChevronRight, ShoppingCart, Banknote, Send,
 } from "lucide-react";
 import { useState } from "react";
+import eximmanLogo from "@assets/eximman_logo.png";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -40,34 +41,14 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="px-4 py-4 border-b">
-        <div className="flex items-center gap-2.5">
-          <div className="h-9 w-9 rounded-md bg-primary flex items-center justify-center shrink-0 shadow-sm" aria-label="Import / Export">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-5 w-5 text-primary-foreground"
-              aria-hidden="true"
-            >
-              {/* Globe meridian — international trade */}
-              <circle cx="12" cy="12" r="8.5" opacity="0.35" />
-              <path d="M3.5 12h17" opacity="0.35" />
-              {/* Inbound arrow (import) */}
-              <path d="M5 9 L9 9 L9 6.5" />
-              <path d="M9 9 L4.5 13.5" />
-              {/* Outbound arrow (export) */}
-              <path d="M19 15 L15 15 L15 17.5" />
-              <path d="M15 15 L19.5 10.5" />
-            </svg>
-          </div>
-          <div className="min-w-0">
-            <p className="font-display font-semibold truncate tracking-tight text-[19px]">EXIMMAN</p>
-            <p className="text-[0.65rem] tracking-[0.18em] uppercase text-muted-foreground leading-tight break-words whitespace-normal mt-0.5">My Export & Import Manager</p>
-          </div>
+      <SidebarHeader className="px-3 py-3 border-b">
+        <div className="flex items-center justify-center">
+          <img
+            src={eximmanLogo}
+            alt="EXIMMAN — Export · Import · Manager"
+            className="h-16 w-auto object-contain"
+            data-testid="img-brand-logo"
+          />
         </div>
       </SidebarHeader>
       <SidebarContent className="px-2 py-2">

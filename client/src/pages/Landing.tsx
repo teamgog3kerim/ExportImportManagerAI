@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import eximmanLogo from "@assets/eximman_logo.png";
 import {
   Ship, FileText, Calculator, BrainCircuit, Wallet, Package,
   Globe2, ShieldCheck, Sparkles, ArrowRight, Building2, MapPin, Mail, Phone,
@@ -31,21 +32,13 @@ export default function Landing() {
       {/* Top Nav */}
       <header className="sticky top-0 z-50 bg-background/85 backdrop-blur border-b">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 sm:px-6 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-md bg-primary flex items-center justify-center shrink-0 shadow-sm">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-primary-foreground">
-                <circle cx="12" cy="12" r="8.5" opacity="0.35" />
-                <path d="M3.5 12h17" opacity="0.35" />
-                <path d="M5 9 L9 9 L9 6.5" />
-                <path d="M9 9 L4.5 13.5" />
-                <path d="M19 15 L15 15 L15 17.5" />
-                <path d="M15 15 L19.5 10.5" />
-              </svg>
-            </div>
-            <div className="min-w-0">
-              <p className="font-display font-semibold tracking-tight text-[19px] leading-none" data-testid="text-brand">EXIMMAN</p>
-              <p className="text-[0.6rem] tracking-[0.18em] uppercase text-muted-foreground leading-tight mt-0.5">My Import & Export Manager</p>
-            </div>
+          <div className="flex items-center">
+            <img
+              src={eximmanLogo}
+              alt="EXIMMAN — Export · Import · Manager"
+              className="h-12 w-auto object-contain"
+              data-testid="img-brand-logo"
+            />
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <a href="#features" className="text-muted-foreground hover:text-foreground" data-testid="link-features">Features</a>
