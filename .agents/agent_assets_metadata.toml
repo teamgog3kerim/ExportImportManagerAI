@@ -6,3 +6,9 @@ id = "rK6bXHzicd9cIG-E8TJVm"
 uri = "file://exports/EXIMMAN_Pitch_Deck.pptx"
 type = "slides"
 title = "EXIMMAN — Pitch Deck (15 slides)"
+
+[[outputs]]
+id = "IP3zwazfT0MzGPyd95Ym9"
+uri = "file://eximman_app_prompt.json"
+type = "unspecified"
+title = "EXIMMAN — Full App JSON Prompt"
