@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { generateAIResponse, generateDailySummary } from "./openai";
+import { generateAIResponse, generateDailySummary, translateReportToAmharic } from "./openai";
 import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema, insertSaleSchema } from "@shared/schema";
 import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
 import { buildReport } from "./lib/reportNarrator";
@@ -495,11 +495,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     periodLabel: z.string().min(1),
     mode: z.enum(["detailed", "precise"]).optional(),
+    language: z.enum(["en", "am"]).optional(),
   });
   app.post("/api/reports/generate", async (req, res) => {
     const parsed = reportPeriodSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid period format" });
-    const { from, to, periodLabel, mode } = parsed.data;
+    const { from, to, periodLabel, mode, language } = parsed.data;
     const fromDate = new Date(from + "T00:00:00Z");
     const toDate = new Date(to + "T00:00:00Z");
     if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
@@ -509,11 +510,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).json({ message: "'From' date must be on or before 'To' date" });
     }
     try {
-      const report = await buildReport(from, to, periodLabel, mode ?? "precise");
+      let report = await buildReport(from, to, periodLabel, mode ?? "precise");
+      report.language = language ?? "en";
+      if (language === "am") {
+        report = await translateReportToAmharic(report);
+        report.language = "am";
+      }
       res.json(report);
     } catch (e) {
       console.error("Report error:", e);
-      res.status(500).json({ message: "Failed to generate report" });
+      const msg = e instanceof Error && /translation/i.test(e.message)
+        ? "Could not translate the report into Amharic. Please try again."
+        : "Failed to generate report";
+      res.status(500).json({ message: msg });
     }
   });
   app.get("/api/reports", async (_req, res) => res.json(await storage.getReports()));

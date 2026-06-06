@@ -7,6 +7,7 @@ export type ReportChart = {
   data: Array<{ label: string; value: number; valueLabel: string }>;
 };
 export type ReportMode = "detailed" | "precise";
+export type ReportLanguage = "en" | "am";
 export type GeneratedReport = {
   title: string;
   periodLabel: string;
@@ -15,6 +16,7 @@ export type GeneratedReport = {
   generatedAt: string;
   company: string;
   mode: ReportMode;
+  language: ReportLanguage;
   compact: boolean;
   headline: string;
   metrics: Record<string, string | number>;
@@ -426,6 +428,7 @@ export async function buildReport(
     generatedAt,
     company: companyName,
     mode,
+    language: "en",
     compact,
     headline,
     metrics: {

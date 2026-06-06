@@ -19,6 +19,7 @@ import type { Report } from "@shared/schema";
 type Section = { heading: string; paragraphs: string[] };
 type Chart = { title: string; unit: string; data: Array<{ label: string; value: number; valueLabel: string }> };
 type ReportMode = "detailed" | "precise";
+type ReportLanguage = "en" | "am";
 type GeneratedReport = {
   title: string;
   periodLabel: string;
@@ -27,6 +28,7 @@ type GeneratedReport = {
   generatedAt: string;
   company: string;
   mode: ReportMode;
+  language: ReportLanguage;
   compact: boolean;
   headline: string;
   metrics: Record<string, string | number>;
@@ -109,7 +111,7 @@ function reportToPlainText(r: GeneratedReport) {
 
 const CHART_COLORS = ["#d97a4a", "#b07a4a", "#8b5e3c", "#c89868", "#e3a87d"];
 
-function drawChartOnPdf(doc: jsPDF, chart: Chart, x: number, y: number, w: number): number {
+function drawChartOnPdf(doc: jsPDF, chart: Chart, x: number, y: number, w: number, sansFont: string): number {
   const titleH = 5;
   const rowH = 5.5;
   const padTop = 1;
@@ -120,11 +122,11 @@ function drawChartOnPdf(doc: jsPDF, chart: Chart, x: number, y: number, w: numbe
   const max = Math.max(...chart.data.map(d => d.value), 1);
   const h = titleH + padTop + chart.data.length * rowH + padBottom;
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont(sansFont, "bold");
   doc.setFontSize(9);
   doc.setTextColor(42, 29, 18);
   doc.text(chart.title, x, y);
-  doc.setFont("helvetica", "normal");
+  doc.setFont(sansFont, "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(154, 132, 112);
   doc.text(`(${chart.unit})`, x + doc.getTextWidth(chart.title) + 2, y);
@@ -134,7 +136,7 @@ function drawChartOnPdf(doc: jsPDF, chart: Chart, x: number, y: number, w: numbe
     const d = chart.data[i];
     const colorHex = CHART_COLORS[i % CHART_COLORS.length];
     const [r, g, b] = hexToRgb(colorHex);
-    doc.setFont("helvetica", "normal");
+    doc.setFont(sansFont, "normal");
     doc.setFontSize(8);
     doc.setTextColor(60, 45, 30);
     const labelTxt = doc.splitTextToSize(d.label, labelW)[0];
@@ -150,7 +152,7 @@ function drawChartOnPdf(doc: jsPDF, chart: Chart, x: number, y: number, w: numbe
 
     // value label on right
     doc.setTextColor(42, 29, 18);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(sansFont, "bold");
     doc.text(d.valueLabel, x + labelW + barAreaW + 2, yy + 2.5, { maxWidth: valueW });
     yy += rowH;
   }
@@ -165,8 +167,13 @@ function hexToRgb(hex: string): [number, number, number] {
   ];
 }
 
-function generatePdf(r: GeneratedReport): jsPDF {
+function generatePdf(r: GeneratedReport, amharicFontBase64?: string): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
+  if (r.language === "am" && amharicFontBase64) {
+    doc.addFileToVFS("AbyssinicaSIL.ttf", amharicFontBase64);
+    doc.addFont("AbyssinicaSIL.ttf", "Ethiopic", "normal");
+    doc.addFont("AbyssinicaSIL.ttf", "Ethiopic", "bold");
+  }
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const marginX = 16;
@@ -178,6 +185,12 @@ function generatePdf(r: GeneratedReport): jsPDF {
     ? { body: 9, head: 11, h2: 10, lh: 4.2, gapAfterPara: 1.5, gapAfterSection: 2.5, metricsGap: 2.5 }
     : { body: 10.5, head: 14, h2: 11.5, lh: 5, gapAfterPara: 2, gapAfterSection: 4, metricsGap: 3 };
 
+  // Amharic (Ethiopic script) needs the embedded Abyssinica SIL font; Latin
+  // helvetica/times glyph sets cannot render Ge'ez characters.
+  const amharic = r.language === "am";
+  const fSans = amharic ? "Ethiopic" : "helvetica";
+  const fSerif = amharic ? "Ethiopic" : "times";
+
   let y = marginTop;
   const ensureSpace = (need: number) => {
     if (y + need > pageH - marginBottom) {
@@ -186,7 +199,7 @@ function generatePdf(r: GeneratedReport): jsPDF {
     }
   };
 
-  doc.setFont("helvetica", "bold");
+  doc.setFont(fSans, "bold");
   doc.setTextColor(176, 122, 74);
   doc.setFontSize(8);
   doc.text(r.mode === "detailed" ? "EXECUTIVE OPERATIONS REPORT" : "OPERATIONS REPORT (PRECISE)", marginX, y);
@@ -197,7 +210,7 @@ function generatePdf(r: GeneratedReport): jsPDF {
   doc.text(r.title, marginX, y);
   y += cfg.head * 0.45;
 
-  doc.setFont("helvetica", "normal");
+  doc.setFont(fSans, "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(122, 101, 83);
   doc.text(`${r.company}  ·  ${fmtDate(r.from)} – ${fmtDate(r.to)}  ·  Generated ${new Date(r.generatedAt).toLocaleString()}`, marginX, y);
@@ -218,10 +231,10 @@ function generatePdf(r: GeneratedReport): jsPDF {
     for (let c = 0; c < 2 && i + c < entries.length; c++) {
       const [k, v] = entries[i + c];
       const x = marginX + c * colW;
-      doc.setFont("helvetica", "normal");
+      doc.setFont(fSans, "normal");
       doc.setTextColor(122, 101, 83);
       doc.text(k, x, y);
-      doc.setFont("helvetica", "bold");
+      doc.setFont(fSans, "bold");
       doc.setTextColor(42, 29, 18);
       doc.text(String(v), x + colW - 2, y, { align: "right", maxWidth: colW - 30 });
     }
@@ -235,10 +248,10 @@ function generatePdf(r: GeneratedReport): jsPDF {
   // Charts (2-col grid)
   if (r.charts.length > 0) {
     ensureSpace(8);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(fSans, "bold");
     doc.setFontSize(cfg.h2);
     doc.setTextColor(42, 29, 18);
-    doc.text("Visual Snapshot", marginX, y);
+    doc.text(amharic ? "የእይታ ማጠቃለያ" : "Visual Snapshot", marginX, y);
     y += cfg.h2 * 0.55;
 
     const chartW = (contentW - 6) / 2;
@@ -249,8 +262,8 @@ function generatePdf(r: GeneratedReport): jsPDF {
       const rightH = right ? 5 + 1 + right.data.length * 5.5 + 3 : 0;
       const rowMax = Math.max(leftH, rightH);
       ensureSpace(rowMax + 2);
-      drawChartOnPdf(doc, left, marginX, y, chartW);
-      if (right) drawChartOnPdf(doc, right, marginX + chartW + 6, y, chartW);
+      drawChartOnPdf(doc, left, marginX, y, chartW, fSans);
+      if (right) drawChartOnPdf(doc, right, marginX + chartW + 6, y, chartW, fSans);
       y += rowMax + 4;
     }
     y += 1;
@@ -262,13 +275,13 @@ function generatePdf(r: GeneratedReport): jsPDF {
     doc.setDrawColor(217, 122, 74);
     doc.setLineWidth(1.2);
     doc.line(marginX, y - cfg.h2 * 0.32, marginX, y + 1);
-    doc.setFont("helvetica", "bold");
+    doc.setFont(fSans, "bold");
     doc.setFontSize(cfg.h2);
     doc.setTextColor(42, 29, 18);
     doc.text(s.heading, marginX + 2.5, y);
     y += cfg.h2 * 0.55;
 
-    doc.setFont("times", "normal");
+    doc.setFont(fSerif, "normal");
     doc.setFontSize(cfg.body);
     doc.setTextColor(42, 29, 18);
     for (const p of s.paragraphs) {
@@ -283,10 +296,13 @@ function generatePdf(r: GeneratedReport): jsPDF {
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    doc.setFont("helvetica", "normal");
+    doc.setFont(fSans, "normal");
     doc.setFontSize(7.5);
     doc.setTextColor(154, 132, 112);
-    doc.text(`EXIMMAN · My Import & Export Manager · Page ${i} of ${pageCount}`, pageW / 2, pageH - 6, { align: "center" });
+    const footer = amharic
+      ? `EXIMMAN · የእኔ ኢምፖርት እና ኤክስፖርት አስተዳዳሪ · ገጽ ${i} ከ ${pageCount}`
+      : `EXIMMAN · My Import & Export Manager · Page ${i} of ${pageCount}`;
+    doc.text(footer, pageW / 2, pageH - 6, { align: "center" });
   }
   return doc;
 }
@@ -302,12 +318,13 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   const [customFrom, setCustomFrom] = useState(iso(new Date(new Date().setDate(new Date().getDate() - 30))));
   const [customTo, setCustomTo] = useState(iso(new Date()));
   const [mode, setMode] = useState<ReportMode>("precise");
+  const [language, setLanguage] = useState<ReportLanguage>("en");
   const [report, setReport] = useState<GeneratedReport | null>(null);
 
   const archiveQuery = useQuery<Report[]>({ queryKey: ["/api/reports"], enabled: open });
 
   const generate = useMutation({
-    mutationFn: async (payload: { from: string; to: string; periodLabel: string; mode: ReportMode }) => {
+    mutationFn: async (payload: { from: string; to: string; periodLabel: string; mode: ReportMode; language: ReportLanguage }) => {
       const res = await apiRequest("POST", "/api/reports/generate", payload);
       return (await res.json()) as GeneratedReport;
     },
@@ -342,7 +359,7 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     const p = PRESETS.find(x => x.key === key);
     if (!p) return;
     setSelectedPreset(key);
-    generate.mutate({ ...p.compute(), mode });
+    generate.mutate({ ...p.compute(), mode, language });
   };
 
   const onCustomGenerate = () => {
@@ -351,21 +368,32 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       return;
     }
     setSelectedPreset("custom");
-    generate.mutate({ from: customFrom, to: customTo, periodLabel: "Custom Range", mode });
+    generate.mutate({ from: customFrom, to: customTo, periodLabel: "Custom Range", mode, language });
   };
 
   const regenerateWithMode = (newMode: ReportMode) => {
     setMode(newMode);
     if (report) {
-      generate.mutate({ from: report.from, to: report.to, periodLabel: report.periodLabel, mode: newMode });
+      generate.mutate({ from: report.from, to: report.to, periodLabel: report.periodLabel, mode: newMode, language });
     }
   };
 
-  const downloadPdf = () => {
+  const regenerateWithLanguage = (newLang: ReportLanguage) => {
+    setLanguage(newLang);
+    if (report) {
+      generate.mutate({ from: report.from, to: report.to, periodLabel: report.periodLabel, mode, language: newLang });
+    }
+  };
+
+  const downloadPdf = async () => {
     if (!report) return;
     try {
-      const doc = generatePdf(report);
-      const filename = `EXIMMAN_${report.mode}_${safeFilename(report.periodLabel)}_${report.from}_to_${report.to}.pdf`;
+      let fontBase64: string | undefined;
+      if (report.language === "am") {
+        fontBase64 = (await import("@/lib/abyssinicaFont")).abyssinicaSilBase64;
+      }
+      const doc = generatePdf(report, fontBase64);
+      const filename = `EXIMMAN_${report.mode}_${report.language}_${safeFilename(report.periodLabel)}_${report.from}_to_${report.to}.pdf`;
       doc.save(filename);
       toast({ title: "PDF downloaded", description: filename });
     } catch (e: any) {
@@ -392,7 +420,9 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       const parsed = JSON.parse(a.content) as GeneratedReport;
       if (!parsed.charts) parsed.charts = [];
       if (!parsed.mode) parsed.mode = "precise";
+      if (!parsed.language) parsed.language = "en";
       setMode(parsed.mode);
+      setLanguage(parsed.language);
       setReport(parsed);
       setActiveTab("new");
     } catch {
@@ -400,7 +430,34 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
     }
   };
 
-  const reset = () => { setReport(null); setSelectedPreset(null); setMode("precise"); };
+  const reset = () => { setReport(null); setSelectedPreset(null); setMode("precise"); setLanguage("en"); };
+
+  const LanguageChooser = (
+    <div className="inline-flex rounded-md border p-0.5" data-testid="language-chooser">
+      <Button
+        type="button"
+        size="sm"
+        variant={language === "en" ? "default" : "ghost"}
+        className="h-7"
+        onClick={() => language !== "en" && regenerateWithLanguage("en")}
+        disabled={generate.isPending}
+        data-testid="button-language-en"
+      >
+        English
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant={language === "am" ? "default" : "ghost"}
+        className="h-7"
+        onClick={() => language !== "am" && regenerateWithLanguage("am")}
+        disabled={generate.isPending}
+        data-testid="button-language-am"
+      >
+        አማርኛ
+      </Button>
+    </div>
+  );
 
   const ModeChooser = (
     <div className="flex items-center gap-4 text-sm" data-testid="mode-chooser">
@@ -457,6 +514,18 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                       ? "Detailed mode produces full narrative paragraphs across all modules."
                       : "Precise mode produces short, factual one-line summaries per module."}
                     {" "}Periods over 7 days include visual charts.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Report Language</Label>
+                  <div className="mt-2">{LanguageChooser}</div>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {language === "am"
+                      ? "Amharic reports are translated by AI; figures, currencies and dates are kept unchanged."
+                      : "Generate the report in English or Amharic (አማርኛ)."}
                   </p>
                 </div>
 
@@ -549,8 +618,11 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           </Tabs>
         ) : (
           <>
-            <div className="px-6 py-2.5 border-b flex items-center justify-between flex-wrap gap-2 shrink-0 bg-muted/30">
-              {ModeChooser}
+            <div className="px-6 py-2.5 border-b flex items-center justify-between flex-wrap gap-3 shrink-0 bg-muted/30">
+              <div className="flex items-center flex-wrap gap-3">
+                {ModeChooser}
+                {LanguageChooser}
+              </div>
               {generate.isPending && (
                 <span className="text-xs text-muted-foreground flex items-center gap-1.5">
                   <Loader2 className="h-3 w-3 animate-spin" /> Rebuilding…

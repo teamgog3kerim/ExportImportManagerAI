@@ -1,0 +1,2 @@
+- [jsPDF Amharic/Ge'ez rendering](jspdf-amharic-fonts.md) — jsPDF can't render Ge'ez with helvetica/times; must embed a STATIC Abyssinica SIL TTF as base64 and register as a font family.
+- [AI array translation robustness](ai-translation-index-map.md) — translating ordered text via LLM: send an index→string map and rebuild with per-item fallback; never hard-fail on count mismatch.

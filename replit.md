@@ -15,7 +15,7 @@ Full-stack TypeScript with React frontend and Express backend.
 - **Styling:** Tailwind CSS with custom ETB/Ethiopian-themed colors
 
 ### Key Features
-1. **Dashboard** — Trade volume chart, currency exchange rates (ETB/USD), AI insights, recent shipments
+1. **Dashboard** — Trade volume chart, currency exchange rates (ETB/USD), AI insights, recent shipments. **Generate Report** dialog supports a language choice (English or Amharic/አማርኛ) for the on-screen report and PDF export; Amharic is produced by AI translation (numbers, currencies, dates and proper nouns preserved) and the PDF embeds the Abyssinica SIL Ge'ez font
 2. **AI Insights Engine** — Efficiency score gauge, trade predictions, risk detection, AI chat assistant
 3. **Financial Ledger** — Available balance, LC credit limit, cash flow forecast, transaction history
 4. **Exchange Rates** — Addis Fortune Exchange Board with 8 Ethiopian banks (Amhara, Berhan, Hijra, Hibret, Dashen, ZamZam, Oromia, CBE), smart USD/ETB converter
