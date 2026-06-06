@@ -77,6 +77,28 @@ export const inventory = pgTable("inventory", {
   unitSalePriceEtb: numeric("unit_sale_price_etb").default("0"),
   bookedFor: text("booked_for"),
   markedSoldOut: text("marked_sold_out").default("false"),
+  serialNumbers: text("serial_numbers").array(),
+  soldSerials: text("sold_serials").array(),
+  createdAt: text("created_at").notNull(),
+});
+
+// Sales (Import — selling cleared inventory by serial number)
+export const sales = pgTable("sales", {
+  id: varchar("id").primaryKey(),
+  saleRef: text("sale_ref").notNull(),
+  customerName: text("customer_name").notNull(),
+  customerContact: text("customer_contact"),
+  customerTin: text("customer_tin"),
+  saleDate: text("sale_date").notNull(),
+  paymentMethod: text("payment_method").default("Cash"),
+  paymentStatus: text("payment_status").default("Unpaid"),
+  status: text("status").default("Completed"),
+  items: text("items").notNull().default("[]"),
+  subtotalEtb: numeric("subtotal_etb").notNull().default("0"),
+  discountEtb: numeric("discount_etb").default("0"),
+  vatEtb: numeric("vat_etb").default("0"),
+  totalEtb: numeric("total_etb").notNull().default("0"),
+  notes: text("notes"),
   createdAt: text("created_at").notNull(),
 });
 
@@ -338,6 +360,7 @@ export const insertReportSchema = createInsertSchema(reports).omit({ id: true, c
 export const insertLcSchema = createInsertSchema(lcs).omit({ id: true, createdAt: true });
 export const insertShipmentSchema = createInsertSchema(shipments).omit({ id: true, createdAt: true });
 export const insertInventorySchema = createInsertSchema(inventory).omit({ id: true, createdAt: true });
+export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, createdAt: true });
 export const insertBankSchema = createInsertSchema(banks).omit({ id: true, createdAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertBuyerSchema = createInsertSchema(buyers).omit({ id: true, createdAt: true });
@@ -384,6 +407,23 @@ export type Shipment = typeof shipments.$inferSelect;
 export type InsertShipment = z.infer<typeof insertShipmentSchema>;
 export type InventoryItem = typeof inventory.$inferSelect;
 export type InsertInventoryItem = z.infer<typeof insertInventorySchema>;
+export type Sale = typeof sales.$inferSelect;
+export type InsertSale = z.infer<typeof insertSaleSchema>;
+export type SaleLineItem = {
+  inventoryId: string;
+  serialNumber: string;
+  descriptionOfGoods: string;
+  warehouse?: string;
+  unitPriceEtb: string;
+};
+export type AvailableSerial = {
+  serialNumber: string;
+  inventoryId: string;
+  descriptionOfGoods: string;
+  warehouse: string;
+  shipmentRef: string | null;
+  unitSalePriceEtb: string;
+};
 export type ExchangeRate = typeof exchangeRates.$inferSelect;
 export type Bank = typeof banks.$inferSelect;
 export type InsertBank = z.infer<typeof insertBankSchema>;

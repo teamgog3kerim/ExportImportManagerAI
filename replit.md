@@ -24,9 +24,10 @@ Full-stack TypeScript with React frontend and Express backend.
    - Settlement Amount: FCY value, margin held, settlement % (70%), NBE 2.5% rate
    - Paid/unpaid status checkboxes with color indicators
 6. **Import Shipments** — Route tracking (Supplier→Port→Sea→Djibouti→Modjo→Warehouse), documents, customs financials, pre-fill from approved LC
-7. **Inventory** — Post-clearance stock with warehouse utilization, low stock alerts, AI stock forecasting
-8. **Customs Engine** — Real-time tax calculator: CIF = FOB + Freight + Insurance; Duty(20%) + Surtax(3%) + VAT(15%) + Withholding(3%), required documents status, AI HS code classification
-9. **Settings** — Company profile (Midas Global Trade Ltd), Banks, Suppliers, Certifications, Notifications with toggles
+7. **Inventory** — Post-clearance stock with warehouse utilization, low stock alerts, AI stock forecasting. Each item carries auto-generated per-unit serial numbers (prefix from shipment ref)
+8. **Sales** (Import) — Sell cleared inventory by serial number with full traceability. Multi-select available serials from stock, record customer/TIN/contact, payment method & status, per-line pricing, discount and 15% VAT totals. Selling marks serials sold so they leave available stock and decrement quantities; reversing a sale releases serials back. Includes a Serial Number Tracer that reports whether any serial is in stock or which sale/customer it went to
+10. **Customs Engine** — Real-time tax calculator: CIF = FOB + Freight + Insurance; Duty(20%) + Surtax(3%) + VAT(15%) + Withholding(3%), required documents status, AI HS code classification
+11. **Settings** — Company profile (Midas Global Trade Ltd), Banks, Suppliers, Certifications, Notifications with toggles
 
 ### Ethiopian Context
 - Currency: ETB (Ethiopian Birr), USD/ETB rates from Addis Fortune
@@ -38,7 +39,8 @@ Full-stack TypeScript with React frontend and Express backend.
 ### Data Models (shared/schema.ts)
 - `lcs` — Letters of Credit with full financial fields
 - `shipments` — Import shipments with route and customs data
-- `inventory` — Post-clearance inventory items
+- `inventory` — Post-clearance inventory items (incl. `serialNumbers` and `soldSerials` arrays)
+- `sales` — Import sales: customer, payment, line items (serials) as JSON, subtotal/discount/VAT/total
 - `exchangeRates` — Ethiopian bank USD/ETB rates
 - `banks` — Company bank accounts
 - `suppliers` — International supplier registry
@@ -51,6 +53,8 @@ Full-stack TypeScript with React frontend and Express backend.
 - `GET/POST/PATCH/DELETE /api/lcs` — LC CRUD
 - `GET/POST/PATCH/DELETE /api/shipments` — Shipment CRUD
 - `GET/POST/PATCH/DELETE /api/inventory` — Inventory CRUD
+- `GET/POST/PATCH/DELETE /api/sales` — Sales CRUD (create marks serials sold; delete releases them)
+- `GET /api/sales/available-serials` — Serials in stock and sellable (inventory minus sold)
 - `GET /api/exchange-rates` — Exchange rates
 - `GET/POST/DELETE /api/settings/banks` — Bank accounts
 - `GET/POST/DELETE /api/settings/suppliers` — Suppliers
@@ -67,6 +71,7 @@ Full-stack TypeScript with React frontend and Express backend.
 - `/import/lc-management` — LC Management
 - `/import/shipments` — Import Shipments
 - `/import/inventory` — Inventory
+- `/import/sales` — Sales (sell inventory by serial number)
 - `/customs` — Customs Engine
 - `/settings` — Settings (Company/Banks/Suppliers/Certs/Notifications)
 

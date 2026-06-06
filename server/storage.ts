@@ -14,9 +14,18 @@ function normalizeProducts(input: unknown): string[] {
   }
   return out;
 }
+function genSerials(prefix: string, count: number): string[] {
+  const out: string[] = [];
+  const safe = (prefix || "INV").toUpperCase().replace(/[^A-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 12) || "INV";
+  const n = Math.max(0, Math.min(Math.floor(count) || 0, 5000));
+  for (let i = 1; i <= n; i++) out.push(`${safe}-${String(i).padStart(4, "0")}`);
+  return out;
+}
+
 import type {
   User, InsertUser, LC, InsertLC, Shipment, InsertShipment,
-  InventoryItem, InsertInventoryItem, ExchangeRate, Bank, InsertBank,
+  InventoryItem, InsertInventoryItem, Sale, InsertSale, SaleLineItem, AvailableSerial,
+  ExchangeRate, Bank, InsertBank,
   Supplier, InsertSupplier, Buyer, InsertBuyer, Certification, InsertCertification,
   CompanySettings, NotificationSettings,
   ExportPurchase, InsertExportPurchase, Cad, InsertCad,
@@ -51,6 +60,13 @@ export interface IStorage {
   createInventoryItem(item: InsertInventoryItem): Promise<InventoryItem>;
   updateInventoryItem(id: string, item: Partial<InsertInventoryItem>): Promise<InventoryItem | undefined>;
   deleteInventoryItem(id: string): Promise<boolean>;
+  // Sales
+  getSales(): Promise<Sale[]>;
+  getSale(id: string): Promise<Sale | undefined>;
+  createSale(sale: InsertSale): Promise<Sale>;
+  updateSale(id: string, sale: Partial<InsertSale>): Promise<Sale | undefined>;
+  deleteSale(id: string): Promise<boolean>;
+  getAvailableSerials(): Promise<AvailableSerial[]>;
   // Exchange Rates
   getExchangeRates(): Promise<ExchangeRate[]>;
   setExchangeRates(rates: ExchangeRate[]): Promise<void>;
@@ -130,6 +146,7 @@ export class MemStorage implements IStorage {
   private lcs = new Map<string, LC>();
   private shipments = new Map<string, Shipment>();
   private inventory = new Map<string, InventoryItem>();
+  private sales = new Map<string, Sale>();
   private exchangeRates = new Map<string, ExchangeRate>();
   private banks = new Map<string, Bank>();
   private suppliers = new Map<string, Supplier>();
@@ -169,8 +186,9 @@ export class MemStorage implements IStorage {
 
     // Seed Inventory
     const inventoryData: InventoryItem[] = [
-      { id: randomUUID(), shipmentRef: "SHP-001", descriptionOfGoods: "Industrial Machinery", quantityUnits: "450", warehouse: "Kality A1", stockStatus: "In Stock", unitSalePriceEtb: "500", bookedFor: "", markedSoldOut: "false", createdAt: now },
-      { id: randomUUID(), shipmentRef: "SHP-003", descriptionOfGoods: "Italian Sofa Sets", quantityUnits: "12", warehouse: "Modjo Dry Port", stockStatus: "Low Stock", unitSalePriceEtb: "1200", bookedFor: "Furniture Expo", markedSoldOut: "false", createdAt: now },
+      { id: randomUUID(), shipmentRef: "SHP-001", descriptionOfGoods: "Industrial Machinery", quantityUnits: "20", warehouse: "Kality A1", stockStatus: "In Stock", unitSalePriceEtb: "500", bookedFor: "", markedSoldOut: "false", serialNumbers: genSerials("SHP-001", 20), soldSerials: [], createdAt: now },
+      { id: randomUUID(), shipmentRef: "SHP-003", descriptionOfGoods: "Italian Sofa Sets", quantityUnits: "12", warehouse: "Modjo Dry Port", stockStatus: "Low Stock", unitSalePriceEtb: "1200", bookedFor: "Furniture Expo", markedSoldOut: "false", serialNumbers: genSerials("SHP-003", 12), soldSerials: [], createdAt: now },
+      { id: randomUUID(), shipmentRef: "SHP-002", descriptionOfGoods: "Electronic Components", quantityUnits: "150", warehouse: "Addis Ababa Central", stockStatus: "In Stock", unitSalePriceEtb: "850", bookedFor: "", markedSoldOut: "false", serialNumbers: genSerials("SHP-002", 150), soldSerials: [], createdAt: now },
     ];
     inventoryData.forEach(i => this.inventory.set(i.id, i));
 
@@ -372,18 +390,176 @@ export class MemStorage implements IStorage {
   async getInventoryItem(id: string) { return this.inventory.get(id); }
   async createInventoryItem(item: InsertInventoryItem): Promise<InventoryItem> {
     const id = randomUUID();
-    const n: InventoryItem = { ...item, id, shipmentRef: item.shipmentRef ?? null, quantityUnits: item.quantityUnits ?? "0", unitSalePriceEtb: item.unitSalePriceEtb ?? "0", bookedFor: item.bookedFor ?? null, markedSoldOut: item.markedSoldOut ?? "false", createdAt: new Date().toISOString() };
+    const qty = Math.max(0, Math.floor(Number(item.quantityUnits ?? "0")) || 0);
+    const provided = Array.isArray(item.serialNumbers)
+      ? (item.serialNumbers as string[]).map(s => String(s).trim()).filter(Boolean)
+      : [];
+    const serialNumbers = provided.length > 0
+      ? Array.from(new Set(provided))
+      : genSerials(item.shipmentRef || item.descriptionOfGoods || "INV", qty);
+    const n: InventoryItem = {
+      ...item, id,
+      shipmentRef: item.shipmentRef ?? null,
+      quantityUnits: item.quantityUnits ?? "0",
+      stockStatus: item.stockStatus ?? "In Stock",
+      unitSalePriceEtb: item.unitSalePriceEtb ?? "0",
+      bookedFor: item.bookedFor ?? null,
+      markedSoldOut: item.markedSoldOut ?? "false",
+      serialNumbers,
+      soldSerials: Array.isArray(item.soldSerials) ? (item.soldSerials as string[]) : [],
+      createdAt: new Date().toISOString(),
+    };
     this.inventory.set(id, n);
     return n;
   }
   async updateInventoryItem(id: string, updates: Partial<InsertInventoryItem>) {
     const e = this.inventory.get(id);
     if (!e) return undefined;
-    const u = { ...e, ...updates };
+    const u: InventoryItem = { ...e, ...updates };
+    if (updates.serialNumbers !== undefined) {
+      u.serialNumbers = Array.isArray(updates.serialNumbers)
+        ? Array.from(new Set((updates.serialNumbers as string[]).map(s => String(s).trim()).filter(Boolean)))
+        : e.serialNumbers;
+    }
     this.inventory.set(id, u);
     return u;
   }
   async deleteInventoryItem(id: string) { return this.inventory.delete(id); }
+
+  // === Sales (Import — selling cleared inventory by serial) ===
+  async getSales() {
+    return Array.from(this.sales.values()).sort((a, b) =>
+      (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+  }
+  async getSale(id: string) { return this.sales.get(id); }
+  private parseItems(raw: unknown): SaleLineItem[] {
+    try {
+      const v = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (!Array.isArray(v)) return [];
+      return v.filter((i: any) => i && i.inventoryId && i.serialNumber) as SaleLineItem[];
+    } catch { return []; }
+  }
+  async getAvailableSerials(): Promise<AvailableSerial[]> {
+    const out: AvailableSerial[] = [];
+    for (const inv of Array.from(this.inventory.values())) {
+      const all = Array.isArray(inv.serialNumbers) ? inv.serialNumbers : [];
+      const sold = new Set(Array.isArray(inv.soldSerials) ? inv.soldSerials : []);
+      for (const sn of all) {
+        if (sold.has(sn)) continue;
+        out.push({
+          serialNumber: sn,
+          inventoryId: inv.id,
+          descriptionOfGoods: inv.descriptionOfGoods,
+          warehouse: inv.warehouse,
+          shipmentRef: inv.shipmentRef ?? null,
+          unitSalePriceEtb: inv.unitSalePriceEtb ?? "0",
+        });
+      }
+    }
+    return out;
+  }
+  private applySaleToInventory(items: SaleLineItem[], direction: 1 | -1) {
+    // direction 1 = mark sold, -1 = release back to stock
+    const byInv = new Map<string, Set<string>>();
+    for (const it of items) {
+      if (!byInv.has(it.inventoryId)) byInv.set(it.inventoryId, new Set());
+      byInv.get(it.inventoryId)!.add(it.serialNumber);
+    }
+    for (const [invId, serials] of Array.from(byInv.entries())) {
+      const inv = this.inventory.get(invId);
+      if (!inv) continue;
+      const sold = new Set(Array.isArray(inv.soldSerials) ? inv.soldSerials : []);
+      for (const sn of Array.from(serials)) {
+        if (direction === 1) sold.add(sn);
+        else sold.delete(sn);
+      }
+      const total = (Array.isArray(inv.serialNumbers) ? inv.serialNumbers : []).length;
+      const remaining = Math.max(0, total - sold.size);
+      const status = remaining === 0 ? "Out of Stock" : remaining <= Math.max(1, Math.ceil(total * 0.15)) ? "Low Stock" : "In Stock";
+      this.inventory.set(invId, {
+        ...inv,
+        soldSerials: Array.from(sold),
+        quantityUnits: String(remaining),
+        stockStatus: status,
+        markedSoldOut: remaining === 0 ? "true" : "false",
+      });
+    }
+  }
+  // Validates serials are available (none sold), have no duplicates, and recomputes
+  // authoritative money totals server-side. `excludeSerials` lets an update treat its
+  // own currently-held serials as available. Throws on any invalid serial.
+  private async assertAndPrice(items: SaleLineItem[], discountEtb: any, excludeSerials: Set<string> = new Set()) {
+    if (items.length === 0) throw new Error("Sale must include at least one serial number");
+    const keys = items.map(it => `${it.inventoryId}::${it.serialNumber}`);
+    if (new Set(keys).size !== keys.length) throw new Error("Duplicate serial numbers in sale");
+    const available = new Set((await this.getAvailableSerials()).map(s => `${s.inventoryId}::${s.serialNumber}`));
+    const unavailable = items.filter(it => {
+      const k = `${it.inventoryId}::${it.serialNumber}`;
+      return !available.has(k) && !excludeSerials.has(k);
+    });
+    if (unavailable.length > 0) {
+      throw new Error(`Serial number(s) no longer available: ${unavailable.map(u => u.serialNumber).join(", ")}`);
+    }
+    const subtotal = items.reduce((s, it) => s + (Number(it.unitPriceEtb) || 0), 0);
+    const discount = Math.max(0, Number(discountEtb ?? "0") || 0);
+    const taxable = Math.max(0, subtotal - discount);
+    const vat = taxable * 0.15;
+    const total = taxable + vat;
+    return {
+      subtotalEtb: subtotal.toFixed(2),
+      discountEtb: discount.toFixed(2),
+      vatEtb: vat.toFixed(2),
+      totalEtb: total.toFixed(2),
+    };
+  }
+  async createSale(sale: InsertSale): Promise<Sale> {
+    const id = randomUUID();
+    const items = this.parseItems(sale.items);
+    const totals = await this.assertAndPrice(items, sale.discountEtb);
+    const n: Sale = {
+      ...sale, id,
+      customerContact: sale.customerContact ?? null,
+      customerTin: sale.customerTin ?? null,
+      paymentMethod: sale.paymentMethod ?? "Cash",
+      paymentStatus: sale.paymentStatus ?? "Unpaid",
+      status: sale.status ?? "Completed",
+      items: JSON.stringify(items),
+      ...totals,
+      notes: sale.notes ?? null,
+      createdAt: new Date().toISOString(),
+    };
+    this.sales.set(id, n);
+    this.applySaleToInventory(items, 1);
+    return n;
+  }
+  async updateSale(id: string, updates: Partial<InsertSale>) {
+    const cur = this.sales.get(id);
+    if (!cur) return undefined;
+    const next: Sale = { ...cur, ...updates };
+    if (updates.items !== undefined) {
+      // Release current serials first so they count as available for revalidation
+      const oldItems = this.parseItems(cur.items);
+      this.applySaleToInventory(oldItems, -1);
+      const newItems = this.parseItems(updates.items);
+      try {
+        const totals = await this.assertAndPrice(newItems, updates.discountEtb ?? cur.discountEtb);
+        next.items = JSON.stringify(newItems);
+        Object.assign(next, totals);
+        this.applySaleToInventory(newItems, 1);
+      } catch (e) {
+        // Roll back the release so inventory state is unchanged on failure
+        this.applySaleToInventory(oldItems, 1);
+        throw e;
+      }
+    }
+    this.sales.set(id, next);
+    return next;
+  }
+  async deleteSale(id: string) {
+    const cur = this.sales.get(id);
+    if (cur) this.applySaleToInventory(this.parseItems(cur.items), -1);
+    return this.sales.delete(id);
+  }
 
   async getExchangeRates() { return Array.from(this.exchangeRates.values()); }
   async setExchangeRates(rates: ExchangeRate[]) {

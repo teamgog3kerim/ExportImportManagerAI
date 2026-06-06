@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard, BrainCircuit, Wallet, TrendingUp, FileText, Ship, Package,
-  Calculator, Settings, ChevronDown, ChevronRight, ShoppingCart, Banknote, Send,
+  Calculator, Settings, ChevronDown, ChevronRight, ShoppingCart, Banknote, Send, ShoppingBag,
 } from "lucide-react";
 import { useState } from "react";
 import eximmanLogo from "@assets/eximman_logo.png";
@@ -21,6 +21,7 @@ const importItems = [
   { title: "LC Management", url: "/import/lc-management", icon: FileText },
   { title: "Shipments", url: "/import/shipments", icon: Ship },
   { title: "Inventory", url: "/import/inventory", icon: Package },
+  { title: "Sales", url: "/import/sales", icon: ShoppingBag },
 ];
 
 const exportItems = [

@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { generateAIResponse, generateDailySummary } from "./openai";
-import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema } from "@shared/schema";
+import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema, insertSaleSchema } from "@shared/schema";
 import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
 import { buildReport } from "./lib/reportNarrator";
 
@@ -142,6 +142,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/inventory/:id", async (req, res) => {
     const deleted = await storage.deleteInventoryItem(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Inventory item not found" });
+    res.status(204).end();
+  });
+
+  // Sales (Import — selling cleared inventory by serial number)
+  app.get("/api/sales/available-serials", async (_req, res) => res.json(await storage.getAvailableSerials()));
+  app.get("/api/sales", async (_req, res) => res.json(await storage.getSales()));
+  app.get("/api/sales/:id", async (req, res) => {
+    const sale = await storage.getSale(req.params.id);
+    if (!sale) return res.status(404).json({ message: "Sale not found" });
+    res.json(sale);
+  });
+  app.post("/api/sales", async (req, res) => {
+    try {
+      const parsed = insertSaleSchema.parse(req.body);
+      const sale = await storage.createSale(parsed);
+      res.status(201).json(sale);
+    } catch (e) {
+      if (e instanceof z.ZodError) return res.status(400).json({ message: "Validation failed", errors: e.errors });
+      res.status(400).json({ message: e instanceof Error ? e.message : "Could not record sale" });
+    }
+  });
+  app.patch("/api/sales/:id", async (req, res) => {
+    try {
+      const parsed = insertSaleSchema.partial().parse(req.body);
+      const updated = await storage.updateSale(req.params.id, parsed);
+      if (!updated) return res.status(404).json({ message: "Sale not found" });
+      res.json(updated);
+    } catch (e) {
+      if (e instanceof z.ZodError) return res.status(400).json({ message: "Validation failed", errors: e.errors });
+      res.status(400).json({ message: e instanceof Error ? e.message : "Could not update sale" });
+    }
+  });
+  app.delete("/api/sales/:id", async (req, res) => {
+    const deleted = await storage.deleteSale(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Sale not found" });
     res.status(204).end();
   });
 
