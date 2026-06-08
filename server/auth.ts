@@ -17,9 +17,9 @@ import {
 
 const scryptAsync = promisify(scrypt);
 
-const BOOTSTRAP_ADMIN_EMAIL = "teamgog3@gmail.com";
-const BOOTSTRAP_ADMIN_PASSWORD = "WeyMerSar@Hon13Ker29";
-const BOOTSTRAP_ADMIN_NAME = "Midas Admin";
+const BOOTSTRAP_ADMIN_EMAIL = process.env.BOOTSTRAP_ADMIN_EMAIL || "teamgog3@gmail.com";
+const BOOTSTRAP_ADMIN_PASSWORD = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+const BOOTSTRAP_ADMIN_NAME = process.env.BOOTSTRAP_ADMIN_NAME || "Midas Admin";
 
 export type SafeUser = {
   id: string;
@@ -81,6 +81,14 @@ async function getUserByEmail(email: string) {
 export async function ensureBootstrapAdmin() {
   const existing = await getUserByEmail(BOOTSTRAP_ADMIN_EMAIL);
   if (existing) return;
+  if (!BOOTSTRAP_ADMIN_PASSWORD) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[auth] No admin account exists and BOOTSTRAP_ADMIN_PASSWORD is not set. " +
+        "Set the BOOTSTRAP_ADMIN_PASSWORD secret to provision the first administrator.",
+    );
+    return;
+  }
   await db.insert(users).values({
     id: randomUUID(),
     email: BOOTSTRAP_ADMIN_EMAIL.toLowerCase(),
