@@ -558,6 +558,7 @@ export default function CostEstimator() {
                     <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Margin Rate</th>
                     <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Margin Amount (ETB)</th>
                     <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Total Cost plus Margin (ETB)</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">VAT Amount (ETB)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -570,6 +571,7 @@ export default function CostEstimator() {
                       <td className="px-3 py-1.5 text-right font-mono font-bold">{(m.K * 100).toFixed(2)}%</td>
                       <td className="px-3 py-1.5 text-right font-mono text-[hsl(var(--chart-4))] font-semibold">{fmt(m.L)}</td>
                       <td className="px-3 py-1.5 text-right font-mono font-bold">{fmt(m.Ndp)}</td>
+                      <td className="px-3 py-1.5 text-right font-mono text-[hsl(var(--chart-5))] font-semibold">{fmt(m.Ndp * 0.15)}</td>
                     </tr>
                   ))}
                 </tbody>
