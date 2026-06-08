@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/PageHeader";
 import { Plus, Search, ShoppingCart, Pencil, Trash2, Wheat, Package, DollarSign } from "lucide-react";
 import type { ExportPurchase, Supplier } from "@shared/schema";
+import { useAuth, canRecord } from "@/lib/auth";
 
 const CATEGORIES = ["Coffee", "Sesame", "Leather", "Pulses", "Spices", "Oilseeds", "Cereals", "Khat", "Honey", "Other"];
 const QUALITY_GRADES = ["Grade 1", "Grade 2", "Grade 3", "Premium", "Specialty", "Standard", "Grade A", "Grade B"];
@@ -29,6 +30,8 @@ function statusColor(s: string): any {
 }
 
 export default function ExportPurchases() {
+  const { user } = useAuth();
+  const writable = canRecord(user, "export-purchases");
   const { toast } = useToast();
   const { data: items = [], isLoading } = useQuery<ExportPurchase[]>({ queryKey: ["/api/export/purchases"] });
   const { data: suppliersRaw = [] } = useQuery<Supplier[]>({ queryKey: ["/api/settings/suppliers"] });
@@ -124,9 +127,11 @@ export default function ExportPurchases() {
         title="Purchase & Sourcing Inventory"
         description="Track local Ethiopian goods procured from cooperatives and unions, ready for international markets."
         actions={
-          <Button onClick={openNew} data-testid="button-create-purchase">
-            <Plus className="h-4 w-4 mr-1.5" /> New Purchase
-          </Button>
+          writable && (
+            <Button onClick={openNew} data-testid="button-create-purchase">
+              <Plus className="h-4 w-4 mr-1.5" /> New Purchase
+            </Button>
+          )
         }
       />
 
@@ -245,12 +250,16 @@ export default function ExportPurchases() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(item)} data-testid={`button-edit-purchase-${i}`}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(item.id)} data-testid={`button-delete-purchase-${i}`}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={() => openEdit(item)} data-testid={`button-edit-purchase-${i}`}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(item.id)} data-testid={`button-delete-purchase-${i}`}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -420,9 +429,11 @@ export default function ExportPurchases() {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setOpenModal(false)}>Cancel</Button>
-            <Button onClick={submit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-purchase">
-              {editItem ? "Save Updates" : "Create Purchase"}
-            </Button>
+            {writable && (
+              <Button onClick={submit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-purchase">
+                {editItem ? "Save Updates" : "Create Purchase"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Ship, AlertTriangle, Pencil, Trash2, MapPin, ChevronRight, Calculator } from "lucide-react";
 import type { Shipment, LC } from "@shared/schema";
 import { LCCostCalculator } from "@/components/LCCostCalculator";
+import { useAuth, canRecord } from "@/lib/auth";
 
 const STATUSES = [
   "Under Production", "Port Loading", "Sea Transit", "Djibouti Port arrived",
@@ -34,6 +35,8 @@ function statusColor(s: string) {
 const ROUTE_STAGES = ["Supplier", "Port Loading", "Sea Transit", "Djibouti", "Modjo", "Warehouse"];
 
 export default function ImportShipments() {
+  const { user } = useAuth();
+  const writable = canRecord(user, "import-shipments");
   const { toast } = useToast();
   const { data: shipments = [], isLoading } = useQuery<Shipment[]>({ queryKey: ["/api/shipments"] });
   const { data: lcs = [] } = useQuery<LC[]>({ queryKey: ["/api/lcs"] });
@@ -112,9 +115,11 @@ export default function ImportShipments() {
           <h1 className="text-2xl font-bold">Shipments</h1>
           <p className="text-sm text-muted-foreground">Manage and track your global logistics lifecycle</p>
         </div>
-        <Button onClick={openNew} data-testid="button-create-shipment">
-          <Plus className="h-4 w-4 mr-1.5" /> Create Shipment
-        </Button>
+        {writable && (
+          <Button onClick={openNew} data-testid="button-create-shipment">
+            <Plus className="h-4 w-4 mr-1.5" /> Create Shipment
+          </Button>
+        )}
       </div>
 
       <div className="relative">
@@ -177,12 +182,16 @@ export default function ImportShipments() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); openEdit(s); }} data-testid={`button-edit-shipment-${i}`}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); deleteMutation.mutate(s.id); }} data-testid={`button-delete-shipment-${i}`}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); openEdit(s); }} data-testid={`button-edit-shipment-${i}`}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={e => { e.stopPropagation(); deleteMutation.mutate(s.id); }} data-testid={`button-delete-shipment-${i}`}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -469,9 +478,11 @@ export default function ImportShipments() {
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setOpenModal(false)}>Cancel</Button>
-            <Button onClick={submit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-shipment">
-              {editShipment ? "Update Shipment" : "Create Shipment"}
-            </Button>
+            {writable && (
+              <Button onClick={submit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-shipment">
+                {editShipment ? "Update Shipment" : "Create Shipment"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

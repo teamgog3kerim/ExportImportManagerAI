@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { queryClient, apiRequest } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,12 +7,16 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Bell, Search, LogOut } from "lucide-react";
+import { Bell, Search, LogOut, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
+import { useAuth, canView, type AuthUser } from "@/lib/auth";
+import NoAccess from "@/components/NoAccess";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import SignIn from "@/pages/SignIn";
+import SignUp from "@/pages/SignUp";
 import Dashboard from "@/pages/Dashboard";
 import AIInsights from "@/pages/AIInsights";
 import Finance from "@/pages/Finance";
@@ -28,41 +32,66 @@ import ExportPurchases from "@/pages/ExportPurchases";
 import CADManagement from "@/pages/CADManagement";
 import ExportShipments from "@/pages/ExportShipments";
 
-function AppRouter() {
+function Guarded({
+  user,
+  pageKey,
+  children,
+}: {
+  user: AuthUser | null;
+  pageKey: string;
+  children: React.ReactNode;
+}) {
+  if (!canView(user, pageKey)) return <NoAccess />;
+  return <>{children}</>;
+}
+
+function AppRouter({ user }: { user: AuthUser | null }) {
   return (
     <Switch>
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/ai-insights" component={AIInsights} />
-      <Route path="/finance" component={Finance} />
-      <Route path="/exchange-rates" component={ExchangeRates} />
-      <Route path="/import/lc-management" component={LCManagement} />
-      <Route path="/import/shipments" component={ImportShipments} />
-      <Route path="/import/inventory" component={InventoryPage} />
-      <Route path="/import/sales" component={Sales} />
-      <Route path="/export/purchases" component={ExportPurchases} />
-      <Route path="/export/cads" component={CADManagement} />
-      <Route path="/export/shipments" component={ExportShipments} />
-      <Route path="/cost-estimator" component={CostEstimator} />
-      <Route path="/customs" component={CustomsEngine} />
-      <Route path="/settings" component={Settings} />
+      <Route path="/dashboard">{() => <Guarded user={user} pageKey="dashboard"><Dashboard /></Guarded>}</Route>
+      <Route path="/ai-insights">{() => <Guarded user={user} pageKey="ai-insights"><AIInsights /></Guarded>}</Route>
+      <Route path="/finance">{() => <Guarded user={user} pageKey="finance"><Finance /></Guarded>}</Route>
+      <Route path="/exchange-rates">{() => <Guarded user={user} pageKey="exchange-rates"><ExchangeRates /></Guarded>}</Route>
+      <Route path="/import/lc-management">{() => <Guarded user={user} pageKey="import-lc"><LCManagement /></Guarded>}</Route>
+      <Route path="/import/shipments">{() => <Guarded user={user} pageKey="import-shipments"><ImportShipments /></Guarded>}</Route>
+      <Route path="/import/inventory">{() => <Guarded user={user} pageKey="import-inventory"><InventoryPage /></Guarded>}</Route>
+      <Route path="/import/sales">{() => <Guarded user={user} pageKey="import-sales"><Sales /></Guarded>}</Route>
+      <Route path="/export/purchases">{() => <Guarded user={user} pageKey="export-purchases"><ExportPurchases /></Guarded>}</Route>
+      <Route path="/export/cads">{() => <Guarded user={user} pageKey="export-cads"><CADManagement /></Guarded>}</Route>
+      <Route path="/export/shipments">{() => <Guarded user={user} pageKey="export-shipments"><ExportShipments /></Guarded>}</Route>
+      <Route path="/cost-estimator">{() => <Guarded user={user} pageKey="cost-estimator"><CostEstimator /></Guarded>}</Route>
+      <Route path="/customs">{() => <Guarded user={user} pageKey="customs"><CustomsEngine /></Guarded>}</Route>
+      <Route path="/settings">{() => <Guarded user={user} pageKey="settings"><Settings /></Guarded>}</Route>
       <Route component={NotFound} />
     </Switch>
   );
 }
 
-function AppLayout() {
+function initials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("") || "U";
+}
+
+const ROLE_LABEL: Record<string, string> = { admin: "Admin", manager: "Manager", staff: "Staff" };
+
+function AppLayout({ user }: { user: AuthUser }) {
   const [, setLocation] = useLocation();
   const style = {
     "--sidebar-width": "15rem",
     "--sidebar-width-icon": "3.5rem",
   };
 
-  const signOut = () => {
+  const signOut = async () => {
     try {
-      localStorage.removeItem("eximman_session");
-      sessionStorage.removeItem("eximman_session");
+      await apiRequest("POST", "/api/auth/logout");
     } catch {}
-    setLocation("/");
+    queryClient.setQueryData(["/api/auth/me"], null);
+    queryClient.clear();
+    setLocation("/signin");
   };
 
   return (
@@ -87,10 +116,10 @@ function AppLayout() {
               </button>
               <ThemeToggle />
               <div className="flex items-center gap-2 pl-2 border-l">
-                <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">MA</div>
+                <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold" data-testid="text-user-initials">{initials(user.fullName)}</div>
                 <div className="hidden sm:block">
-                  <p className="text-xs font-semibold leading-none">Midas Admin</p>
-                  <p className="text-xs text-muted-foreground leading-none mt-0.5">Admin</p>
+                  <p className="text-xs font-semibold leading-none" data-testid="text-user-name">{user.fullName}</p>
+                  <p className="text-xs text-muted-foreground leading-none mt-0.5" data-testid="text-user-role">{ROLE_LABEL[user.role] ?? user.role}</p>
                 </div>
                 <Button size="icon" variant="ghost" onClick={signOut} data-testid="button-signout" title="Sign out">
                   <LogOut className="h-4 w-4" />
@@ -99,7 +128,7 @@ function AppLayout() {
             </div>
           </header>
           <main className="flex-1 overflow-auto">
-            <AppRouter />
+            <AppRouter user={user} />
           </main>
         </div>
       </div>
@@ -107,11 +136,31 @@ function AppLayout() {
   );
 }
 
+function AuthedApp() {
+  const { user, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !user) setLocation("/signin");
+  }, [isLoading, user, setLocation]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!user) return null;
+  return <AppLayout user={user} />;
+}
+
 function Root() {
   const [location] = useLocation();
   if (location === "/") return <Landing />;
   if (location === "/signin") return <SignIn />;
-  return <AppLayout />;
+  if (location === "/signup") return <SignUp />;
+  return <AuthedApp />;
 }
 
 export default function App() {

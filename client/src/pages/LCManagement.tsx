@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, FileText, AlertTriangle, Pencil, Trash2, Calculator } from "lucide-react";
 import type { LC, Supplier, Bank } from "@shared/schema";
 import { LCCostCalculator } from "@/components/LCCostCalculator";
+import { useAuth, canRecord } from "@/lib/auth";
 
 function lcStatusColor(s: string) {
   if (s === "Approved") return "default";
@@ -25,6 +26,8 @@ function lcStatusColor(s: string) {
 const CURRENCIES = ["USD ($)", "EUR (€)", "GBP (£)", "CNY (¥)"];
 
 export default function LCManagement() {
+  const { user } = useAuth();
+  const writable = canRecord(user, "import-lc");
   const { toast } = useToast();
   const { data: lcs = [], isLoading } = useQuery<LC[]>({ queryKey: ["/api/lcs"] });
   const { data: suppliersRaw = [] } = useQuery<Supplier[]>({ queryKey: ["/api/settings/suppliers"] });
@@ -157,9 +160,11 @@ export default function LCManagement() {
           <h1 className="text-2xl font-bold">LC Management</h1>
           <p className="text-sm text-muted-foreground">Review and process bank-issued letters of credit</p>
         </div>
-        <Button onClick={openNew} data-testid="button-open-new-lc">
-          <Plus className="h-4 w-4 mr-1.5" /> Open New LC
-        </Button>
+        {writable && (
+          <Button onClick={openNew} data-testid="button-open-new-lc">
+            <Plus className="h-4 w-4 mr-1.5" /> Open New LC
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -216,12 +221,16 @@ export default function LCManagement() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button size="icon" variant="ghost" onClick={() => openEdit(lc)} data-testid={`button-edit-lc-${i}`}>
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(lc.id)} data-testid={`button-delete-lc-${i}`}>
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
+                            {writable && (
+                              <Button size="icon" variant="ghost" onClick={() => openEdit(lc)} data-testid={`button-edit-lc-${i}`}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            {writable && (
+                              <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(lc.id)} data-testid={`button-delete-lc-${i}`}>
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -670,13 +679,15 @@ export default function LCManagement() {
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setOpenModal(false)} data-testid="button-discard-lc">Discard</Button>
-            <Button
-              onClick={submit}
-              disabled={createMutation.isPending || updateMutation.isPending}
-              data-testid="button-issue-lc"
-            >
-              {editLC ? "Save Changes" : "Issue Letter of Credit"}
-            </Button>
+            {writable && (
+              <Button
+                onClick={submit}
+                disabled={createMutation.isPending || updateMutation.isPending}
+                data-testid="button-issue-lc"
+              >
+                {editLC ? "Save Changes" : "Issue Letter of Credit"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

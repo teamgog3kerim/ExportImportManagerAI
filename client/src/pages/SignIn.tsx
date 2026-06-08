@@ -1,54 +1,41 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArrowLeft, ArrowRight, Lock, Mail } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import eximmanLogo from "@assets/eximman_logo.png";
-
-const ALLOWED_EMAIL = "teamgog3@gmail.com";
-const ALLOWED_PASSWORD = "WeyMerSar@Hon13Ker29";
-const SESSION_KEY = "eximman_session";
 
 export default function SignIn() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [keepLoggedIn, setKeepLoggedIn] = useState(true);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    try {
-      const existing = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
-      if (existing) setLocation("/dashboard");
-    } catch {}
-  }, [setLocation]);
-
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     const em = email.trim();
     if (!em || !password.trim()) {
       setError("Please enter your email and password.");
       return;
     }
-    if (em.toLowerCase() !== ALLOWED_EMAIL || password !== ALLOWED_PASSWORD) {
-      setError("Invalid email or password. Please try again.");
-      return;
-    }
-    const session = JSON.stringify({ email: em, signedInAt: Date.now(), keepLoggedIn });
+    setSubmitting(true);
     try {
-      if (keepLoggedIn) {
-        localStorage.setItem(SESSION_KEY, session);
-        sessionStorage.removeItem(SESSION_KEY);
-      } else {
-        sessionStorage.setItem(SESSION_KEY, session);
-        localStorage.removeItem(SESSION_KEY);
-      }
-    } catch {}
-    setLocation("/dashboard");
+      const res = await apiRequest("POST", "/api/auth/login", { email: em, password });
+      const user = await res.json();
+      queryClient.setQueryData(["/api/auth/me"], user);
+      await queryClient.invalidateQueries();
+      setLocation("/dashboard");
+    } catch (err: any) {
+      setError(err?.message?.replace(/^\d+:\s*/, "") || "Invalid email or password. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -114,24 +101,17 @@ export default function SignIn() {
                     />
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="keep-logged-in"
-                    checked={keepLoggedIn}
-                    onCheckedChange={v => setKeepLoggedIn(v === true)}
-                    data-testid="checkbox-keep-logged-in"
-                  />
-                  <Label htmlFor="keep-logged-in" className="text-xs cursor-pointer select-none">
-                    Keep me logged in
-                  </Label>
-                </div>
                 {error && (
                   <p className="text-xs text-destructive" data-testid="text-signin-error">{error}</p>
                 )}
-                <Button type="submit" className="w-full" data-testid="button-submit-signin">
-                  Sign In <ArrowRight className="h-4 w-4 ml-1" />
+                <Button type="submit" className="w-full" disabled={submitting} data-testid="button-submit-signin">
+                  {submitting ? "Signing in..." : <>Sign In <ArrowRight className="h-4 w-4 ml-1" /></>}
                 </Button>
               </form>
+              <p className="text-xs text-muted-foreground text-center mt-5">
+                Don't have an account?{" "}
+                <Link href="/signup" className="text-foreground hover:underline" data-testid="link-signup">Create one</Link>
+              </p>
               <p className="text-[0.7rem] text-muted-foreground text-center mt-5">
                 By signing in you agree to EXIMMAN's terms of service and privacy policy.
               </p>

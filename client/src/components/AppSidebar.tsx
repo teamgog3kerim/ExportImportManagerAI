@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import eximmanLogo from "@assets/eximman_logo.png";
+import { useAuth, canView } from "@/lib/auth";
+import { pageForRoute } from "@shared/permissions";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -38,8 +40,18 @@ const otherItems = [
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const { user } = useAuth();
   const [importOpen, setImportOpen] = useState(true);
   const [exportOpen, setExportOpen] = useState(true);
+
+  const allow = (url: string) => {
+    const key = pageForRoute(url);
+    return key ? canView(user, key) : true;
+  };
+  const navVisible = navItems.filter(i => allow(i.url));
+  const importVisible = importItems.filter(i => allow(i.url));
+  const exportVisible = exportItems.filter(i => allow(i.url));
+  const otherVisible = otherItems.filter(i => allow(i.url));
 
   return (
     <Sidebar>
@@ -57,7 +69,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map(item => (
+              {navVisible.map(item => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
                     <a href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
@@ -71,6 +83,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {importVisible.length > 0 && (
         <SidebarGroup>
           <SidebarGroupLabel
             className="flex items-center justify-between cursor-pointer select-none"
@@ -82,7 +95,7 @@ export function AppSidebar() {
           {importOpen && (
             <SidebarGroupContent>
               <SidebarMenu>
-                {importItems.map(item => (
+                {importVisible.map(item => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild isActive={location === item.url}>
                       <a href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
@@ -96,7 +109,9 @@ export function AppSidebar() {
             </SidebarGroupContent>
           )}
         </SidebarGroup>
+        )}
 
+        {exportVisible.length > 0 && (
         <SidebarGroup>
           <SidebarGroupLabel
             className="flex items-center justify-between cursor-pointer select-none"
@@ -108,7 +123,7 @@ export function AppSidebar() {
           {exportOpen && (
             <SidebarGroupContent>
               <SidebarMenu>
-                {exportItems.map(item => (
+                {exportVisible.map(item => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild isActive={location === item.url}>
                       <a href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/[\s/]+/g, "-")}`}>
@@ -122,11 +137,13 @@ export function AppSidebar() {
             </SidebarGroupContent>
           )}
         </SidebarGroup>
+        )}
 
+        {otherVisible.length > 0 && (
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {otherItems.map(item => (
+              {otherVisible.map(item => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
                     <a href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
@@ -139,6 +156,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="px-4 py-3 border-t">
         <div className="flex items-center gap-2.5">

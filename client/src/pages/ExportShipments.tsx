@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Plus, Search, Send, Pencil, Trash2, Ship, MapPin, Anchor, FileText } from "lucide-react";
 import type { ExportShipment, Cad } from "@shared/schema";
 import { countriesWith } from "@/lib/countries";
+import { useAuth, canRecord } from "@/lib/auth";
 
 const ORIGINS = ["Modjo Dry Port", "Addis Ababa Central", "Awasa Hub", "Kality A1", "Dire Dawa Warehouse"];
 const PORTS = ["Djibouti", "Berbera", "Port Sudan", "Mombasa"];
@@ -29,6 +30,8 @@ function statusVariant(s: string): any {
 }
 
 export default function ExportShipments() {
+  const { user } = useAuth();
+  const writable = canRecord(user, "export-shipments");
   const { toast } = useToast();
   const { data: shipments = [], isLoading } = useQuery<ExportShipment[]>({ queryKey: ["/api/export/shipments"] });
   const { data: cads = [] } = useQuery<Cad[]>({ queryKey: ["/api/export/cads"] });
@@ -128,9 +131,11 @@ export default function ExportShipments() {
         title="Export Shipments"
         description="Track outbound consignments from Ethiopian origins through transit ports to international destinations."
         actions={
-          <Button onClick={openNew} data-testid="button-create-export-shipment">
-            <Plus className="h-4 w-4 mr-1.5" /> New Shipment
-          </Button>
+          writable && (
+            <Button onClick={openNew} data-testid="button-create-export-shipment">
+              <Plus className="h-4 w-4 mr-1.5" /> New Shipment
+            </Button>
+          )
         }
       />
 
@@ -252,12 +257,16 @@ export default function ExportShipments() {
                     <td className="px-4 py-3"><Badge variant={statusVariant(s.status ?? "")}>{s.status}</Badge></td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(s)} data-testid={`button-edit-export-${i}`}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(s.id)} data-testid={`button-delete-export-${i}`}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={() => openEdit(s)} data-testid={`button-edit-export-${i}`}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(s.id)} data-testid={`button-delete-export-${i}`}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -444,9 +453,11 @@ export default function ExportShipments() {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setOpenModal(false)}>Cancel</Button>
-            <Button onClick={submit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-export-shipment">
-              {editItem ? "Save Updates" : "Create Shipment"}
-            </Button>
+            {writable && (
+              <Button onClick={submit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-export-shipment">
+                {editItem ? "Save Updates" : "Create Shipment"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

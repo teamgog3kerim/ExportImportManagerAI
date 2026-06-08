@@ -16,6 +16,7 @@ import {
   X, CheckCircle2, ChevronDown, ChevronRight, PackageCheck, BadgeCheck,
 } from "lucide-react";
 import type { Sale, SaleLineItem, AvailableSerial } from "@shared/schema";
+import { useAuth, canRecord } from "@/lib/auth";
 
 const PAYMENT_METHODS = ["Cash", "Bank Transfer", "Telebirr", "Cheque", "Credit"];
 const PAYMENT_STATUSES = ["Paid", "Partial", "Unpaid"];
@@ -33,6 +34,8 @@ function payColor(s: string) {
 }
 
 export default function Sales() {
+  const { user } = useAuth();
+  const writable = canRecord(user, "import-sales");
   const { toast } = useToast();
   const { data: sales = [], isLoading } = useQuery<Sale[]>({ queryKey: ["/api/sales"] });
   const { data: available = [] } = useQuery<AvailableSerial[]>({ queryKey: ["/api/sales/available-serials"] });
@@ -179,9 +182,11 @@ export default function Sales() {
           <h1 className="text-2xl font-bold">Sales</h1>
           <p className="text-sm text-muted-foreground">Sell cleared inventory by serial number with full traceability</p>
         </div>
-        <Button onClick={openNew} data-testid="button-new-sale">
-          <Plus className="h-4 w-4 mr-1.5" /> New Sale
-        </Button>
+        {writable && (
+          <Button onClick={openNew} data-testid="button-new-sale">
+            <Plus className="h-4 w-4 mr-1.5" /> New Sale
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -296,18 +301,20 @@ export default function Sales() {
                             </td>
                             <td className="px-4 py-3 text-right">
                               <div className="flex items-center justify-end gap-1">
-                                {sale.paymentStatus !== "Paid" && (
+                                {writable && sale.paymentStatus !== "Paid" && (
                                   <Button size="icon" variant="ghost" title="Mark as paid"
                                     onClick={() => payMutation.mutate({ id: sale.id, status: "Paid" })}
                                     data-testid={`button-mark-paid-${sale.id}`}>
                                     <BadgeCheck className="h-3.5 w-3.5 text-emerald-600" />
                                   </Button>
                                 )}
-                                <Button size="icon" variant="ghost" title="Reverse sale"
-                                  onClick={() => deleteMutation.mutate(sale.id)}
-                                  data-testid={`button-delete-sale-${sale.id}`}>
-                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                                </Button>
+                                {writable && (
+                                  <Button size="icon" variant="ghost" title="Reverse sale"
+                                    onClick={() => deleteMutation.mutate(sale.id)}
+                                    data-testid={`button-delete-sale-${sale.id}`}>
+                                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                  </Button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -559,9 +566,11 @@ export default function Sales() {
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setOpenModal(false)} data-testid="button-cancel-sale">Cancel</Button>
-            <Button onClick={submit} disabled={createMutation.isPending} data-testid="button-submit-sale">
-              Record Sale
-            </Button>
+            {writable && (
+              <Button onClick={submit} disabled={createMutation.isPending} data-testid="button-submit-sale">
+                Record Sale
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

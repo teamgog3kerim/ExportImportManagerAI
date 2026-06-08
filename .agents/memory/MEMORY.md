@@ -1,2 +1,3 @@
-- [jsPDF Amharic/Ge'ez rendering](jspdf-amharic-fonts.md) — jsPDF can't render Ge'ez with helvetica/times; must embed a STATIC Abyssinica SIL TTF as base64 and register as a font family.
-- [AI array translation robustness](ai-translation-index-map.md) — translating ordered text via LLM: send an index→string map and rebuild with per-item fallback; never hard-fail on count mismatch.
+- [Drizzle push broken](drizzle-push-broken.md) — drizzle-kit 1.0.0-rc.2 vs drizzle-orm 0.45.2 breaks `db:push`; create/alter tables via raw SQL instead.
+- [RBAC deny-by-default](rbac-deny-by-default.md) — server apiAccessGuard must deny unmapped /api routes; new endpoints need an API_PAGE_RULES entry or they're blocked for non-admins.
+- [Server has no watch mode](server-no-watch.md) — backend .ts edits need restart_workflow; Vite HMR only covers client.

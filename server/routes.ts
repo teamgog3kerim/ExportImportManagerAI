@@ -6,6 +6,7 @@ import { generateAIResponse, generateDailySummary, translateReportToAmharic } fr
 import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema, insertSaleSchema } from "@shared/schema";
 import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
 import { buildReport } from "./lib/reportNarrator";
+import { apiAccessGuard, ensureBootstrapAdmin, registerAuthRoutes } from "./auth";
 
 let lastScrapeAt = 0;
 let lastScrapeOk = false;
@@ -35,6 +36,16 @@ async function refreshLiveRates() {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Ensure the bootstrap administrator account exists.
+  await ensureBootstrapAdmin();
+
+  // Global access-control guard for all /api routes (skips /api/auth/*).
+  // Registered before route handlers so req.currentUser is populated.
+  app.use(apiAccessGuard());
+
+  // Auth endpoints (public) + admin user-management endpoints.
+  registerAuthRoutes(app);
+
   // Dashboard
   app.get("/api/dashboard", async (_req, res) => {
     const [lcs, shipments, inventory, rates] = await Promise.all([

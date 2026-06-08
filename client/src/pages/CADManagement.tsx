@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Plus, Search, Banknote, Pencil, Trash2, FileCheck, Globe, TrendingUp } from "lucide-react";
 import type { Cad, Buyer } from "@shared/schema";
 import { COUNTRIES, countriesWith } from "@/lib/countries";
+import { useAuth, canRecord } from "@/lib/auth";
 
 const BUYER_OTHER = "__other__";
 const PAYMENT_TERMS = ["Sight", "30 Days", "60 Days", "90 Days", "120 Days"];
@@ -27,6 +28,8 @@ function statusVariant(s: string): any {
 }
 
 export default function CADManagement() {
+  const { user } = useAuth();
+  const writable = canRecord(user, "export-cads");
   const { toast } = useToast();
   const { data: cads = [], isLoading } = useQuery<Cad[]>({ queryKey: ["/api/export/cads"] });
   const { data: buyers = [] } = useQuery<Buyer[]>({ queryKey: ["/api/settings/buyers"] });
@@ -150,9 +153,11 @@ export default function CADManagement() {
         title="Cash Against Documents"
         description="Manage export payment instruments and preview NBE forex settlement in real time."
         actions={
-          <Button onClick={openNew} data-testid="button-create-cad">
-            <Plus className="h-4 w-4 mr-1.5" /> New CAD
-          </Button>
+          writable && (
+            <Button onClick={openNew} data-testid="button-create-cad">
+              <Plus className="h-4 w-4 mr-1.5" /> New CAD
+            </Button>
+          )
         }
       />
 
@@ -265,12 +270,16 @@ export default function CADManagement() {
                     <td className="px-4 py-3"><Badge variant={statusVariant(c.status ?? "")}>{c.status}</Badge></td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(c)} data-testid={`button-edit-cad-${i}`}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(c.id)} data-testid={`button-delete-cad-${i}`}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={() => openEdit(c)} data-testid={`button-edit-cad-${i}`}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(c.id)} data-testid={`button-delete-cad-${i}`}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -455,9 +464,11 @@ export default function CADManagement() {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setOpenModal(false)}>Cancel</Button>
-            <Button onClick={submit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-cad">
-              {editItem ? "Save Updates" : "Create CAD"}
-            </Button>
+            {writable && (
+              <Button onClick={submit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-cad">
+                {editItem ? "Save Updates" : "Create CAD"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ETHIOPIAN_BANKS, swiftForBank } from "@/lib/ethiopianBanks";
 import type { CompanySettings, NotificationSettings, Bank, Supplier, Buyer, Certification } from "@shared/schema";
 import { countriesWith } from "@/lib/countries";
+import UserManagementPanel from "@/components/UserManagementPanel";
 
 const OTHER_BANK = "__other__";
 
@@ -523,19 +524,7 @@ export default function Settings() {
       )}
 
       {/* Configurations Tab */}
-      {tab === "configurations" && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Configurations</CardTitle>
-            <p className="text-xs text-muted-foreground">App-level configuration options will appear here.</p>
-          </CardHeader>
-          <CardContent>
-            <div className="py-12 text-center text-xs text-muted-foreground" data-testid="text-configurations-placeholder">
-              Coming soon.
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {tab === "configurations" && <UserManagementPanel />}
 
       {/* Bank Modal */}
       <Dialog open={bankModal} onOpenChange={(o) => { setBankModal(o); if (!o) { setBankSelect(""); setBankForm({ bankName: "", accountNumber: "", swiftBic: "", currency: "ETB / USD" }); } }}>

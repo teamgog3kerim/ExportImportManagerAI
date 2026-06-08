@@ -23,7 +23,7 @@ function genSerials(prefix: string, count: number): string[] {
 }
 
 import type {
-  User, InsertUser, LC, InsertLC, Shipment, InsertShipment,
+  LC, InsertLC, Shipment, InsertShipment,
   InventoryItem, InsertInventoryItem, Sale, InsertSale, SaleLineItem, AvailableSerial,
   ExchangeRate, Bank, InsertBank,
   Supplier, InsertSupplier, Buyer, InsertBuyer, Certification, InsertCertification,
@@ -39,9 +39,6 @@ import type {
 } from "@shared/schema";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
   // LCs
   getLCs(): Promise<LC[]>;
   getLC(id: string): Promise<LC | undefined>;
@@ -142,7 +139,6 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
-  private users = new Map<string, User>();
   private lcs = new Map<string, LC>();
   private shipments = new Map<string, Shipment>();
   private inventory = new Map<string, InventoryItem>();
@@ -340,15 +336,6 @@ export class MemStorage implements IStorage {
       { id: randomUUID(), buyerName: "Milano Pelle SRL", linkedCadId: null, invoiceNumber: "EXP-INV-003", invoiceDate: "2024-04-25", dueDate: "2024-05-25", receivedDate: "2024-05-20", totalAmountEtb: "4382220", receivedAmountEtb: "4382220", currency: "USD", paymentMethod: "CAD — Sight", status: "Received", notes: "Settled in full", createdAt: now },
     ];
     arData.forEach(p => this.customerPayments.set(p.id, p));
-  }
-
-  async getUser(id: string) { return this.users.get(id); }
-  async getUserByUsername(username: string) { return Array.from(this.users.values()).find(u => u.username === username); }
-  async createUser(user: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const u: User = { ...user, id };
-    this.users.set(id, u);
-    return u;
   }
 
   async getLCs() { return Array.from(this.lcs.values()); }

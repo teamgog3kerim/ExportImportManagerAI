@@ -23,6 +23,7 @@ import {
   PieChart, Pie, Cell, LineChart, Line,
 } from "recharts";
 import type { Expense, PettyCashAccount, PettyCashTransaction, SupplierPayment, CustomerPayment, LC, Cad } from "@shared/schema";
+import { useAuth, canRecord } from "@/lib/auth";
 
 const TABS = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -225,6 +226,8 @@ type ExpenseForm = Partial<Expense>;
 const emptyExpense: ExpenseForm = { expenseTitle: "", category: "Other", expenseDate: new Date().toISOString().slice(0, 10), amountEtb: "0", vatAmountEtb: "0", currency: "ETB", paymentMethod: "Cash", approvalStatus: "Approved" };
 
 function ExpensesTab() {
+  const { user } = useAuth();
+  const writable = canRecord(user, "finance");
   const { toast } = useToast();
   const { data: expenses = [], isLoading } = useQuery<Expense[]>({ queryKey: ["/api/finance/expenses"] });
   const [open, setOpen] = useState(false);
@@ -265,7 +268,9 @@ function ExpensesTab() {
           <h2 className="text-lg font-semibold">Expense Manager</h2>
           <p className="text-xs text-muted-foreground">Total recorded: {CURRENCY(total)}</p>
         </div>
-        <Button onClick={openCreate} data-testid="button-add-expense"><Plus className="h-4 w-4 mr-1" /> Add Expense</Button>
+        {writable && (
+          <Button onClick={openCreate} data-testid="button-add-expense"><Plus className="h-4 w-4 mr-1" /> Add Expense</Button>
+        )}
       </div>
 
       <Card>
@@ -298,8 +303,12 @@ function ExpensesTab() {
                     <TableCell className="text-right text-xs text-muted-foreground">{CURRENCY(e.vatAmountEtb ?? 0)}</TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-end">
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(e)} data-testid={`button-edit-expense-${e.id}`}><Pencil className="h-3.5 w-3.5" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMut.mutate(e.id)} data-testid={`button-delete-expense-${e.id}`}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button>
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={() => openEdit(e)} data-testid={`button-edit-expense-${e.id}`}><Pencil className="h-3.5 w-3.5" /></Button>
+                        )}
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={() => deleteMut.mutate(e.id)} data-testid={`button-delete-expense-${e.id}`}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -337,7 +346,9 @@ function ExpensesTab() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={submit} disabled={createMut.isPending || updateMut.isPending} data-testid="button-save-expense">Save</Button>
+            {writable && (
+              <Button onClick={submit} disabled={createMut.isPending || updateMut.isPending} data-testid="button-save-expense">Save</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -348,6 +359,8 @@ function ExpensesTab() {
 // =================== PETTY CASH ===================
 
 function PettyCashTab() {
+  const { user } = useAuth();
+  const writable = canRecord(user, "finance");
   const { toast } = useToast();
   const { data: accounts = [] } = useQuery<PettyCashAccount[]>({ queryKey: ["/api/finance/petty-cash/accounts"] });
   const { data: allTxns = [] } = useQuery<PettyCashTransaction[]>({ queryKey: ["/api/finance/petty-cash/transactions"] });
@@ -385,9 +398,11 @@ function PettyCashTab() {
     <div className="space-y-4">
       <div className="flex flex-wrap justify-between items-center gap-3">
         <h2 className="text-lg font-semibold">Petty Cash Manager</h2>
-        <Button onClick={() => { setAccountForm({ holderName: "", assignedAmountEtb: "0", lowBalanceThresholdEtb: "1000", status: "Active" }); setAccountOpen(true); }} data-testid="button-add-petty-account">
-          <Plus className="h-4 w-4 mr-1" /> New Account
-        </Button>
+        {writable && (
+          <Button onClick={() => { setAccountForm({ holderName: "", assignedAmountEtb: "0", lowBalanceThresholdEtb: "1000", status: "Active" }); setAccountOpen(true); }} data-testid="button-add-petty-account">
+            <Plus className="h-4 w-4 mr-1" /> New Account
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -408,8 +423,12 @@ function PettyCashTab() {
                     <p className="text-xs text-muted-foreground">{a.department || "—"}</p>
                   </div>
                   <div className="flex gap-1">
-                    <Button size="sm" variant="outline" onClick={() => openTxn(a.id)} data-testid={`button-petty-txn-${a.id}`}><Plus className="h-3 w-3 mr-1" /> Txn</Button>
-                    <Button size="icon" variant="ghost" onClick={() => deleteAccount.mutate(a.id)}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button>
+                    {writable && (
+                      <Button size="sm" variant="outline" onClick={() => openTxn(a.id)} data-testid={`button-petty-txn-${a.id}`}><Plus className="h-3 w-3 mr-1" /> Txn</Button>
+                    )}
+                    {writable && (
+                      <Button size="icon" variant="ghost" onClick={() => deleteAccount.mutate(a.id)}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -462,10 +481,12 @@ function PettyCashTab() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAccountOpen(false)}>Cancel</Button>
-            <Button onClick={() => {
-              if (!accountForm.holderName) { toast({ title: "Holder name required", variant: "destructive" }); return; }
-              createAccount.mutate({ ...accountForm, balanceEtb: accountForm.assignedAmountEtb ?? "0" });
-            }} data-testid="button-save-petty-account">Create</Button>
+            {writable && (
+              <Button onClick={() => {
+                if (!accountForm.holderName) { toast({ title: "Holder name required", variant: "destructive" }); return; }
+                createAccount.mutate({ ...accountForm, balanceEtb: accountForm.assignedAmountEtb ?? "0" });
+              }} data-testid="button-save-petty-account">Create</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -497,7 +518,9 @@ function PettyCashTab() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTxnOpen(false)}>Cancel</Button>
-            <Button onClick={() => createTxn.mutate(txnForm)} disabled={createTxn.isPending} data-testid="button-save-petty-txn">Post</Button>
+            {writable && (
+              <Button onClick={() => createTxn.mutate(txnForm)} disabled={createTxn.isPending} data-testid="button-save-petty-txn">Post</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -515,6 +538,8 @@ function statusVariant(s: string): "default" | "secondary" | "destructive" | "ou
 }
 
 function PayablesTab() {
+  const { user } = useAuth();
+  const writable = canRecord(user, "finance");
   const { toast } = useToast();
   const { data: payables = [] } = useQuery<SupplierPayment[]>({ queryKey: ["/api/finance/payables"] });
   const [open, setOpen] = useState(false);
@@ -551,7 +576,9 @@ function PayablesTab() {
           <h2 className="text-lg font-semibold">Accounts Payable</h2>
           <p className="text-xs text-muted-foreground">Outstanding: {CURRENCY(totalOutstanding)}</p>
         </div>
-        <Button onClick={openCreate} data-testid="button-add-payable"><Plus className="h-4 w-4 mr-1" /> Add Payable</Button>
+        {writable && (
+          <Button onClick={openCreate} data-testid="button-add-payable"><Plus className="h-4 w-4 mr-1" /> Add Payable</Button>
+        )}
       </div>
 
       <Card><CardContent className="p-0">
@@ -583,8 +610,12 @@ function PayablesTab() {
                     <TableCell><Badge variant={statusVariant(p.status ?? "Pending")}>{p.status}</Badge></TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-end">
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(p)} data-testid={`button-edit-payable-${p.id}`}><Pencil className="h-3.5 w-3.5" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMut.mutate(p.id)}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button>
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={() => openEdit(p)} data-testid={`button-edit-payable-${p.id}`}><Pencil className="h-3.5 w-3.5" /></Button>
+                        )}
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={() => deleteMut.mutate(p.id)}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -628,7 +659,9 @@ function PayablesTab() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={submit} data-testid="button-save-payable">Save</Button>
+            {writable && (
+              <Button onClick={submit} data-testid="button-save-payable">Save</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -639,6 +672,8 @@ function PayablesTab() {
 // =================== A/R (RECEIVABLES) ===================
 
 function ReceivablesTab() {
+  const { user } = useAuth();
+  const writable = canRecord(user, "finance");
   const { toast } = useToast();
   const { data: receivables = [] } = useQuery<CustomerPayment[]>({ queryKey: ["/api/finance/receivables"] });
   const [open, setOpen] = useState(false);
@@ -675,7 +710,9 @@ function ReceivablesTab() {
           <h2 className="text-lg font-semibold">Accounts Receivable</h2>
           <p className="text-xs text-muted-foreground">Outstanding: {CURRENCY(totalOutstanding)}</p>
         </div>
-        <Button onClick={openCreate} data-testid="button-add-receivable"><Plus className="h-4 w-4 mr-1" /> Add Receivable</Button>
+        {writable && (
+          <Button onClick={openCreate} data-testid="button-add-receivable"><Plus className="h-4 w-4 mr-1" /> Add Receivable</Button>
+        )}
       </div>
 
       <Card><CardContent className="p-0">
@@ -707,8 +744,12 @@ function ReceivablesTab() {
                     <TableCell><Badge variant={statusVariant(p.status ?? "Pending")}>{p.status}</Badge></TableCell>
                     <TableCell>
                       <div className="flex gap-1 justify-end">
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(p)} data-testid={`button-edit-receivable-${p.id}`}><Pencil className="h-3.5 w-3.5" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteMut.mutate(p.id)}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button>
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={() => openEdit(p)} data-testid={`button-edit-receivable-${p.id}`}><Pencil className="h-3.5 w-3.5" /></Button>
+                        )}
+                        {writable && (
+                          <Button size="icon" variant="ghost" onClick={() => deleteMut.mutate(p.id)}><Trash2 className="h-3.5 w-3.5 text-red-500" /></Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -752,7 +793,9 @@ function ReceivablesTab() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={submit} data-testid="button-save-receivable">Save</Button>
+            {writable && (
+              <Button onClick={submit} data-testid="button-save-receivable">Save</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

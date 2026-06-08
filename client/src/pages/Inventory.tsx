@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Package, AlertTriangle, Pencil, Trash2, Zap } from "lucide-react";
 import type { InventoryItem } from "@shared/schema";
+import { useAuth, canRecord } from "@/lib/auth";
 
 const WAREHOUSES = ["Kality A1", "Modjo Dry Port", "Addis Ababa Central", "Djibouti Free Zone", "Hawassa"];
 const STOCK_STATUSES = ["In Stock", "Low Stock", "Out of Stock", "Reserved"];
@@ -25,6 +26,8 @@ function stockColor(s: string) {
 }
 
 export default function InventoryPage() {
+  const { user } = useAuth();
+  const writable = canRecord(user, "import-inventory");
   const { toast } = useToast();
   const { data: items = [], isLoading } = useQuery<InventoryItem[]>({ queryKey: ["/api/inventory"] });
   const { data: shipments = [] } = useQuery<any[]>({ queryKey: ["/api/shipments"] });
@@ -77,9 +80,11 @@ export default function InventoryPage() {
           <h1 className="text-2xl font-bold">Inventory</h1>
           <p className="text-sm text-muted-foreground">Post-clearance stock tracking and warehouse management</p>
         </div>
-        <Button onClick={openNew} data-testid="button-create-inventory">
-          <Plus className="h-4 w-4 mr-1.5" /> Create New Inventory
-        </Button>
+        {writable && (
+          <Button onClick={openNew} data-testid="button-create-inventory">
+            <Plus className="h-4 w-4 mr-1.5" /> Create New Inventory
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -182,12 +187,16 @@ export default function InventoryPage() {
                         <td className="px-4 py-3 text-right font-medium">{item.unitSalePriceEtb} ETB</td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Button size="icon" variant="ghost" onClick={() => openEdit(item)} data-testid={`button-edit-inventory-${i}`}>
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(item.id)} data-testid={`button-delete-inventory-${i}`}>
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
+                            {writable && (
+                              <Button size="icon" variant="ghost" onClick={() => openEdit(item)} data-testid={`button-edit-inventory-${i}`}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            )}
+                            {writable && (
+                              <Button size="icon" variant="ghost" onClick={() => deleteMutation.mutate(item.id)} data-testid={`button-delete-inventory-${i}`}>
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -358,9 +367,11 @@ export default function InventoryPage() {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setOpenModal(false)}>Cancel</Button>
-            <Button onClick={submit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-inventory">
-              {editItem ? "Save Updates" : "Add to Inventory"}
-            </Button>
+            {writable && (
+              <Button onClick={submit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit-inventory">
+                {editItem ? "Save Updates" : "Add to Inventory"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

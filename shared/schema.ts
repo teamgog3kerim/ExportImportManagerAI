@@ -1,12 +1,18 @@
-import { pgTable, text, varchar, numeric, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, numeric, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import type { PermLevel } from "./permissions";
 
 // Users
 export const users = pgTable("users", {
   id: varchar("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  fullName: text("full_name").notNull(),
+  role: text("role").notNull().default("staff"),
+  status: text("status").notNull().default("pending"),
+  permissions: jsonb("permissions").$type<Record<string, PermLevel>>().notNull().default({}),
+  createdAt: text("created_at").notNull(),
 });
 
 // Letters of Credit (Import)
@@ -355,7 +361,7 @@ export const reports = pgTable("reports", {
 });
 
 // Schemas
-export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true });
 export const insertLcSchema = createInsertSchema(lcs).omit({ id: true, createdAt: true });
 export const insertShipmentSchema = createInsertSchema(shipments).omit({ id: true, createdAt: true });
