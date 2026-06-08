@@ -295,7 +295,7 @@ export default function CostEstimator() {
     <div className="p-6 space-y-6">
       <PageHeader
         eyebrow="Import · Landed Cost"
-        title="Cost Estimator"
+        title="Landed Cost Estimator"
         description="Build up the full landed cost per unit — invoice, insurance, bank charges, duties, port, warehouse and margin scenarios."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
