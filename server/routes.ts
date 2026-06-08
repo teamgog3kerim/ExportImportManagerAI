@@ -7,6 +7,7 @@ import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema
 import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
 import { buildReport } from "./lib/reportNarrator";
 import { apiAccessGuard, ensureBootstrapAdmin, registerAuthRoutes } from "./auth";
+import { runMigrations, verifyAuthSchema } from "./migrate";
 
 let lastScrapeAt = 0;
 let lastScrapeOk = false;
@@ -36,6 +37,12 @@ async function refreshLiveRates() {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Apply checked-in SQL migrations (users + session tables), then verify the
+  // auth schema is intact before anything touches it. db:push is broken here,
+  // so migrations are the versioned, repeatable source of truth.
+  await runMigrations();
+  await verifyAuthSchema();
+
   // Ensure the bootstrap administrator account exists.
   await ensureBootstrapAdmin();
 
