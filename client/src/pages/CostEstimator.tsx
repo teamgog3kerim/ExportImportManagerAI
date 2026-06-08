@@ -538,7 +538,7 @@ export default function CostEstimator() {
         {/* ===== MARGIN ===== */}
         <TabsContent value="margin" className="space-y-6 mt-6">
           <Card className="overflow-hidden">
-            <SectionHeader icon={<BarChart3 className="h-4 w-4" />} title="Margin Analysis & Pricing Scenarios" badge="Duty-Paid Price at Each Margin Rate" />
+            <SectionHeader icon={<BarChart3 className="h-4 w-4" />} title="Margin Analysis & Pricing Scenarios" badge="Total Cost plus Margin at Each Rate" />
             <div className="flex flex-wrap gap-6 bg-muted/50 px-4 py-3 border-b">
               <MetaItem label="Landed Cost / Unit" value={`${fmt(c.N57)} ETB`} />
               <MetaItem label="FOB / Unit (USD)" value={`${fmt(c.M14)} USD`} />
@@ -548,7 +548,7 @@ export default function CostEstimator() {
               <MetaItem label="Forecasted Increment" value={fpct4(c.M11)} />
             </div>
             <p className="px-4 py-3 text-xs text-muted-foreground bg-muted/30 border-b">
-              Each row shows the duty-paid selling price at that margin percentage. The amber row is the forecasted value for the projected period; the highlighted row is the zero-margin cost price.
+              Each row shows the total cost plus margin at that margin percentage. The amber row is the forecasted value for the projected period; the highlighted row is the zero-margin cost price.
             </p>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm" style={{ minWidth: "520px" }}>
@@ -557,7 +557,7 @@ export default function CostEstimator() {
                     <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider">Description</th>
                     <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Margin Rate</th>
                     <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Margin Amount (ETB)</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Duty Paid Total (ETB)</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Total Cost plus Margin (ETB)</th>
                   </tr>
                 </thead>
                 <tbody>
