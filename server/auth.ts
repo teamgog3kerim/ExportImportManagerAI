@@ -17,8 +17,8 @@ import {
 
 const scryptAsync = promisify(scrypt);
 
-const BOOTSTRAP_ADMIN_EMAIL = "teamgog3@gmail.com";
-const BOOTSTRAP_ADMIN_PASSWORD = "WeyMerSar@Hon13Ker29";
+export const BOOTSTRAP_ADMIN_EMAIL = "teamgog3@gmail.com";
+export const BOOTSTRAP_ADMIN_PASSWORD = "WeyMerSar@Hon13Ker29";
 const BOOTSTRAP_ADMIN_NAME = "Midas Admin";
 
 export type SafeUser = {
