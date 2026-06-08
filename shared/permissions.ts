@@ -106,6 +106,18 @@ export function pageForApiPath(path: string): string | null {
   return API_PAGE_RULES.find((r) => r.test.test(path))?.page ?? null;
 }
 
+// Non-GET endpoints that compute/generate a response without persisting data.
+// These are read-style operations: a "view" user may call them, they do NOT
+// require "record" access.
+export const READ_STYLE_POST_PATHS: RegExp[] = [
+  /^\/api\/ai\//,
+  /^\/api\/reports\/generate/,
+];
+
+export function isReadStylePost(path: string): boolean {
+  return READ_STYLE_POST_PATHS.some((r) => r.test(path));
+}
+
 export function pageForRoute(route: string): string | null {
   const found = PAGES.find((p) => p.path === route);
   return found ? found.key : null;

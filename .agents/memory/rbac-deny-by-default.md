@@ -1,23 +1,25 @@
 ---
-name: RBAC deny-by-default guard
-description: How per-page API authorization works and the trap with new endpoints
+name: RBAC permission semantics
+description: How per-page view/record authorization decides what to allow
 ---
 
-The server `apiAccessGuard` (server/auth.ts) authorizes every `/api/*` request for
-non-admins by mapping the path to a page key via `API_PAGE_RULES`
-(shared/permissions.ts), then checking the user's per-page level (none/view/record).
-Writes (non-GET) require `record`.
+Authorization is per-page with two levels: `view` (read) and `record` (read+write).
+A central server guard maps each `/api` request to a page and checks the user's
+level; admins bypass everything.
 
-**Rule:** unmapped `/api` paths are DENIED (403), not allowed through. Auth routes
-(`/api/auth/*`), `/api/settings*` (read=any active user, write=admin), and
-`/api/users*` (admin only) are handled explicitly before the page-rule check. Admins
-bypass all of it.
+**Rule 1 — deny by default:** an `/api` path that isn't explicitly mapped to a page
+(and isn't an auth/settings/users route handled separately) is forbidden for
+non-admins. New endpoints must be mapped or they're blocked.
+**Why:** an "allow if unmapped" default silently let non-admins hit new endpoints
+regardless of permissions — a real authorization bypass.
 
-**Why:** an earlier version did `if (!pageKey) return next()`, which silently let
-any authenticated non-admin hit unmapped endpoints (e.g. `/api/reports`) regardless
-of permissions — a real authorization bypass.
+**Rule 2 — write vs read is about persistence, not HTTP verb:** a non-GET request
+that only computes/generates a response without persisting (e.g. AI chat, report
+generation) is a *read* and is allowed at `view` level. Only requests that create,
+update, or delete stored data require `record`.
+**Why:** treating every POST as a write made read-only features (generate-a-report,
+chat) 403 for view users and forced the UI to hide genuinely-readable actions.
 
-**How to apply:** when you add a new `/api` resource, add a matching entry to
-`API_PAGE_RULES` (and a page in `PAGES` if it's a new section) or it will be blocked
-for everyone except admins. Client `canView`/`canRecord` (client/src/lib/auth.ts)
-must use the same page keys so UI gating matches server enforcement.
+**How to apply:** keep client `canView`/`canRecord` gating in lockstep with the
+server — same page keys, and read-style POST controls (generate/chat) shown to view
+users while persist actions (save/delete) stay behind `canRecord`.

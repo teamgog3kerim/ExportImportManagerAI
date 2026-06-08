@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { ReportDialog } from "@/components/ReportDialog";
+import { useAuth, canRecord } from "@/lib/auth";
 import { useState } from "react";
 
 function fmt(n: number | string) {
@@ -19,6 +20,8 @@ function fmt(n: number | string) {
 
 export default function Dashboard() {
   const { data, isLoading } = useQuery<any>({ queryKey: ["/api/dashboard"] });
+  const { user } = useAuth();
+  const canSaveReports = canRecord(user, "dashboard");
   const [reportOpen, setReportOpen] = useState(false);
 
   if (isLoading) {
@@ -194,7 +197,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <ReportDialog open={reportOpen} onOpenChange={setReportOpen} />
+      <ReportDialog open={reportOpen} onOpenChange={setReportOpen} canSave={canSaveReports} />
     </div>
   );
 }

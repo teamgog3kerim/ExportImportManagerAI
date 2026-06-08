@@ -311,7 +311,7 @@ function safeFilename(s: string) {
   return s.replace(/[^a-z0-9-_]+/gi, "_").replace(/^_+|_+$/g, "");
 }
 
-export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+export function ReportDialog({ open, onOpenChange, canSave = true }: { open: boolean; onOpenChange: (v: boolean) => void; canSave?: boolean }) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"new" | "archive">("new");
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
@@ -606,9 +606,11 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                         </div>
                         <Badge variant="secondary" className="shrink-0">{a.periodLabel}</Badge>
                         <Button variant="outline" size="sm" onClick={() => openArchived(a)} data-testid={`button-open-${a.id}`}>Open</Button>
-                        <Button variant="ghost" size="icon" onClick={() => del.mutate(a.id)} data-testid={`button-delete-${a.id}`}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        {canSave && (
+                          <Button variant="ghost" size="icon" onClick={() => del.mutate(a.id)} data-testid={`button-delete-${a.id}`}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
@@ -694,10 +696,12 @@ export function ReportDialog({ open, onOpenChange }: { open: boolean; onOpenChan
                 <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Back
               </Button>
               <div className="flex-1" />
-              <Button variant="outline" size="sm" onClick={() => save.mutate()} disabled={save.isPending} data-testid="button-save-archive">
-                {save.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Archive className="h-3.5 w-3.5 mr-1.5" />}
-                Save to Archive
-              </Button>
+              {canSave && (
+                <Button variant="outline" size="sm" onClick={() => save.mutate()} disabled={save.isPending} data-testid="button-save-archive">
+                  {save.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Archive className="h-3.5 w-3.5 mr-1.5" />}
+                  Save to Archive
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={share} data-testid="button-share">
                 <Share2 className="h-3.5 w-3.5 mr-1.5" /> Share
               </Button>

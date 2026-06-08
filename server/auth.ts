@@ -9,6 +9,7 @@ import { db, pool } from "./db";
 import { users } from "@shared/schema";
 import {
   defaultPermsForRole,
+  isReadStylePost,
   pageForApiPath,
   type PermLevel,
   type Role,
@@ -140,7 +141,11 @@ export function apiAccessGuard() {
       return res.status(403).json({ message: "Administrator access required" });
     }
 
-    const isWrite = req.method !== "GET" && req.method !== "HEAD" && req.method !== "OPTIONS";
+    const isWrite =
+      req.method !== "GET" &&
+      req.method !== "HEAD" &&
+      req.method !== "OPTIONS" &&
+      !isReadStylePost(req.path);
 
     // Settings sub-resources are shared lookups: any active user may read,
     // only admins may write.
