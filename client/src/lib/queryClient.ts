@@ -1,5 +1,18 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+const PUBLIC_PATHS = ["/", "/signin", "/signup"];
+
+// Centralized handling for any API call that comes back 401 (session expired,
+// account blocked/deleted, etc.). Clears cached auth/data and forces the user
+// back to the sign-in screen on their next request.
+function handleUnauthorized() {
+  queryClient.setQueryData(["/api/auth/me"], null);
+  queryClient.clear();
+  if (typeof window !== "undefined" && !PUBLIC_PATHS.includes(window.location.pathname)) {
+    window.location.href = "/signin";
+  }
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -19,6 +32,10 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  if (res.status === 401) {
+    handleUnauthorized();
+  }
+
   await throwIfResNotOk(res);
   return res;
 }
@@ -33,8 +50,14 @@ export const getQueryFn: <T>(options: {
       credentials: "include",
     });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    if (res.status === 401) {
+      // returnNull is used by the auth probe itself (useAuth) — don't redirect
+      // there, just report "not signed in". For any other query, a 401 means
+      // the session is gone, so force a clean redirect to sign-in.
+      if (unauthorizedBehavior === "returnNull") {
+        return null;
+      }
+      handleUnauthorized();
     }
 
     await throwIfResNotOk(res);
