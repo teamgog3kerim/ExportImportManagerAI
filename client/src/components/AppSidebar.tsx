@@ -42,12 +42,12 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="px-3 py-3 border-b">
+      <SidebarHeader className="px-2 py-3 border-b">
         <div className="flex items-center justify-center">
           <img
             src={eximmanLogo}
             alt="EXIMMAN — Export · Import · Manager"
-            className="h-24 w-full max-w-[200px] object-contain"
+            className="w-full h-auto object-contain"
             data-testid="img-brand-logo"
           />
         </div>
