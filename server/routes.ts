@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { generateAIResponse, generateDailySummary, translateReportToAmharic } from "./openai";
-import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema, insertSaleSchema } from "@shared/schema";
+import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema, updateSupplierPaymentSchema, updateCustomerPaymentSchema, insertSaleSchema } from "@shared/schema";
 import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
 import { buildReport } from "./lib/reportNarrator";
 import { apiAccessGuard, ensureBootstrapAdmin, registerAuthRoutes } from "./auth";
@@ -462,8 +462,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(201).json(await storage.createSupplierPayment(parsed.data));
   });
   app.patch("/api/finance/payables/:id", async (req, res) => {
-    const parsed = insertSupplierPaymentSchema.partial().safeParse(req.body);
+    const parsed = updateSupplierPaymentSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid update", errors: parsed.error.flatten() });
+    const current = (await storage.getSupplierPayments()).find(p => p.id === req.params.id);
+    if (!current) return res.status(404).json({ message: "Payable not found" });
+    const merged = { ...current, ...parsed.data };
+    if (Number(merged.paidAmountEtb ?? 0) > Number(merged.totalAmountEtb)) {
+      return res.status(400).json({ message: "Invalid update", errors: { fieldErrors: { paidAmountEtb: ["Paid amount cannot exceed total amount"] } } });
+    }
     const u = await storage.updateSupplierPayment(req.params.id, parsed.data);
     if (!u) return res.status(404).json({ message: "Payable not found" });
     res.json(u);
@@ -482,8 +488,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(201).json(await storage.createCustomerPayment(parsed.data));
   });
   app.patch("/api/finance/receivables/:id", async (req, res) => {
-    const parsed = insertCustomerPaymentSchema.partial().safeParse(req.body);
+    const parsed = updateCustomerPaymentSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ message: "Invalid update", errors: parsed.error.flatten() });
+    const current = (await storage.getCustomerPayments()).find(p => p.id === req.params.id);
+    if (!current) return res.status(404).json({ message: "Receivable not found" });
+    const merged = { ...current, ...parsed.data };
+    if (Number(merged.receivedAmountEtb ?? 0) > Number(merged.totalAmountEtb)) {
+      return res.status(400).json({ message: "Invalid update", errors: { fieldErrors: { receivedAmountEtb: ["Received amount cannot exceed total amount"] } } });
+    }
     const u = await storage.updateCustomerPayment(req.params.id, parsed.data);
     if (!u) return res.status(404).json({ message: "Receivable not found" });
     res.json(u);

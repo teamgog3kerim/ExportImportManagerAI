@@ -383,26 +383,35 @@ export const insertPettyCashTransactionSchema = createInsertSchema(pettyCashTran
     amountEtb: z.string().refine(v => Number(v) > 0, { message: "Amount must be > 0" }),
   });
 const nonNegativeNumericStr = z.string().refine(v => Number(v) >= 0 && isFinite(Number(v)), { message: "Must be a non-negative number" });
-export const insertSupplierPaymentSchema = createInsertSchema(supplierPayments)
+const supplierPaymentBase = createInsertSchema(supplierPayments)
   .omit({ id: true, createdAt: true })
   .extend({
     totalAmountEtb: nonNegativeNumericStr,
     paidAmountEtb: nonNegativeNumericStr.optional(),
-  })
-  .refine(d => Number(d.paidAmountEtb ?? 0) <= Number(d.totalAmountEtb), {
-    message: "Paid amount cannot exceed total amount",
-    path: ["paidAmountEtb"],
   });
-export const insertCustomerPaymentSchema = createInsertSchema(customerPayments)
+export const insertSupplierPaymentSchema = supplierPaymentBase.refine(
+  d => Number(d.paidAmountEtb ?? 0) <= Number(d.totalAmountEtb),
+  { message: "Paid amount cannot exceed total amount", path: ["paidAmountEtb"] },
+);
+export const updateSupplierPaymentSchema = supplierPaymentBase.partial().refine(
+  d => d.totalAmountEtb === undefined || Number(d.paidAmountEtb ?? 0) <= Number(d.totalAmountEtb),
+  { message: "Paid amount cannot exceed total amount", path: ["paidAmountEtb"] },
+);
+
+const customerPaymentBase = createInsertSchema(customerPayments)
   .omit({ id: true, createdAt: true })
   .extend({
     totalAmountEtb: nonNegativeNumericStr,
     receivedAmountEtb: nonNegativeNumericStr.optional(),
-  })
-  .refine(d => Number(d.receivedAmountEtb ?? 0) <= Number(d.totalAmountEtb), {
-    message: "Received amount cannot exceed total amount",
-    path: ["receivedAmountEtb"],
   });
+export const insertCustomerPaymentSchema = customerPaymentBase.refine(
+  d => Number(d.receivedAmountEtb ?? 0) <= Number(d.totalAmountEtb),
+  { message: "Received amount cannot exceed total amount", path: ["receivedAmountEtb"] },
+);
+export const updateCustomerPaymentSchema = customerPaymentBase.partial().refine(
+  d => d.totalAmountEtb === undefined || Number(d.receivedAmountEtb ?? 0) <= Number(d.totalAmountEtb),
+  { message: "Received amount cannot exceed total amount", path: ["receivedAmountEtb"] },
+);
 
 // Types
 export type User = typeof users.$inferSelect;
