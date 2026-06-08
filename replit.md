@@ -26,6 +26,7 @@ Full-stack TypeScript with React frontend and Express backend.
 6. **Import Shipments** — Route tracking (Supplier→Port→Sea→Djibouti→Modjo→Warehouse), documents, customs financials, pre-fill from approved LC
 7. **Inventory** — Post-clearance stock with warehouse utilization, low stock alerts, AI stock forecasting. Each item carries auto-generated per-unit serial numbers (prefix from shipment ref)
 8. **Sales** (Import) — Sell cleared inventory by serial number with full traceability. Multi-select available serials from stock, record customer/TIN/contact, payment method & status, per-line pricing, discount and 15% VAT totals. Selling marks serials sold so they leave available stock and decrement quantities; reversing a sale releases serials back. Includes a Serial Number Tracer that reports whether any serial is in stock or which sale/customer it went to
+9. **Cost Estimator** — Professional Landed Cost Build-Up Calculator (per-unit ETB). Four tabs: Shipment Input (header fields, qty/FOB, exchange rates with opening/settlement/forecasted increments), Cost Breakdown (full line-by-line build-up — FOB→C&F→CIF, marine insurance 2%, bank charges, taxes & duties with total tax rate and actual duty, port/Djibouti transport, storage, warehouse/assembly, scanning, miscellaneous → sub-total & total landed cost, cost rate ETB/USD), Margin Analysis (duty-paid price across margin scenarios 100%→0% plus forecasted-period row), and Records (save/load/delete/clear/search/export-CSV, stored in browser localStorage). Calculations are an exact port of the source workbook; visible line-item descriptions intentionally omit formula annotations and cell references
 10. **Customs Engine** — Real-time tax calculator: CIF = FOB + Freight + Insurance; Duty(20%) + Surtax(3%) + VAT(15%) + Withholding(3%), required documents status, AI HS code classification
 11. **Settings** — Company profile (Midas Global Trade Ltd), Banks, Suppliers, Certifications, Notifications with toggles
 
@@ -72,6 +73,7 @@ Full-stack TypeScript with React frontend and Express backend.
 - `/import/shipments` — Import Shipments
 - `/import/inventory` — Inventory
 - `/import/sales` — Sales (sell inventory by serial number)
+- `/cost-estimator` — Cost Estimator (Landed Cost Build-Up Calculator, client-side localStorage records)
 - `/customs` — Customs Engine
 - `/settings` — Settings (Company/Banks/Suppliers/Certs/Notifications)
 

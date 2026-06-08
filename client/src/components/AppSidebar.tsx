@@ -31,6 +31,7 @@ const exportItems = [
 ];
 
 const otherItems = [
+  { title: "Cost Estimator", url: "/cost-estimator", icon: Calculator },
   { title: "Tax Estimator", url: "/customs", icon: Calculator },
   { title: "Settings", url: "/settings", icon: Settings },
 ];

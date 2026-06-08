@@ -22,6 +22,7 @@ import ImportShipments from "@/pages/ImportShipments";
 import InventoryPage from "@/pages/Inventory";
 import Sales from "@/pages/Sales";
 import CustomsEngine from "@/pages/CustomsEngine";
+import CostEstimator from "@/pages/CostEstimator";
 import Settings from "@/pages/Settings";
 import ExportPurchases from "@/pages/ExportPurchases";
 import CADManagement from "@/pages/CADManagement";
@@ -41,6 +42,7 @@ function AppRouter() {
       <Route path="/export/purchases" component={ExportPurchases} />
       <Route path="/export/cads" component={CADManagement} />
       <Route path="/export/shipments" component={ExportShipments} />
+      <Route path="/cost-estimator" component={CostEstimator} />
       <Route path="/customs" component={CustomsEngine} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />

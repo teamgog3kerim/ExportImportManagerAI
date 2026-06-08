@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LC Landed Cost Build-Up Report</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0d1b2a;--navy2:#1b2e45;--navy3:#243852;
+  --teal:#1a7f6e;--teal2:#22a090;--teal3:#e0f5f2;
+  --amber:#b8691a;--amber2:#d4801f;--amber3:#fef3e2;
+  --red:#b83232;--red2:#fdecea;
+  --blue:#1a5fa8;--blue2:#e8f1fb;
+  --green:#1a6b3a;--green2:#e2f5e9;
+  --border:#d0dae4;--border2:#b8c8d6;
+  --bg:#f0f4f8;--bg2:#e4ecf2;
+  --white:#fff;--text:#1a2533;--text2:#3d5169;--text3:#6b8299;
+  --font:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;
+  --shadow:0 2px 10px rgba(13,27,42,.10);--shadow2:0 6px 28px rgba(13,27,42,.14);
+  --r:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13px}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 55%,#163d5e 100%);
+  color:#fff;box-shadow:var(--shadow2);position:sticky;top:0;z-index:200}
+.hdr-top{padding:12px 28px 10px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,.10);flex-wrap:wrap;gap:10px}
+.hdr-logo{display:flex;align-items:center;gap:12px}
+.logo-icon{width:40px;height:40px;background:var(--teal);border-radius:9px;
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.logo-text h1{font-size:16px;font-weight:700;letter-spacing:.3px}
+.logo-text p{font-size:10.5px;color:rgba(255,255,255,.5);margin-top:1px}
+.hdr-pills{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+  border-radius:20px;padding:4px 13px;font-size:11px;color:rgba(255,255,255,.7)}
+.pill strong{color:#fff;font-weight:600}
+.btn{border:none;border-radius:var(--r);padding:7px 15px;font-family:var(--font);
+  font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-teal{background:var(--teal);color:#fff}.btn-teal:hover{background:var(--teal2)}
+.btn-ghost{background:rgba(255,255,255,.09);color:rgba(255,255,255,.82);
+  border:1px solid rgba(255,255,255,.18)}.btn-ghost:hover{background:rgba(255,255,255,.16)}
+.btn-red{background:var(--red);color:#fff}.btn-red:hover{opacity:.88}
+.btn-sm{padding:5px 12px;font-size:11.5px}
+.btn-navy{background:var(--navy2);color:#fff;border:none}.btn-navy:hover{background:var(--navy3)}
+.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:var(--r);
+  padding:5px 12px;font-family:var(--font);font-size:11.5px;cursor:pointer}
+.btn-outline:hover{background:var(--bg2)}
+.hdr-tabs{display:flex;padding:0 28px}
+.tab{padding:9px 20px;font-size:12px;font-weight:500;color:rgba(255,255,255,.48);
+  cursor:pointer;border-bottom:2.5px solid transparent;transition:all .2s;white-space:nowrap}
+.tab.active{color:var(--teal2);border-color:var(--teal2)}
+.tab:hover:not(.active){color:rgba(255,255,255,.78)}
+.tab .rec-count{background:var(--teal);color:#fff;border-radius:10px;padding:1px 7px;
+  font-size:10px;margin-left:5px;font-weight:700}
+
+/* PAGE */
+.page{max-width:1360px;margin:0 auto;padding:22px 22px 80px}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* SUMMARY CARDS */
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.card{background:var(--white);border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--teal)}
+.card.c-amber::before{background:var(--amber)}.card.c-blue::before{background:var(--blue)}
+.card.c-red::before{background:var(--red)}.card.c-navy::before{background:var(--navy3)}
+.card label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.55px;
+  color:var(--text3);display:block;margin-bottom:5px}
+.card .cv{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--teal);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card.c-amber .cv{color:var(--amber)}.card.c-blue .cv{color:var(--blue)}
+.card.c-red .cv{color:var(--red)}.card.c-navy .cv{color:var(--navy3)}
+.card .cs{font-size:10px;color:var(--text3);margin-top:3px}
+
+/* SECTION CARD */
+.sec{margin-bottom:18px}
+.sec-card{background:var(--white);border:1px solid var(--border);border-radius:10px;
+  box-shadow:var(--shadow);overflow:hidden}
+.sec-hdr{background:var(--navy2);color:#fff;padding:9px 18px;display:flex;align-items:center;gap:9px}
+.sec-hdr .si{font-size:15px}.sec-hdr h2{font-size:11.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.sec-hdr .sb{margin-left:auto;background:rgba(255,255,255,.12);border-radius:10px;
+  padding:2px 10px;font-size:10px;color:rgba(255,255,255,.65)}
+.sec-sub{background:var(--navy3);color:rgba(255,255,255,.82);padding:6px 18px;
+  font-size:10.5px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;
+  border-top:1px solid rgba(255,255,255,.07)}
+
+/* FORM GRID */
+.fgrid{display:grid}
+.fgrid.g2{grid-template-columns:repeat(2,1fr)}.fgrid.g3{grid-template-columns:repeat(3,1fr)}
+.fgrid.g4{grid-template-columns:repeat(4,1fr)}.fgrid.g5{grid-template-columns:repeat(5,1fr)}
+.ff{padding:9px 14px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.ff:last-child{border-right:none}
+.ff label{display:block;font-size:9.5px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.ff input,.ff select{width:100%;height:28px;border:1px solid var(--border);border-radius:4px;
+  padding:0 7px;font-family:var(--font);font-size:12.5px;color:var(--text);background:#fff;
+  transition:border-color .15s,box-shadow .15s}
+.ff input:focus,.ff select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(26,127,110,.11)}
+.ff input.num{text-align:right;font-family:var(--mono);font-size:12px}
+.ff input.out-teal{background:var(--teal3);color:var(--teal);font-weight:600;
+  font-family:var(--mono);font-size:12px;text-align:right;cursor:default}
+
+/* RATES */
+.rates-grid{display:grid;grid-template-columns:repeat(3,1fr)}
+.rate-sep{display:grid;grid-template-columns:repeat(3,1fr);background:var(--bg2);
+  border-top:1px solid var(--border)}
+.rblock{padding:14px 18px;border-right:1px solid var(--border)}
+.rblock:last-child{border-right:none}
+.rblock label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--text3);display:block;margin-bottom:6px}
+.rblock .rb-val{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--navy)}
+.rblock .rb-val.teal{color:var(--teal)}.rblock .rb-val.amber{color:var(--amber)}
+.rblock .rb-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.rblock .rb-inp{display:flex;align-items:center;gap:6px}
+.rblock .rb-inp input{flex:1;height:32px;border:1px solid var(--border2);border-radius:4px;
+  padding:0 8px;font-family:var(--mono);font-size:14px;font-weight:600;color:var(--navy);
+  text-align:right;background:#fff}
+.rblock .rb-inp input:focus{outline:none;border-color:var(--teal)}
+.rblock .rb-inp .cur{font-size:10px;font-weight:700;color:var(--text3);white-space:nowrap}
+.incr-row{display:flex;gap:10px;padding:10px 16px;flex-wrap:wrap;
+  border-bottom:1px solid var(--border);background:var(--bg)}
+.ibadge{background:var(--white);border:1px solid var(--border);border-radius:6px;padding:7px 13px;min-width:140px}
+.ibadge label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  color:var(--text3);display:block;margin-bottom:3px}
+.ibadge .iv{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--teal)}
+.ibadge .iv.amber{color:var(--amber)}
+.ibadge input,.ibadge select{height:26px;border:1px solid var(--border);border-radius:4px;
+  padding:0 7px;font-family:var(--mono);font-size:13px;font-weight:600;text-align:right}
+.ibadge input:focus,.ibadge select:focus{outline:none;border-color:var(--teal)}
+
+/* COST TABLE */
+.ct-wrap{overflow-x:auto}
+table.ct{width:100%;border-collapse:collapse;min-width:940px}
+table.ct th{background:var(--navy3);color:rgba(255,255,255,.75);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;white-space:nowrap;
+  border-right:1px solid rgba(255,255,255,.08);text-align:right}
+table.ct th:first-child{text-align:left;min-width:280px;width:29%}
+table.ct th:nth-child(2){min-width:100px}
+table.ct th:nth-child(3){min-width:120px}
+table.ct th:nth-child(4){min-width:130px}
+table.ct th:nth-child(5){min-width:50px}
+table.ct th:nth-child(6){min-width:120px}
+table.ct th:nth-child(7){min-width:150px}
+table.ct td{padding:5px 8px;border-bottom:1px solid var(--border);
+  border-right:1px solid var(--border);font-size:12px;vertical-align:middle}
+table.ct td:first-child{padding-left:14px}
+table.ct td.r{text-align:right}
+table.ct td.mono{font-family:var(--mono);font-size:11.5px;text-align:right;color:var(--text2)}
+table.ct td.mono.hi{color:var(--text);font-weight:600}
+table.ct td.mono.teal{color:var(--teal);font-weight:600}
+table.ct td.mono.amber{color:var(--amber);font-weight:600}
+table.ct td.dim{font-size:11px;color:var(--text3);text-align:center}
+table.ct tr.tr-sec td{background:var(--navy);color:rgba(255,255,255,.88);font-weight:700;
+  font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;padding:6px 14px}
+table.ct tr.tr-cf td{background:#e4f5f1;font-weight:700;color:var(--teal)}
+table.ct tr.tr-cif td{background:#e4eef8;font-weight:700;color:var(--blue)}
+table.ct tr.tr-duty td{background:#fdf3e2;font-weight:700;color:var(--amber)}
+table.ct tr.tr-sub td{background:var(--navy2);color:#fff;font-weight:700}
+table.ct tr.tr-total td{background:var(--teal);color:#fff;font-weight:700;font-size:13.5px}
+table.ct tr.tr-data:hover td{background:#f7fafc}
+.ti{height:26px;border:1px solid var(--border2);border-radius:3px;padding:0 6px;
+  font-family:var(--mono);font-size:11.5px;background:#fff;color:var(--text);
+  text-align:right;width:100%;min-width:80px}
+.ti:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 2px rgba(26,127,110,.11)}
+.ti.pct{background:var(--blue2);color:var(--blue);font-weight:600}
+.ti.fix{background:var(--bg);color:var(--text2)}
+
+/* DUTY BAR */
+.duty-bar{display:grid;grid-template-columns:repeat(6,1fr)}
+.dc{padding:10px 14px;border-right:1px solid var(--border)}
+.dc:last-child{border-right:none;background:var(--red2)}
+.dc label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--text3);display:block;margin-bottom:5px}
+.dc .dv{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--red)}
+
+/* COST RATE BAR */
+.crbar{background:var(--navy);color:#fff;display:flex;align-items:center;
+  justify-content:space-between;padding:12px 22px;flex-wrap:wrap;gap:12px}
+.crb-group{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.crb-item label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:rgba(255,255,255,.5);display:block;margin-bottom:2px}
+.crb-item .crv{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--teal2)}
+.crb-item .crv.big{font-size:26px}
+.crb-unit{font-size:10px;color:rgba(255,255,255,.45);margin-left:4px}
+
+/* MARGIN TABLE */
+.mt-wrap{overflow-x:auto}
+table.mt{width:100%;border-collapse:collapse;min-width:860px}
+table.mt th{background:var(--navy3);color:rgba(255,255,255,.75);font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;text-align:right;
+  border-right:1px solid rgba(255,255,255,.08);white-space:nowrap}
+table.mt th:first-child{text-align:left;min-width:180px}
+table.mt td{padding:6px 10px;border-bottom:1px solid var(--border);
+  border-right:1px solid var(--border);font-family:var(--mono);font-size:12px;text-align:right}
+table.mt td:first-child{font-family:var(--font);text-align:left;font-size:12px;color:var(--text2)}
+table.mt tr.tr-forecast td{background:var(--amber3);font-weight:700;color:var(--amber)}
+table.mt tr.tr-forecast td:first-child{color:var(--amber)}
+table.mt tr.tr-zero td{background:var(--teal3);font-weight:700;color:var(--teal)}
+table.mt tr.tr-zero td:first-child{color:var(--teal)}
+table.mt tr:hover:not(.tr-forecast):not(.tr-zero) td{background:var(--bg)}
+.mg-meta{padding:12px 18px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;gap:24px;flex-wrap:wrap;align-items:center}
+.mg-item label{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;
+  color:var(--text3);display:block;margin-bottom:2px}
+.mg-item .mgv{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--navy)}
+
+/* RECORDS */
+.rec-toolbar{padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rec-toolbar input[type=text]{height:30px;border:1px solid var(--border);border-radius:var(--r);
+  padding:0 10px;font-family:var(--font);font-size:12px;width:220px}
+.rec-toolbar input[type=text]:focus{outline:none;border-color:var(--teal)}
+table.rec{width:100%;border-collapse:collapse}
+table.rec th{background:var(--bg2);font-size:10.5px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.4px;color:var(--text2);padding:8px 12px;border-bottom:2px solid var(--border);
+  text-align:left;white-space:nowrap}
+table.rec td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:12.5px;vertical-align:middle}
+table.rec tr:hover td{background:var(--bg)}
+.rec-empty{padding:56px;text-align:center;color:var(--text3)}
+.rec-empty .ri{font-size:44px;margin-bottom:10px}
+.chip{display:inline-block;border-radius:20px;padding:2px 10px;font-size:10.5px;font-weight:600}
+.chip-draft{background:var(--blue2);color:var(--blue)}
+.chip-final{background:var(--green2);color:var(--green)}
+.chip-review{background:var(--amber3);color:var(--amber)}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;
+  display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:12px;box-shadow:var(--shadow2);width:440px;max-width:94vw;overflow:hidden}
+.modal-hdr{background:var(--navy2);color:#fff;padding:14px 18px;
+  display:flex;align-items:center;justify-content:space-between}
+.modal-hdr h3{font-size:14px;font-weight:600}
+.modal-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:20px;cursor:pointer;line-height:1}
+.modal-body{padding:20px 18px}
+.modal-body .mf{margin-bottom:14px}
+.modal-body .mf label{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;
+  color:var(--text3);display:block;margin-bottom:5px}
+.modal-body .mf input,.modal-body .mf select{width:100%;height:34px;border:1px solid var(--border);
+  border-radius:var(--r);padding:0 10px;font-family:var(--font);font-size:13px}
+.modal-body .mf input:focus,.modal-body .mf select:focus{outline:none;border-color:var(--teal)}
+.modal-footer{padding:14px 18px;border-top:1px solid var(--border);
+  display:flex;gap:8px;justify-content:flex-end}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--navy);color:#fff;
+  border-radius:8px;padding:12px 20px;font-size:13px;font-weight:500;
+  box-shadow:var(--shadow2);z-index:999;opacity:0;transform:translateY(12px);
+  transition:all .3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{background:var(--teal)}
+.toast.error{background:var(--red)}
+
+@media print{
+  .hdr .hdr-tabs,.btn,.hdr-pills{display:none!important}
+  .hdr-top{position:static}
+  .hdr{position:static;box-shadow:none}
+  body{background:#fff}
+  .tab-panel{display:block!important}
+  .sec-card{box-shadow:none;break-inside:avoid;border:1px solid #ccc;margin-bottom:14px}
+  table.ct tr.tr-sec td,table.ct tr.tr-total td,table.ct tr.tr-sub td,
+  .sec-hdr,.crbar{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="hdr-logo">
+      <div class="logo-icon">🚢</div>
+      <div class="logo-text">
+        <h1>LC LANDED COST BUILD-UP REPORT</h1>
+        <p>Ethiopian Import Landed Cost Management System &nbsp;·&nbsp; <span id="hToday"></span></p>
+      </div>
+    </div>
+    <div class="hdr-pills">
+      <div class="pill">Units: <strong id="hUnits">—</strong></div>
+      <div class="pill">FOB Total: <strong id="hFOB">—</strong> USD</div>
+      <div class="pill">Landed Cost/Unit: <strong id="hLC">—</strong> ETB</div>
+      <button class="btn btn-ghost btn-sm" onclick="resetAll()">↺ Reset</button>
+      <button class="btn btn-ghost btn-sm" onclick="openSaveModal()">💾 Save Record</button>
+      <button class="btn btn-teal btn-sm" onclick="window.print()">🖨 Print</button>
+    </div>
+  </div>
+  <div class="hdr-tabs">
+    <div class="tab active"   onclick="showTab('input')">📋 Shipment Input</div>
+    <div class="tab"          onclick="showTab('costs')">📦 Cost Breakdown</div>
+    <div class="tab"          onclick="showTab('margin')">📊 Margin Analysis</div>
+    <div class="tab"          onclick="showTab('records')">🗂 Records <span class="rec-count" id="recBadge">0</span></div>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- ===== TAB: INPUT ===== -->
+<div id="tab-input" class="tab-panel active">
+  <div class="cards">
+    <div class="card">          <label>Landed Cost / Unit</label>   <div class="cv" id="sc0">—</div><div class="cs">ETB per unit</div></div>
+    <div class="card c-amber">  <label>Total Cost (All Units)</label><div class="cv" id="sc1">—</div><div class="cs">Grand total ETB</div></div>
+    <div class="card c-blue">   <label>CIF Value / Unit</label>     <div class="cv" id="sc2">—</div><div class="cs">Cost, Insurance &amp; Freight</div></div>
+    <div class="card c-red">    <label>Taxes &amp; Duties / Unit</label><div class="cv" id="sc3">—</div><div class="cs">Customs payable ETB</div></div>
+    <div class="card c-navy">   <label>Cost Rate</label>            <div class="cv" id="sc4">—</div><div class="cs">ETB per USD</div></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-card">
+      <div class="sec-hdr"><span class="si">📋</span><h2>Shipment Information</h2><span class="sb">Header Fields</span></div>
+      <div class="fgrid g4">
+        <div class="ff"><label>Supplier</label><input type="text" id="supplier" placeholder="Supplier name" oninput="calc()"></div>
+        <div class="ff"><label>Customer</label><input type="text" id="customer" placeholder="Customer name" oninput="calc()"></div>
+        <div class="ff"><label>Payment Terms</label><input type="text" id="payTerms" value="CIF" oninput="calc()"></div>
+        <div class="ff"><label>Invoice No.</label><input type="text" id="invoiceNo" placeholder="Invoice number" oninput="calc()"></div>
+        <div class="ff"><label>Mode of Transport</label><input type="text" id="transport" value="Sea freight" oninput="calc()"></div>
+        <div class="ff"><label>Model</label><input type="text" id="model" placeholder="Product model" oninput="calc()"></div>
+        <div class="ff"><label>Description of Goods</label><input type="text" id="descGoods" placeholder="Description" oninput="calc()"></div>
+        <div class="ff"><label>LC Number</label><input type="text" id="lcNumber" placeholder="LC number" oninput="calc()"></div>
+        <div class="ff"><label>Lot No.</label><input type="text" id="lotNo" placeholder="Lot number" oninput="calc()"></div>
+        <div class="ff"><label>Origin</label><input type="text" id="origin" value="CHINA" oninput="calc()"></div>
+        <div class="ff"><label>Delivery Point</label><input type="text" id="deliveryPt" value="ADDIS ABABA" oninput="calc()"></div>
+        <div class="ff"><label>Bank Name</label><input type="text" id="bankName" placeholder="Bank" oninput="calc()"></div>
+      </div>
+      <div class="sec-sub">Quantity &amp; Invoice Value</div>
+      <div class="fgrid g4">
+        <div class="ff"><label>Units (Qty)</label><input type="number" id="units" value="3" min="1" class="num" oninput="calc()"></div>
+        <div class="ff"><label>FOB per Unit (USD)</label><input type="number" id="fobPU" value="13400" class="num" oninput="calc()"></div>
+        <div class="ff"><label>Sea Freight Cost — Total (USD)</label><input type="number" id="seaFreight" value="8000" class="num" oninput="calc()"></div>
+        <div class="ff"><label>Margin Opening (%)</label><input type="number" id="marginOpen" value="1" step="0.01" class="num" oninput="calc()"></div>
+        <div class="ff"><label>Total FOB Value (USD)</label><input type="text" id="out_N5" class="out-teal" readonly></div>
+        <div class="ff"><label>Container Type</label>
+          <select id="containerType" oninput="calc()" style="height:28px;font-size:12.5px">
+            <option value='20"'>20"</option><option value='40"'>40"</option>
+            <option value="RoRo">RoRo</option><option value="Tender">Tender</option>
+          </select>
+        </div>
+        <div class="ff"><label>Volume (CBM)</label><input type="number" id="volume" placeholder="CBM" class="num" oninput="calc()"></div>
+        <div class="ff"><label>Weight (Tons)</label><input type="number" id="weight" placeholder="Tons" class="num" oninput="calc()"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-card">
+      <div class="sec-hdr"><span class="si">💱</span><h2>Exchange Rates — Time Value of Money</h2><span class="sb">ETB / USD</span></div>
+      <div class="rates-grid">
+        <div class="rblock">
+          <label>Opening Exchange Rate</label>
+          <div class="rb-inp"><input type="number" id="rateO" value="158.324" step="0.001" oninput="calc()"><span class="cur">ETB/USD</span></div>
+          <div class="rb-sub">Rate at LC opening date</div>
+        </div>
+        <div class="rblock">
+          <label>Settlement Exchange Rate ★</label>
+          <div class="rb-inp"><input type="number" id="rateS" value="160.2345" step="0.001" oninput="calc()"><span class="cur">ETB/USD</span></div>
+          <div class="rb-sub">Used for FOB, Freight &amp; Port calculations</div>
+        </div>
+        <div class="rblock">
+          <label>Report Date Exchange Rate</label>
+          <div class="rb-inp"><input type="number" id="rateT" value="161.6483" step="0.001" oninput="calc()"><span class="cur">ETB/USD</span></div>
+          <div class="rb-sub">Current date rate</div>
+        </div>
+      </div>
+      <div class="rate-sep">
+        <div class="rblock">
+          <label>Opening → Settlement Increment</label>
+          <div class="rb-val teal" id="incrOS">—</div>
+          <div class="rb-sub">(Settlement − Opening) ÷ Opening</div>
+        </div>
+        <div class="rblock">
+          <label>Opening → Today Increment</label>
+          <div class="rb-val teal" id="incrOT">—</div>
+          <div class="rb-sub">(Today − Opening) ÷ Opening</div>
+        </div>
+        <div class="rblock">
+          <label>Forecasted Increment (Next N Months)</label>
+          <div class="rb-val amber" id="incrF">—</div>
+          <div class="rb-sub">(Opening→Today) + (Monthly % × Months)</div>
+        </div>
+      </div>
+      <div class="incr-row">
+        <div class="ibadge">
+          <label>Avg Monthly Increment (%)</label>
+          <input type="number" id="monthlyPct" value="1.8" step="0.01" style="width:90px" oninput="calc()">
+        </div>
+        <div class="ibadge">
+          <label>Projection Months</label>
+          <input type="number" id="projMonths" value="3" min="1" step="1" style="width:70px" oninput="calc()">
+        </div>
+        <div class="ibadge">
+          <label>Forecasted Rate (ETB/USD)</label>
+          <div class="iv amber" id="forecastRate">—</div>
+        </div>
+        <div class="ibadge">
+          <label>Record Status</label>
+          <select id="statusSel" style="width:140px;height:26px;font-size:12px;border:1px solid var(--border);border-radius:4px;font-family:var(--font)" oninput="calc()">
+            <option value="draft">Draft</option>
+            <option value="review">Under Review</option>
+            <option value="final">Final</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /tab-input -->
+
+<!-- ===== TAB: COSTS ===== -->
+<div id="tab-costs" class="tab-panel">
+  <div class="sec">
+    <div class="sec-card">
+      <div class="sec-hdr"><span class="si">📦</span><h2>Full Landed Cost Breakdown</h2><span class="sb">Birr Values per Unit (ETB)</span></div>
+      <div class="ct-wrap">
+      <table class="ct">
+        <thead>
+          <tr>
+            <th style="text-align:left">Cost Line Item</th>
+            <th>Rate</th>
+            <th>FYC Total</th>
+            <th>ETB Total</th>
+            <th>Cur.</th>
+            <th>Foreign Value / Unit</th>
+            <th>Birr Value / Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+
+        <!-- 1. INVOICE -->
+        <tr class="tr-sec"><td colspan="7">1. Invoice Amount</td></tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">FOB Charges</td>
+          <td class="mono hi"><span id="d_rS">—</span></td>
+          <td class="mono hi"><span id="d_N5">—</span> USD</td>
+          <td class="mono hi"><span id="d_fob_etb">—</span> ETB</td>
+          <td class="mono">USD</td>
+          <td class="mono hi"><span id="d_M14">—</span></td>
+          <td class="mono hi teal"><span id="d_N14">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Freight Charge</td>
+          <td class="mono hi"><span id="d_rS2">—</span></td>
+          <td class="mono dim">—</td>
+          <td class="mono dim">—</td>
+          <td class="mono">USD</td>
+          <td class="mono hi"><span id="d_M15">—</span></td>
+          <td class="mono hi teal"><span id="d_N15">—</span></td>
+        </tr>
+        <tr class="tr-cf">
+          <td style="padding-left:12px">C&amp;F — Cost &amp; Freight</td>
+          <td class="dim" colspan="5" style="text-align:center">FOB + Freight</td>
+          <td class="mono teal" style="font-size:13px"><span id="d_N16">—</span></td>
+        </tr>
+        <tr class="tr-cif">
+          <td style="padding-left:12px">CIF — Cost, Insurance &amp; Freight</td>
+          <td class="dim" colspan="5" style="text-align:center">C&amp;F + Insurance</td>
+          <td class="mono" style="color:var(--blue);font-size:13px"><span id="d_N17">—</span></td>
+        </tr>
+
+        <!-- 2. INSURANCE -->
+        <tr class="tr-sec"><td colspan="7">2. Insurance</td></tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Insurance (Marine)</td>
+          <td class="dim" style="text-align:center">2% of FOB</td>
+          <td class="mono hi"><span id="d_J18">—</span> ETB</td>
+          <td class="mono hi"><span id="d_J18">—</span> ETB</td>
+          <td class="mono">Birr</td>
+          <td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_N18">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Entry Certifications</td>
+          <td class="dim" style="text-align:center">Fixed</td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono">Birr</td><td class="mono dim">—</td>
+          <td><input class="ti fix" type="number" id="i_N19" value="1000" oninput="calc()"></td>
+        </tr>
+
+        <!-- 3. BANK CHARGES -->
+        <tr class="tr-sec"><td colspan="7">3. Bank Charges</td></tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">L/C Charges</td>
+          <td><input class="ti pct" type="number" id="i_F21" value="0.04" step="0.005" oninput="calc()"></td>
+          <td class="mono hi"><span id="d_J21">—</span></td>
+          <td class="mono dim">—</td><td class="mono">Birr</td><td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_N21">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">L/C Service Charge VAT</td>
+          <td><input class="ti pct" type="number" id="i_F22" value="0.15" step="0.01" oninput="calc()"></td>
+          <td class="mono hi"><span id="d_J22">—</span></td>
+          <td class="mono dim">—</td><td class="mono">Birr</td><td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_N22">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Margin Hold</td>
+          <td class="mono"><span id="d_F23">—</span></td>
+          <td class="mono"><span id="d_J23">—</span></td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Unpaid Margin Service Charge</td>
+          <td class="mono"><span id="d_F24">—</span></td>
+          <td class="mono"><span id="d_J24">—</span></td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Unpaid Margin Charge VAT</td>
+          <td><input class="ti pct" type="number" id="i_F25" value="0.15" step="0.01" oninput="calc()"></td>
+          <td class="mono"><span id="d_J25">—</span></td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">NBE Rate Payable</td>
+          <td><input class="ti pct" type="number" id="i_F26" value="0.025" step="0.005" oninput="calc()"></td>
+          <td class="mono hi"><span id="d_J26">—</span></td>
+          <td class="mono dim">—</td><td class="mono">Birr</td><td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_N26">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">SWIFT Charge</td>
+          <td class="dim" style="text-align:center">Fixed</td>
+          <td class="mono hi"><span id="d_J27">—</span></td>
+          <td class="mono dim">—</td><td class="mono">Birr</td><td class="mono dim">—</td>
+          <td><input class="ti fix" type="number" id="i_N27" value="200" oninput="calc()"></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">SWIFT Charge VAT</td>
+          <td><input class="ti pct" type="number" id="i_F28" value="0.15" step="0.01" oninput="calc()"></td>
+          <td class="mono hi"><span id="d_J28">—</span></td>
+          <td class="mono dim">—</td><td class="mono">Birr</td><td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_N28">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Sea Freight Service Charge</td>
+          <td><input class="ti pct" type="number" id="i_F29" value="0.04" step="0.005" oninput="calc()"></td>
+          <td class="mono hi"><span id="d_J29">—</span></td>
+          <td class="mono dim">—</td><td class="mono">Birr</td><td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_N29">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Sea Freight Service Charge VAT</td>
+          <td><input class="ti pct" type="number" id="i_F30" value="0.15" step="0.01" oninput="calc()"></td>
+          <td class="mono hi"><span id="d_J30">—</span></td>
+          <td class="mono dim">—</td><td class="mono">Birr</td><td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_N30">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Sea Freight SC — NBE Payable</td>
+          <td><input class="ti pct" type="number" id="i_F31" value="0.025" step="0.005" oninput="calc()"></td>
+          <td class="mono hi"><span id="d_J31">—</span></td>
+          <td class="mono dim">—</td><td class="mono">Birr</td><td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_N31">—</span></td>
+        </tr>
+
+        <!-- 4. DUTIES -->
+        <tr class="tr-sec"><td colspan="7">4. Taxes &amp; Duties</td></tr>
+        <tr>
+          <td colspan="7" style="padding:0">
+            <div class="duty-bar">
+              <div class="dc"><label>Scanning (%)</label>
+                <input class="ti pct" type="number" id="i_E34" value="0.0007" step="0.0001" oninput="calc()" style="width:100%;margin-top:4px"></div>
+              <div class="dc"><label>Duty Tax (%)</label>
+                <input class="ti pct" type="number" id="i_F34" value="0.06" step="0.01" oninput="calc()" style="width:100%;margin-top:4px"></div>
+              <div class="dc"><label>VAT (%)</label>
+                <input class="ti pct" type="number" id="i_G34" value="0.15" step="0.01" oninput="calc()" style="width:100%;margin-top:4px"></div>
+              <div class="dc"><label>Withholding (%)</label>
+                <input class="ti pct" type="number" id="i_H34" value="0.03" step="0.01" oninput="calc()" style="width:100%;margin-top:4px"></div>
+              <div class="dc"><label>Social Welfare (%)</label>
+                <input class="ti pct" type="number" id="i_I34" value="0.03" step="0.01" oninput="calc()" style="width:100%;margin-top:4px"></div>
+              <div class="dc"><label>Total Tax Rate</label>
+                <div class="dv" id="d_J34">—</div></div>
+            </div>
+          </td>
+        </tr>
+        <tr class="tr-duty">
+          <td style="padding-left:12px">Actual Duty (Taxes &amp; Duties)</td>
+          <td class="dim" colspan="4" style="text-align:center">(CIF + Djibouti Transport + Customs Transport) × Total Tax Rate</td>
+          <td class="mono amber"><span id="d_M34">—</span></td>
+          <td class="mono amber" style="font-size:13px"><span id="d_N34">—</span></td>
+        </tr>
+
+        <!-- 5. PORT -->
+        <tr class="tr-sec"><td colspan="7">5. Port Related Charges</td></tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Port Charges — Djibouti Clearance</td>
+          <td class="dim" style="text-align:center">Auto</td>
+          <td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_J37">—</span> ETB</td>
+          <td class="mono">BIRR</td><td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_N37">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Djibouti → Addis Ababa Transport</td>
+          <td class="dim" style="text-align:center">Auto</td>
+          <td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_J38">—</span> ETB</td>
+          <td class="mono">ETB</td><td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_N38">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Transport: Customs → Warehouse</td>
+          <td class="dim" style="text-align:center">Per Unit</td>
+          <td class="mono dim">—</td><td class="mono dim">—</td>
+          <td class="mono">ETB</td><td class="mono dim">—</td>
+          <td><input class="ti fix" type="number" id="i_J39" value="35000" oninput="calc()"></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Container Unstaffing Costs (if any)</td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td>
+          <td class="mono">ETB</td><td class="mono dim">—</td>
+          <td><input class="ti fix" type="number" id="i_unstaf" value="0" oninput="calc()"></td>
+        </tr>
+
+        <!-- 5.2 STORAGE -->
+        <tr class="tr-sec"><td colspan="7">5.2 Storage Charges (if any)</td></tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Trucks / Construction Equipment</td>
+          <td class="dim" style="text-align:center">USD→ETB</td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono">USD</td>
+          <td><input class="ti fix" type="number" id="i_trucks" value="0" oninput="calc()"></td>
+          <td class="mono hi"><span id="d_trucks">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Break Bulk (per CBM or ton)</td>
+          <td class="dim" style="text-align:center">USD→ETB</td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono">USD</td>
+          <td><input class="ti fix" type="number" id="i_bb" value="0" oninput="calc()"></td>
+          <td class="mono hi"><span id="d_bb">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Container Storage</td>
+          <td class="dim" style="text-align:center">USD→ETB</td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono">USD</td>
+          <td><input class="ti fix" type="number" id="i_cont" value="0" oninput="calc()"></td>
+          <td class="mono hi"><span id="d_cont">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Container Demurrage</td>
+          <td class="dim" style="text-align:center">USD→ETB</td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono">USD</td>
+          <td><input class="ti fix" type="number" id="i_dem" value="0" oninput="calc()"></td>
+          <td class="mono hi"><span id="d_dem">—</span></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Container Return</td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td>
+          <td class="mono">Birr</td><td class="mono dim">—</td>
+          <td><input class="ti fix" type="number" id="i_contRet" value="0" oninput="calc()"></td>
+        </tr>
+
+        <!-- 6. OTHER COSTS -->
+        <tr class="tr-sec"><td colspan="7">6. Other Costs</td></tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Warehouse Costs</td>
+          <td class="dim" style="text-align:center">Per Unit</td>
+          <td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_J48">—</span> ETB</td>
+          <td class="mono">Birr</td><td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_N48">—</span></td>
+        </tr>
+        <tr class="tr-data" style="background:var(--bg)">
+          <td style="padding-left:34px;color:var(--text3);font-size:11.5px">Warehouse Cost Input (total ETB)</td>
+          <td colspan="5" class="mono dim"></td>
+          <td><input class="ti fix" type="number" id="i_J48" value="25000" oninput="calc()"></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Assembly at Warehouse + VAT</td>
+          <td class="dim" style="text-align:center">Total</td>
+          <td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_J49">—</span> ETB</td>
+          <td class="mono">Birr</td><td class="mono dim">—</td><td class="mono dim">—</td>
+        </tr>
+        <tr class="tr-data" style="background:var(--bg)">
+          <td style="padding-left:34px;color:var(--text3);font-size:11.5px">Assembly Cost Input (total ETB)</td>
+          <td colspan="5" class="mono dim"></td>
+          <td><input class="ti fix" type="number" id="i_J49" value="2400000" oninput="calc()"></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Driven Costs</td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td>
+          <td class="mono">Birr</td><td class="mono dim">—</td>
+          <td><input class="ti fix" type="number" id="i_driven" value="0" oninput="calc()"></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Insurance — Port to Addis (driven vehicles)</td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td>
+          <td class="mono">Birr</td><td class="mono dim">—</td>
+          <td><input class="ti fix" type="number" id="i_portIns" value="0" oninput="calc()"></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Scanning Charge (0.07% of C&amp;F)</td>
+          <td class="mono"><span id="d_G52">—</span></td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono">Birr</td><td class="mono dim">—</td>
+          <td class="mono hi"><span id="d_M52">—</span></td>
+        </tr>
+
+        <!-- 7-9 -->
+        <tr class="tr-sec"><td colspan="7">7–9. Additional Costs</td></tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Locally Fitted Components / Retrofitting</td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td>
+          <td class="mono">Birr</td><td class="mono dim">—</td>
+          <td><input class="ti fix" type="number" id="i_local" value="0" oninput="calc()"></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Delivery / Installation / Commissioning</td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono dim">—</td>
+          <td class="mono">Birr</td><td class="mono dim">—</td>
+          <td><input class="ti fix" type="number" id="i_delivery" value="0" oninput="calc()"></td>
+        </tr>
+        <tr class="tr-data">
+          <td style="padding-left:22px">Miscellaneous Costs (% of C&amp;F)</td>
+          <td><input class="ti pct" type="number" id="i_K55" value="0.0005" step="0.0001" oninput="calc()"></td>
+          <td class="mono dim">—</td><td class="mono dim">—</td><td class="mono">Birr</td>
+          <td class="mono hi"><span id="d_M55">—</span> USD</td>
+          <td class="mono hi"><span id="d_N55">—</span></td>
+        </tr>
+
+        <!-- TOTALS -->
+        <tr class="tr-sub">
+          <td colspan="6" style="text-align:right;padding-right:24px;font-size:13px;letter-spacing:.4px">SUB-TOTAL (COSTS) — ETB per Unit</td>
+          <td class="mono" style="font-size:15px"><span id="d_N56">—</span></td>
+        </tr>
+        <tr class="tr-total">
+          <td colspan="6" style="text-align:right;padding-right:24px;font-size:14px;letter-spacing:.4px">TOTAL LANDED COST — ETB per Unit</td>
+          <td class="mono" style="font-size:17px"><span id="d_N57">—</span></td>
+        </tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="crbar">
+        <div class="crb-group">
+          <div class="crb-item">
+            <label>Cost Rate</label>
+            <span class="crv big" id="d_N58">—</span><span class="crb-unit">ETB per USD</span>
+          </div>
+          <div class="crb-item">
+            <label>Total All Units</label>
+            <span class="crv" id="d_subAll">—</span><span class="crb-unit">ETB</span>
+          </div>
+        </div>
+        <div class="crb-group">
+          <div class="crb-item"><label>C&amp;F / Unit</label><span class="crv" id="d_crCF">—</span><span class="crb-unit">ETB</span></div>
+          <div class="crb-item"><label>CIF / Unit</label><span class="crv" id="d_crCIF">—</span><span class="crb-unit">ETB</span></div>
+          <div class="crb-item"><label>Total Duty / Unit</label><span class="crv" style="color:#f08080" id="d_crDuty">—</span><span class="crb-unit">ETB</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /tab-costs -->
+
+<!-- ===== TAB: MARGIN ===== -->
+<div id="tab-margin" class="tab-panel">
+  <div class="sec">
+    <div class="sec-card">
+      <div class="sec-hdr"><span class="si">📊</span><h2>Margin Analysis &amp; Pricing Scenarios</h2><span class="sb">Duty-Paid Price at Each Margin Rate</span></div>
+      <div class="mg-meta">
+        <div class="mg-item"><label>Landed Cost / Unit</label><div class="mgv" id="mg_n57">—</div></div>
+        <div class="mg-item"><label>FOB / Unit (USD)</label><div class="mgv" id="mg_fob">—</div></div>
+        <div class="mg-item"><label>FOB / Unit (ETB)</label><div class="mgv" id="mg_fob_etb">—</div></div>
+        <div class="mg-item"><label>Units</label><div class="mgv" id="mg_units">—</div></div>
+        <div class="mg-item"><label>Margin Opening</label><div class="mgv" id="mg_mopen">—</div></div>
+        <div class="mg-item"><label>Forecasted Increment</label><div class="mgv" id="mg_forecast">—</div></div>
+      </div>
+      <div style="padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:11.5px;color:var(--text2)">
+        Each row shows the duty-paid selling price at that margin percentage.
+        The <span style="background:var(--amber3);color:var(--amber);padding:1px 6px;border-radius:3px;font-weight:600">amber row</span> is the forecasted value for the projected period.
+        The <span style="background:var(--teal3);color:var(--teal);padding:1px 6px;border-radius:3px;font-weight:600">green row</span> is the zero-margin cost price.
+      </div>
+      <div class="mt-wrap">
+      <table class="mt">
+        <thead>
+          <tr>
+            <th style="text-align:left">Description</th>
+            <th>Total Price (FC)</th>
+            <th>Cur.</th>
+            <th>Margin Opened</th>
+            <th>Cost Rate After Margin</th>
+            <th>Unit Amount (FC)</th>
+            <th>Margin Rate</th>
+            <th>Margin Amount (ETB)</th>
+            <th>Duty Paid Total (ETB)</th>
+          </tr>
+        </thead>
+        <tbody id="marginBody"></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+</div><!-- /tab-margin -->
+
+<!-- ===== TAB: RECORDS ===== -->
+<div id="tab-records" class="tab-panel">
+  <div class="sec">
+    <div class="sec-card">
+      <div class="sec-hdr"><span class="si">🗂</span><h2>Saved Cost Build-Up Records</h2><span class="sb">Stored Locally in Browser</span></div>
+      <div class="rec-toolbar">
+        <input type="text" id="recSearch" placeholder="🔍 Search by name or notes…" oninput="renderRecords()">
+        <button class="btn btn-teal btn-sm" onclick="openSaveModal()">+ Save Current</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto;color:var(--red);border-color:var(--red)" onclick="clearAllRecords()">🗑 Clear All</button>
+      </div>
+      <div id="recTableWrap"></div>
+    </div>
+  </div>
+</div><!-- /tab-records -->
+
+</div><!-- /page -->
+
+<!-- SAVE MODAL -->
+<div class="modal-bg" id="saveModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h3>💾 Save Cost Build-Up Record</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="mf"><label>Record Name / Reference</label>
+        <input type="text" id="saveName" placeholder="e.g. INV-2024-001 — Machinery Import"></div>
+      <div class="mf"><label>Status</label>
+        <select id="saveStatus">
+          <option value="draft">Draft</option>
+          <option value="review">Under Review</option>
+          <option value="final">Final</option>
+        </select></div>
+      <div class="mf"><label>Notes (optional)</label>
+        <input type="text" id="saveNotes" placeholder="Any notes…"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-teal" onclick="saveRecord()">💾 Save Record</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const fn=(n,d=2)=>{if(n===null||n===undefined||isNaN(n))return'—';return Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})};
+const fpct=n=>isNaN(n)?'—':(n*100).toFixed(4)+'%';
+const fpcte=n=>isNaN(n)?'—':(n*100).toFixed(2)+'%';
+const sp=(id,val,d=2)=>{const e=$(id);if(e&&e.tagName!=='INPUT')e.textContent=fn(val,d)};
+const v=(id,fb=0)=>{const e=$(id);if(!e)return fb;const x=parseFloat(e.value);return isNaN(x)?fb:x};
+
+function toast(msg,type='success'){
+  const t=$('toast');t.textContent=msg;t.className='toast '+type+' show';
+  setTimeout(()=>t.className='toast',3000);
+}
+
+$('hToday').textContent=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+
+function calc(){
+  const units  = Math.max(1,v('units',3));
+  const fobPU  = v('fobPU',13400);
+  const N5     = fobPU*units;
+  const J8     = v('seaFreight',8000);
+  const rateO  = v('rateO',158.324);
+  const rateS  = v('rateS',160.2345);
+  const rateT  = v('rateT',161.6483);
+  const mOpen  = v('marginOpen',1);
+  const monthPct = v('monthlyPct',1.8)/100;
+  const projMo = v('projMonths',3);
+
+  // Rate increments
+  const H11 = rateO>0?(rateS-rateO)/rateO:0;
+  const J11 = rateO>0?(rateT-rateO)/rateO:0;
+  const M11 = J11+(monthPct*projMo);
+
+  $('incrOS').textContent=fpct(H11);
+  $('incrOT').textContent=fpct(J11);
+  $('incrF').textContent=fpct(M11);
+  $('forecastRate').textContent=fn(rateT*(1+M11),4)+' ETB/USD';
+  $('out_N5').value=fn(N5,2)+' USD';
+
+  // Section 1
+  const M14=fobPU;
+  const N14=M14*rateS;
+  const fob_etb_total=N5*rateS;
+  const M15=J8/units;
+  const N15=M15*rateS;
+  const N16=N14+N15;
+  const CF_total=N16*units;
+
+  // Insurance: J18=N14*0.02; N18=J18/units
+  const K18=0.02;
+  const J18=N14*K18;
+  const N18=J18/units;
+  const N17=N16+N18;
+
+  // Entry cert
+  const N19=v('i_N19',1000);
+
+  // Section 3
+  const F21=v('i_F21',0.04);  const N21=N14*F21;  const J21=N21*units;
+  const F22=v('i_F22',0.15);  const N22=N21*F22;  const J22=N22*units;
+  const F23=mOpen;
+  const F24=1-F23;
+  const N24=0; const J23=0; const J24=N24*units;
+  const F25=v('i_F25',0.15);  const N25=F25*N24;  const J25=N25*units;
+  const F26=v('i_F26',0.025); const N26=N14*F26;  const J26=N26*units;
+  const N27=v('i_N27',200);   const J27=N27*units;
+  const F28=v('i_F28',0.15);  const N28=N27*F28;  const J28=N28*units;
+  const F29=v('i_F29',0.04);  const N29=N15*F29;  const J29=N29*units;
+  const F30=v('i_F30',0.15);  const N30=N29*F30;  const J30=N30*units;
+  const F31=v('i_F31',0.025); const N31=N15*F31;  const J31=N31*units;
+
+  // Section 4
+  const E34=v('i_E34',0.0007),F34=v('i_F34',0.06),G34=v('i_G34',0.15);
+  const H34=v('i_H34',0.03),  I34=v('i_I34',0.03);
+  const J34=E34+F34+G34+H34+I34;
+
+  // Port (needed for duty base)
+  const J37=2400*rateS; const N37=J37/units;
+  const J38=3410*rateS; const N38=J38/units;
+  const N39=v('i_J39',35000)/units;
+
+  // M34=((N17+N38+N39)*J34)  — exact Excel formula
+  const M34=(N17+N38+N39)*J34;
+  const N34=M34;
+
+  // Section 5.2 storage
+  const N_trucks =(v('i_trucks',0)*rateS)/units;
+  const N_bb     =(v('i_bb',0)*rateS)/units;
+  const N_cont   =(v('i_cont',0)*rateS)/units;
+  const N_dem    =(v('i_dem',0)*rateS)/units;
+  const N_contRet=v('i_contRet',0);
+  const N_unstaf =v('i_unstaf',0)/units;
+
+  // Section 6
+  const J48=v('i_J48',25000); const N48=J48/units;
+  const J49=v('i_J49',2400000);
+  const N_driven =v('i_driven',0);
+  const N_portIns=v('i_portIns',0);
+
+  // Scanning: M52=(N16*units)*G52; G52=E34
+  const G52=E34;
+  const M52=CF_total*G52;
+  const scan_pu=M52/units;
+
+  // Section 7-9
+  const N_local   =v('i_local',0);
+  const N_delivery=v('i_delivery',0);
+  const K55=v('i_K55',0.0005);
+  const N55=K55*N16;
+  const M55=rateS>0?N55/rateS:0;
+
+  // N56=SUM(N17:N55)-N18  (N17-N18 = N16 = C&F)
+  const N56=(N17-N18)
+    +N19
+    +N21+N22+N24+N25+N26
+    +N27+N28+N29+N30+N31
+    +N34
+    +N37+N38+N39
+    +N_unstaf
+    +N_trucks+N_bb+N_cont+N_dem+N_contRet
+    +N48+(J49/units)
+    +N_driven+N_portIns
+    +scan_pu
+    +N_local+N_delivery
+    +N55;
+
+  const N57=N56;
+  const N58=M14>0?N57/M14:0;
+
+  // ---- UPDATE DOM ----
+  // Header pills
+  $('hUnits').textContent=units;
+  $('hFOB').textContent=fn(N5);
+  $('hLC').textContent=fn(N57);
+
+  // Summary cards
+  $('sc0').textContent=fn(N57)+' ETB';
+  $('sc1').textContent=fn(N57*units)+' ETB';
+  $('sc2').textContent=fn(N17)+' ETB';
+  $('sc3').textContent=fn(N34)+' ETB';
+  $('sc4').textContent=fn(N58,6);
+
+  // Cost tab
+  sp('d_rS',rateS,4); sp('d_rS2',rateS,4);
+  sp('d_N5',N5);
+  sp('d_fob_etb',fob_etb_total);
+  sp('d_M14',M14,4);
+  sp('d_N14',N14);
+  sp('d_M15',M15,4);
+  sp('d_N15',N15);
+  sp('d_N16',N16);
+  sp('d_N17',N17);
+
+  // Insurance — d_J18 appears twice in DOM (FYC col and ETB col), querySelectorAll
+  document.querySelectorAll('#d_J18').forEach(e=>e.textContent=fn(J18));
+  sp('d_N18',N18);
+
+  $('d_F23').textContent=fpcte(F23);
+  $('d_J23').textContent=fn(J23);
+  $('d_F24').textContent=fpcte(F24);
+  $('d_J24').textContent=fn(J24);
+  sp('d_J21',J21); sp('d_N21',N21);
+  sp('d_J22',J22); sp('d_N22',N22);
+  sp('d_J25',J25);
+  sp('d_J26',J26); sp('d_N26',N26);
+  sp('d_J27',J27);
+  sp('d_J28',J28); sp('d_N28',N28);
+  sp('d_J29',J29); sp('d_N29',N29);
+  sp('d_J30',J30); sp('d_N30',N30);
+  sp('d_J31',J31); sp('d_N31',N31);
+
+  $('d_J34').textContent=fpcte(J34);
+  sp('d_M34',M34); sp('d_N34',N34);
+  sp('d_J37',J37); sp('d_N37',N37);
+  sp('d_J38',J38); sp('d_N38',N38);
+  sp('d_J48',J48); sp('d_N48',N48);
+  sp('d_J49',J49);
+  $('d_G52').textContent=(G52*100).toFixed(4)+'%';
+  sp('d_M52',scan_pu);
+  sp('d_M55',M55,4); sp('d_N55',N55);
+  sp('d_trucks',N_trucks); sp('d_bb',N_bb);
+  sp('d_cont',N_cont);     sp('d_dem',N_dem);
+  sp('d_N56',N56);
+  sp('d_N57',N57);
+  $('d_N58').textContent=fn(N58,6);
+  sp('d_subAll',N57*units);
+  sp('d_crCF',N16); sp('d_crCIF',N17); sp('d_crDuty',N34);
+
+  // Margin tab meta
+  $('mg_n57').textContent=fn(N57)+' ETB';
+  $('mg_fob').textContent=fn(M14)+' USD';
+  $('mg_fob_etb').textContent=fn(N14)+' ETB';
+  $('mg_units').textContent=units;
+  $('mg_mopen').textContent=fn(mOpen,2)+'%';
+  $('mg_forecast').textContent=fpct(M11);
+
+  buildMarginTable(N57,M14,N5,units,mOpen,M11,projMo);
+}
+
+function buildMarginTable(N57,M14,N5,units,mOpen,M11,projMo){
+  // Excel K column rates: 1→0 in steps, forecast row at projMo position
+  const kRates=[1,0.95,0.9,0.85,0.8,0.75,0.7,0.65,0.6,0.55,0.5,0.45,0.4,0.35,0.3,0.25,0.2,0.15,0.1];
+  const allRates=[...kRates,'forecast',0.05,0];
+  const sup=$('supplier')?.value||'';
+  const lc=$('lcNumber')?.value||'';
+  let html='';
+  allRates.forEach((k,idx)=>{
+    const isFc=k==='forecast';
+    const K=isFc?M11:k;
+    const L=K*N57;
+    const N_dp=L+N57;
+    const I=M14>0?N_dp/M14:0;
+    const isFirst=idx===0;
+    const isZero=k===0;
+    let cls=isFc?'tr-forecast':(isZero?'tr-zero':'');
+    const desc=isFc
+      ?`🔮 Forecasted Sales Value — ${projMo} Month${projMo>1?'s':''}`
+      :(isFirst?(sup||'Primary Scenario')
+        :(idx===1?('LC No: '+(lc||'—'))
+          :(isZero?'Zero Margin — Cost Price Only':'Scenario '+(K*100).toFixed(0)+'%')));
+    html+=`<tr class="${cls}">
+      <td>${desc}</td>
+      <td>${isFirst?fn(N5):'—'}</td>
+      <td>USD</td>
+      <td>${isFirst?fn(mOpen,2)+'%':'—'}</td>
+      <td style="font-weight:600;color:var(--teal)">${fn(I,8)}</td>
+      <td>${isFirst?fn(M14):'—'}</td>
+      <td style="font-weight:700">${(K*100).toFixed(2)}%</td>
+      <td style="color:var(--amber);font-weight:600">${fn(L)}</td>
+      <td style="font-weight:700;color:var(--navy)">${fn(N_dp)}</td>
+    </tr>`;
+  });
+  $('marginBody').innerHTML=html;
+}
+
+// ---- TABS ----
+function showTab(t){
+  ['input','costs','margin','records'].forEach(x=>{
+    $('tab-'+x).classList.toggle('active',x===t);
+  });
+  document.querySelectorAll('.tab').forEach((el,i)=>{
+    el.classList.toggle('active',['input','costs','margin','records'][i]===t);
+  });
+  if(t==='records')renderRecords();
+}
+
+// ---- RECORDS ----
+function getRecords(){try{return JSON.parse(localStorage.getItem('lc_records')||'[]')}catch(e){return[]}}
+function saveRecords(r){try{localStorage.setItem('lc_records',JSON.stringify(r))}catch(e){toast('Storage full — try clearing old records','error')}}
+
+function openSaveModal(){
+  const inv=$('invoiceNo')?.value||'';
+  const sup=$('supplier')?.value||'';
+  $('saveName').value=(inv||(sup?sup+' — ':'')+new Date().toLocaleDateString('en-GB'));
+  $('saveStatus').value=$('statusSel')?.value||'draft';
+  $('saveNotes').value='';
+  $('saveModal').classList.add('open');
+  setTimeout(()=>$('saveName').focus(),80);
+}
+function closeModal(){$('saveModal').classList.remove('open')}
+
+function saveRecord(){
+  const name=$('saveName').value.trim()||('Record — '+new Date().toLocaleDateString());
+  const status=$('saveStatus').value;
+  const notes=$('saveNotes').value.trim();
+  const snap=captureState();
+  const recs=getRecords();
+  recs.unshift({id:Date.now(),name,status,notes,date:new Date().toISOString(),data:snap});
+  saveRecords(recs);
+  closeModal();
+  $('recBadge').textContent=recs.length;
+  toast('✅ Record saved: '+name);
+}
+
+function captureState(){
+  const ids=['units','fobPU','seaFreight','marginOpen','rateO','rateS','rateT',
+    'monthlyPct','projMonths','supplier','customer','payTerms','invoiceNo','transport',
+    'model','descGoods','lcNumber','lotNo','origin','deliveryPt','bankName','statusSel',
+    'i_N19','i_F21','i_F22','i_F25','i_F26','i_N27','i_F28','i_F29','i_F30','i_F31',
+    'i_E34','i_F34','i_G34','i_H34','i_I34','i_J39','i_unstaf',
+    'i_trucks','i_bb','i_cont','i_dem','i_contRet','i_J48','i_J49',
+    'i_driven','i_portIns','i_local','i_delivery','i_K55'];
+  const snap={};
+  ids.forEach(id=>{const e=$(id);if(e)snap[id]=e.value});
+  return snap;
+}
+
+function loadRecord(id){
+  const rec=getRecords().find(r=>r.id===id);
+  if(!rec)return;
+  Object.entries(rec.data).forEach(([k,val])=>{const e=$(k);if(e)e.value=val});
+  calc();
+  showTab('input');
+  toast('📂 Loaded: '+rec.name);
+}
+
+function deleteRecord(id){
+  if(!confirm('Delete this record? This cannot be undone.'))return;
+  const recs=getRecords().filter(r=>r.id!==id);
+  saveRecords(recs);
+  $('recBadge').textContent=recs.length;
+  renderRecords();
+  toast('Record deleted','error');
+}
+
+function renderRecords(){
+  const q=($('recSearch')?.value||'').toLowerCase();
+  const allRecs=getRecords();
+  const recs=allRecs.filter(r=>!q||r.name.toLowerCase().includes(q)||(r.notes||'').toLowerCase().includes(q)||((r.data?.supplier||'').toLowerCase().includes(q)));
+  $('recBadge').textContent=allRecs.length;
+  const wrap=$('recTableWrap');if(!wrap)return;
+  if(!recs.length){
+    wrap.innerHTML=`<div class="rec-empty"><div class="ri">🗂</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:6px">${q?'No results for "'+q+'"':'No records saved yet'}</div>
+      <div style="font-size:12px">Use "Save Current" to save your cost build-up for future reference.</div></div>`;
+    return;
+  }
+  const chipMap={draft:'chip-draft',review:'chip-review',final:'chip-final'};
+  let html=`<div style="overflow-x:auto"><table class="rec">
+    <thead><tr>
+      <th>#</th><th>Record Name</th><th>Status</th><th>Supplier</th>
+      <th>FOB/Unit (USD)</th><th>Units</th><th>Settlement Rate</th>
+      <th>Date Saved</th><th>Notes</th><th style="text-align:center">Actions</th>
+    </tr></thead><tbody>`;
+  recs.forEach((r,i)=>{
+    const d=r.data||{};
+    html+=`<tr>
+      <td style="color:var(--text3);font-size:11px">${i+1}</td>
+      <td style="font-weight:600">${r.name}</td>
+      <td><span class="chip ${chipMap[r.status]||'chip-draft'}">${r.status||'draft'}</span></td>
+      <td>${d.supplier||'—'}</td>
+      <td style="font-family:var(--mono);text-align:right">${d.fobPU?fn(parseFloat(d.fobPU)):'—'}</td>
+      <td style="font-family:var(--mono);text-align:center">${d.units||'—'}</td>
+      <td style="font-family:var(--mono);text-align:right">${d.rateS?parseFloat(d.rateS).toFixed(4):'—'}</td>
+      <td style="color:var(--text3);font-size:11.5px">${new Date(r.date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</td>
+      <td style="color:var(--text3);font-size:11.5px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes||'—'}</td>
+      <td style="text-align:center">
+        <div style="display:flex;gap:5px;justify-content:center">
+          <button class="btn btn-navy btn-sm" onclick="loadRecord(${r.id})">📂 Load</button>
+          <button class="btn btn-red btn-sm" onclick="deleteRecord(${r.id})">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  html+='</tbody></table></div>';
+  wrap.innerHTML=html;
+}
+
+function clearAllRecords(){
+  if(!confirm('Delete ALL saved records? This cannot be undone.'))return;
+  localStorage.removeItem('lc_records');
+  $('recBadge').textContent=0;
+  renderRecords();
+  toast('All records cleared','error');
+}
+
+function exportCSV(){
+  const recs=getRecords();
+  if(!recs.length){toast('No records to export','error');return;}
+  const hdr='ID,Name,Status,Date,Supplier,Units,FOB/Unit (USD),Settlement Rate,Notes\n';
+  const rows=recs.map(r=>{
+    const d=r.data||{};
+    return[r.id,`"${r.name}"`,r.status,new Date(r.date).toLocaleDateString('en-GB'),
+      `"${d.supplier||''}"`,d.units||'',d.fobPU||'',d.rateS||'',`"${r.notes||''}"`].join(',');
+  });
+  const blob=new Blob([hdr+rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='LC_Records_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  toast('CSV exported successfully');
+}
+
+function resetAll(){
+  if(!confirm('Reset all fields to default values?'))return;
+  const defs={
+    units:3,fobPU:13400,seaFreight:8000,marginOpen:1,
+    rateO:158.324,rateS:160.2345,rateT:161.6483,
+    monthlyPct:1.8,projMonths:3,
+    supplier:'',customer:'',payTerms:'CIF',invoiceNo:'',transport:'Sea freight',
+    model:'',descGoods:'',lcNumber:'',lotNo:'',origin:'CHINA',deliveryPt:'ADDIS ABABA',bankName:'',
+    statusSel:'draft',
+    i_N19:1000,i_F21:0.04,i_F22:0.15,i_F25:0.15,i_F26:0.025,
+    i_N27:200,i_F28:0.15,i_F29:0.04,i_F30:0.15,i_F31:0.025,
+    i_E34:0.0007,i_F34:0.06,i_G34:0.15,i_H34:0.03,i_I34:0.03,
+    i_J39:35000,i_unstaf:0,i_trucks:0,i_bb:0,i_cont:0,i_dem:0,i_contRet:0,
+    i_J48:25000,i_J49:2400000,i_driven:0,i_portIns:0,i_local:0,i_delivery:0,i_K55:0.0005
+  };
+  Object.entries(defs).forEach(([id,val])=>{const e=$(id);if(e)e.value=val});
+  calc();
+  toast('Fields reset to defaults');
+}
+
+// Modal keyboard & backdrop
+$('saveModal').addEventListener('click',e=>{if(e.target===$('saveModal'))closeModal()});
+$('saveModal').addEventListener('keydown',e=>{if(e.key==='Enter')saveRecord()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+// Init
+$('recBadge').textContent=getRecords().length;
+calc();
+</script>
+</body>
+</html>
