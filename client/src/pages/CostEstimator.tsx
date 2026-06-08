@@ -555,7 +555,6 @@ export default function CostEstimator() {
                 <thead>
                   <tr className="bg-muted text-muted-foreground">
                     <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider">Description</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Cost Rate After Margin</th>
                     <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Margin Rate</th>
                     <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Margin Amount (ETB)</th>
                     <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Duty Paid Total (ETB)</th>
@@ -568,7 +567,6 @@ export default function CostEstimator() {
                         : m.kind === "zero" ? "bg-secondary font-semibold" : "hover-elevate"
                     } data-testid={`margin-row-${i}`}>
                       <td className="px-3 py-1.5">{m.desc}</td>
-                      <td className="px-3 py-1.5 text-right font-mono font-semibold text-primary">{fmt(m.I, 8)}</td>
                       <td className="px-3 py-1.5 text-right font-mono font-bold">{(m.K * 100).toFixed(2)}%</td>
                       <td className="px-3 py-1.5 text-right font-mono text-[hsl(var(--chart-4))] font-semibold">{fmt(m.L)}</td>
                       <td className="px-3 py-1.5 text-right font-mono font-bold">{fmt(m.Ndp)}</td>
