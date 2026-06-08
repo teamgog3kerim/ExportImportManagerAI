@@ -311,11 +311,13 @@ export default function CostEstimator() {
           </div>
         }
       />
+
       <div className="flex flex-wrap items-center gap-3">
         <Badge variant="secondary" data-testid="badge-units">Units: {c.units}</Badge>
         <Badge variant="secondary" data-testid="badge-fob">FOB Total: {fmt(c.N5)} USD</Badge>
         <Badge data-testid="badge-landed">Landed Cost / Unit: {fmt(c.N57)} ETB</Badge>
       </div>
+
       <Tabs defaultValue="input" className="w-full">
         <TabsList>
           <TabsTrigger value="input" data-testid="tab-input">Shipment Input</TabsTrigger>
@@ -555,7 +557,7 @@ export default function CostEstimator() {
                     <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider">Description</th>
                     <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Margin Rate</th>
                     <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Margin Amount (ETB)</th>
-                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Total Cost plus margin (ETB)</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider">Duty Paid Total (ETB)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -639,6 +641,7 @@ export default function CostEstimator() {
           </Card>
         </TabsContent>
       </Tabs>
+
       <Dialog open={saveOpen} onOpenChange={setSaveOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Save Cost Build-Up Record</DialogTitle></DialogHeader>
