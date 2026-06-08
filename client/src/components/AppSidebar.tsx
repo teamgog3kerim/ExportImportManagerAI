@@ -47,7 +47,7 @@ export function AppSidebar() {
           <img
             src={eximmanLogo}
             alt="EXIMMAN — Export · Import · Manager"
-            className="h-16 w-auto object-contain"
+            className="h-24 w-full max-w-[200px] object-contain"
             data-testid="img-brand-logo"
           />
         </div>
