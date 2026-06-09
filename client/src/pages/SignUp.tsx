@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArrowLeft, ArrowRight, CheckCircle2, Lock, Mail, User } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import eximmanLogo from "@assets/Gemini_Generated_Image_-_Copy_1781003713925.jpg";
+import eximmanLogo from "@assets/eximman_logo_trim.png";
 
 export default function SignUp() {
   const [fullName, setFullName] = useState("");
@@ -46,7 +46,7 @@ export default function SignUp() {
             <img
               src={eximmanLogo}
               alt="EXIMMAN — My Export · Import Manager App"
-              className="h-16 w-auto object-contain rounded-md"
+              className="h-16 w-auto object-contain"
               data-testid="img-brand-logo"
             />
           </Link>
