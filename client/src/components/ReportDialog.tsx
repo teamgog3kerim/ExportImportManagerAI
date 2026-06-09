@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Archive, Download, Share2, Loader2, Calendar as CalendarIcon, FileText, Sparkles, Trash2, ArrowLeft, BarChart3 } from "lucide-react";
+import { Archive, Download, Share2, Loader2, Calendar as CalendarIcon, FileText, Sparkles, Trash2, ArrowLeft, BarChart3, Volume2, Pause, Play, Square } from "lucide-react";
 import jsPDF from "jspdf";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import type { Report } from "@shared/schema";
@@ -107,6 +107,47 @@ function reportToPlainText(r: GeneratedReport) {
     for (const p of s.paragraphs) { lines.push(p); lines.push(""); }
   }
   return lines.join("\n");
+}
+
+// Build a natural-sounding narration script for spoken playback.
+function reportToSpeechText(r: GeneratedReport): string {
+  const parts: string[] = [];
+  parts.push(`${r.title}.`);
+  parts.push(`Reporting period, ${fmtDate(r.from)} to ${fmtDate(r.to)}.`);
+  if (r.headline) parts.push(r.headline);
+  const metrics = Object.entries(r.metrics);
+  if (metrics.length) {
+    parts.push("Here are the key figures.");
+    for (const [k, v] of metrics) parts.push(`${k}: ${v}.`);
+  }
+  for (const s of r.sections) {
+    parts.push(`${s.heading}.`);
+    for (const p of s.paragraphs) parts.push(p);
+  }
+  parts.push("This concludes the report.");
+  return parts.join("\n");
+}
+
+// Split narration into short sentence-grouped chunks. Browsers (notably Chrome)
+// truncate very long utterances, so we queue several shorter ones in sequence.
+function splitIntoSpeechChunks(text: string, max = 200): string[] {
+  const sentences = text
+    .replace(/\s+/g, " ")
+    .match(/[^.!?\n]+[.!?]?/g) ?? [text];
+  const chunks: string[] = [];
+  let cur = "";
+  for (const s of sentences) {
+    const seg = s.trim();
+    if (!seg) continue;
+    if ((cur + " " + seg).trim().length > max && cur) {
+      chunks.push(cur.trim());
+      cur = seg;
+    } else {
+      cur = (cur + " " + seg).trim();
+    }
+  }
+  if (cur.trim()) chunks.push(cur.trim());
+  return chunks;
 }
 
 const CHART_COLORS = ["#d97a4a", "#b07a4a", "#8b5e3c", "#c89868", "#e3a87d"];
@@ -320,6 +361,82 @@ export function ReportDialog({ open, onOpenChange, canSave = true }: { open: boo
   const [mode, setMode] = useState<ReportMode>("precise");
   const [language, setLanguage] = useState<ReportLanguage>("en");
   const [report, setReport] = useState<GeneratedReport | null>(null);
+  const [speaking, setSpeaking] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
+  const chunksRef = useRef<string[]>([]);
+  const chunkIdxRef = useRef(0);
+
+  const ttsSupported = typeof window !== "undefined" && "speechSynthesis" in window;
+
+  useEffect(() => {
+    if (!ttsSupported) return;
+    const pickVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices.length) return;
+      const en = voices.filter(v => /^en/i.test(v.lang));
+      const pool = en.length ? en : voices;
+      const preferred = ["Google UK English Male", "Daniel", "Microsoft Guy", "Microsoft David", "Arthur", "Alex", "Rishi", "Fred", "Google US English"];
+      const female = /female|zira|samantha|victoria|karen|moira|tessa|fiona|serena|allison|susan|google uk english female/i;
+      voiceRef.current =
+        pool.find(v => preferred.some(n => v.name.includes(n))) ||
+        pool.find(v => /male/i.test(v.name)) ||
+        pool.find(v => !female.test(v.name)) ||
+        pool[0] || null;
+    };
+    pickVoice();
+    window.speechSynthesis.addEventListener("voiceschanged", pickVoice);
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", pickVoice);
+  }, [ttsSupported]);
+
+  const stopNarration = () => {
+    if (ttsSupported) window.speechSynthesis.cancel();
+    chunksRef.current = [];
+    chunkIdxRef.current = 0;
+    setSpeaking(false);
+    setPaused(false);
+  };
+
+  const speakNextChunk = () => {
+    if (!ttsSupported) return;
+    if (chunkIdxRef.current >= chunksRef.current.length) {
+      setSpeaking(false);
+      setPaused(false);
+      return;
+    }
+    const u = new SpeechSynthesisUtterance(chunksRef.current[chunkIdxRef.current]);
+    if (voiceRef.current) { u.voice = voiceRef.current; u.lang = voiceRef.current.lang; }
+    else u.lang = "en-GB";
+    u.rate = 0.95;
+    u.pitch = 0.85;
+    u.onend = () => { chunkIdxRef.current += 1; speakNextChunk(); };
+    u.onerror = () => { setSpeaking(false); setPaused(false); };
+    window.speechSynthesis.speak(u);
+  };
+
+  const startNarration = () => {
+    if (!report) return;
+    if (!ttsSupported) {
+      toast({ title: "Audio not supported", description: "Your browser does not support speech playback.", variant: "destructive" });
+      return;
+    }
+    window.speechSynthesis.cancel();
+    chunksRef.current = splitIntoSpeechChunks(reportToSpeechText(report));
+    chunkIdxRef.current = 0;
+    setSpeaking(true);
+    setPaused(false);
+    speakNextChunk();
+  };
+
+  const togglePauseNarration = () => {
+    if (!ttsSupported) return;
+    if (paused) { window.speechSynthesis.resume(); setPaused(false); }
+    else { window.speechSynthesis.pause(); setPaused(true); }
+  };
+
+  // Stop playback when the dialog closes or the component unmounts.
+  useEffect(() => { if (!open) stopNarration(); }, [open]);
+  useEffect(() => () => { if (ttsSupported) window.speechSynthesis.cancel(); }, [ttsSupported]);
 
   const archiveQuery = useQuery<Report[]>({ queryKey: ["/api/reports"], enabled: open });
 
@@ -328,6 +445,7 @@ export function ReportDialog({ open, onOpenChange, canSave = true }: { open: boo
       const res = await apiRequest("POST", "/api/reports/generate", payload);
       return (await res.json()) as GeneratedReport;
     },
+    onMutate: () => stopNarration(),
     onSuccess: r => setReport(r),
     onError: (e: any) => toast({ title: "Could not generate report", description: String(e?.message ?? e), variant: "destructive" }),
   });
@@ -423,7 +541,7 @@ export function ReportDialog({ open, onOpenChange, canSave = true }: { open: boo
     }
   };
 
-  const reset = () => { setReport(null); setSelectedPreset(null); setMode("precise"); setLanguage("en"); };
+  const reset = () => { stopNarration(); setReport(null); setSelectedPreset(null); setMode("precise"); setLanguage("en"); };
 
 
   const ModeChooser = (
@@ -655,6 +773,22 @@ export function ReportDialog({ open, onOpenChange, canSave = true }: { open: boo
                   {save.isPending ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Archive className="h-3.5 w-3.5 mr-1.5" />}
                   Save to Archive
                 </Button>
+              )}
+              {!speaking ? (
+                <Button variant="outline" size="sm" onClick={startNarration} disabled={generate.isPending} data-testid="button-listen">
+                  <Volume2 className="h-3.5 w-3.5 mr-1.5" /> Listen
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" onClick={togglePauseNarration} data-testid="button-pause-narration">
+                    {paused
+                      ? <><Play className="h-3.5 w-3.5 mr-1.5" /> Resume</>
+                      : <><Pause className="h-3.5 w-3.5 mr-1.5" /> Pause</>}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={stopNarration} data-testid="button-stop-narration">
+                    <Square className="h-3.5 w-3.5 mr-1.5" /> Stop
+                  </Button>
+                </>
               )}
               <Button variant="outline" size="sm" onClick={share} data-testid="button-share">
                 <Share2 className="h-3.5 w-3.5 mr-1.5" /> Share

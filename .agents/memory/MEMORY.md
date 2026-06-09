@@ -2,3 +2,4 @@
 - [RBAC deny-by-default](rbac-deny-by-default.md) — server apiAccessGuard must deny unmapped /api routes; new endpoints need an API_PAGE_RULES entry or they're blocked for non-admins.
 - [Server has no watch mode](server-no-watch.md) — backend .ts edits need restart_workflow; Vite HMR only covers client.
 - [Elevate vs absolute positioning](elevate-positioning.md) — hover-elevate/active-elevate set position:relative and override `absolute`; pin via a wrapper div, elevate the inner control.
+- [OpenAI integration proxy limits](openai-integration-limits.md) — Replit OpenAI proxy blocks /audio/speech (TTS); chat works (use max_completion_tokens). Fall back to browser Web Speech API for runtime TTS.
