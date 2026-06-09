@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ArrowLeft, ArrowRight, Lock, Mail } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import eximmanLogo from "@assets/eximman_logo.png";
+import eximmanLogo from "@assets/Gemini_Generated_Image_-_Copy_1781003713925.jpg";
 
 export default function SignIn() {
   const [, setLocation] = useLocation();
@@ -45,8 +45,8 @@ export default function SignIn() {
           <Link href="/" className="flex items-center" data-testid="link-home">
             <img
               src={eximmanLogo}
-              alt="EXIMMAN — Export · Import · Manager"
-              className="h-12 w-auto object-contain"
+              alt="EXIMMAN — My Export · Import Manager App"
+              className="h-16 w-auto object-contain rounded-md"
               data-testid="img-brand-logo"
             />
           </Link>

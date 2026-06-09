@@ -8,7 +8,7 @@ import {
   Calculator, Settings, ChevronDown, ChevronRight, ShoppingCart, Banknote, Send, ShoppingBag,
 } from "lucide-react";
 import { useState } from "react";
-import eximmanLogo from "@assets/eximman_logo.png";
+import eximmanLogo from "@assets/Gemini_Generated_Image_-_Copy_1781003713925.jpg";
 import { useAuth, canView } from "@/lib/auth";
 import { pageForRoute } from "@shared/permissions";
 
@@ -59,8 +59,8 @@ export function AppSidebar() {
         <div className="flex items-center justify-center">
           <img
             src={eximmanLogo}
-            alt="EXIMMAN — Export · Import · Manager"
-            className="w-full h-auto object-contain"
+            alt="EXIMMAN — My Export · Import Manager App"
+            className="w-full h-auto object-contain rounded-md"
             data-testid="img-brand-logo"
           />
         </div>

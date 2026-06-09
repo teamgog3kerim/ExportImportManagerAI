@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import eximmanLogo from "@assets/eximman_logo.png";
+import eximmanLogo from "@assets/Gemini_Generated_Image_-_Copy_1781003713925.jpg";
 import {
   Ship, FileText, Calculator, BrainCircuit, Wallet, Package,
   Globe2, ShieldCheck, Sparkles, ArrowRight, Building2, MapPin, Mail, Phone,
@@ -35,8 +35,8 @@ export default function Landing() {
           <div className="flex items-center">
             <img
               src={eximmanLogo}
-              alt="EXIMMAN — Export · Import · Manager"
-              className="h-12 w-auto object-contain"
+              alt="EXIMMAN — My Export · Import Manager App"
+              className="h-16 w-auto object-contain rounded-md"
               data-testid="img-brand-logo"
             />
           </div>
