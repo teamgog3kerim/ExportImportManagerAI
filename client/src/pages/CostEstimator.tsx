@@ -15,8 +15,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import {
   RotateCcw, Save, Printer, Download, Trash2, FolderOpen, Search, Package, Boxes,
-  ArrowRightLeft, BarChart3,
+  ArrowRightLeft, BarChart3, PieChart as PieIcon, MousePointerClick,
 } from "lucide-react";
+import {
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip as RTooltip, ResponsiveContainer, LabelList,
+} from "recharts";
 
 const NUM_DEFAULTS: Record<string, number> = {
   units: 3, fobPU: 13400, seaFreight: 8000, marginOpen: 1,
@@ -79,6 +83,7 @@ export default function CostEstimator() {
   const [saveName, setSaveName] = useState("");
   const [saveStatus, setSaveStatus] = useState("draft");
   const [saveNotes, setSaveNotes] = useState("");
+  const [selectedMargin, setSelectedMargin] = useState<number | null>(null);
 
   const set = (k: string, v: string) => setF(p => ({ ...p, [k]: v }));
   const g = (k: string) => {
@@ -227,6 +232,12 @@ export default function CostEstimator() {
       || (r.notes || "").toLowerCase().includes(q)
       || (r.data?.supplier || "").toLowerCase().includes(q);
   });
+
+  const forecastIdx = c.margin.findIndex(m => m.kind === "forecast");
+  const selIdx = selectedMargin != null && selectedMargin < c.margin.length
+    ? selectedMargin
+    : (forecastIdx >= 0 ? forecastIdx : 0);
+  const selRow = c.margin[selIdx];
 
   const openSave = () => {
     const inv = f.invoiceNo || "";
@@ -547,8 +558,9 @@ export default function CostEstimator() {
               <MetaItem label="Margin Opening" value={`${fmt(c.mOpen, 2)}%`} />
               <MetaItem label="Forecasted Increment" value={fpct4(c.M11)} />
             </div>
-            <p className="px-4 py-3 text-xs text-muted-foreground bg-muted/30 border-b">
-              Each row shows the total cost plus margin at that margin percentage. The amber row is the forecasted value for the projected period; the highlighted row is the zero-margin cost price.
+            <p className="px-4 py-3 text-xs text-muted-foreground bg-muted/30 border-b flex items-center gap-1.5">
+              <MousePointerClick className="h-3.5 w-3.5 shrink-0" />
+              Click any row to view its graphical report below. The amber row is the forecasted value for the projected period; the highlighted row is the zero-margin cost price.
             </p>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm" style={{ minWidth: "520px" }}>
@@ -564,10 +576,13 @@ export default function CostEstimator() {
                 </thead>
                 <tbody>
                   {c.margin.map((m, i) => (
-                    <tr key={i} className={
+                    <tr key={i} onClick={() => setSelectedMargin(i)} className={`cursor-pointer ${
+                      selIdx === i ? "outline outline-2 -outline-offset-2 outline-primary "
+                        : ""
+                    }${
                       m.kind === "forecast" ? "bg-[hsl(var(--chart-3)/0.18)] font-semibold"
                         : m.kind === "zero" ? "bg-secondary font-semibold" : "hover-elevate"
-                    } data-testid={`margin-row-${i}`}>
+                    }`} data-testid={`margin-row-${i}`}>
                       <td className="px-3 py-1.5">{m.desc}</td>
                       <td className="px-3 py-1.5 text-right font-mono font-bold">{(m.K * 100).toFixed(2)}%</td>
                       <td className="px-3 py-1.5 text-right font-mono text-[hsl(var(--chart-4))] font-semibold">{fmt(m.L)}</td>
@@ -580,6 +595,8 @@ export default function CostEstimator() {
               </table>
             </div>
           </Card>
+
+          {selRow && <MarginReport row={selRow} landedCost={c.N57} units={c.units} fobUsd={c.M14} all={c.margin} selIdx={selIdx} />}
         </TabsContent>
 
         {/* ===== RECORDS ===== */}
@@ -670,6 +687,144 @@ export default function CostEstimator() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+type MarginItem = { kind: string; K: number; L: number; Ndp: number; I: number; desc: string; isFirst: boolean };
+
+function MarginReport({ row, landedCost, units, fobUsd, all, selIdx }: {
+  row: MarginItem; landedCost: number; units: number; fobUsd: number; all: MarginItem[]; selIdx: number;
+}) {
+  const margin = row.L;
+  const subtotal = row.Ndp;
+  const vat = row.Ndp * 0.15;
+  const total = row.Ndp + vat;
+  const totalAllUnits = total * units;
+
+  const composition = [
+    { name: "Landed Cost / Unit", value: landedCost, color: "hsl(var(--chart-1))" },
+    { name: "Margin Amount", value: margin, color: "hsl(var(--chart-4))" },
+    { name: "VAT (15%)", value: vat, color: "hsl(var(--chart-5))" },
+  ];
+
+  const comparison = all.map((m, i) => ({
+    name: m.kind === "forecast" ? "Fcst" : `${(m.K * 100).toFixed(0)}%`,
+    value: m.Ndp * 1.15,
+    selected: i === selIdx,
+  }));
+
+  const tiles = [
+    { label: "Margin Rate", value: `${(row.K * 100).toFixed(2)}%`, accent: "text-primary" },
+    { label: "Landed Cost / Unit", value: `${fmt(landedCost)} ETB`, accent: "text-foreground" },
+    { label: "Margin Amount", value: `${fmt(margin)} ETB`, accent: "text-[hsl(var(--chart-4))]" },
+    { label: "Total Cost + Margin", value: `${fmt(subtotal)} ETB`, accent: "text-foreground" },
+    { label: "VAT (15%)", value: `${fmt(vat)} ETB`, accent: "text-[hsl(var(--chart-5))]" },
+    { label: "Total Sales / Unit", value: `${fmt(total)} ETB`, accent: "text-primary" },
+  ];
+
+  return (
+    <Card className="overflow-hidden" data-testid="card-margin-report">
+      <SectionHeader icon={<PieIcon className="h-4 w-4" />} title="Graphical Margin Report" badge={row.desc} />
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-px bg-border">
+        {tiles.map((t, i) => (
+          <div key={i} className="bg-card px-4 py-3" data-testid={`report-tile-${i}`}>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{t.label}</p>
+            <p className={`font-mono text-sm font-bold mt-1 truncate ${t.accent}`}>{t.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">
+            Sales Value Composition / Unit
+          </p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={composition}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={58}
+                  outerRadius={92}
+                  paddingAngle={2}
+                  stroke="hsl(var(--card))"
+                  strokeWidth={2}
+                >
+                  {composition.map((d, i) => <Cell key={i} fill={d.color} />)}
+                </Pie>
+                <RTooltip
+                  contentStyle={{
+                    background: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "0.375rem",
+                    fontSize: "12px",
+                    color: "hsl(var(--popover-foreground))",
+                  }}
+                  formatter={(v: number) => [`${fmt(v)} ETB`, ""]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1.5 justify-center mt-2">
+            {composition.map((d, i) => (
+              <div key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: d.color }} />
+                <span>{d.name}</span>
+                <span className="font-mono font-semibold text-foreground">{fmt(d.value)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3">
+            Total Sales Value Across Scenarios (ETB / Unit)
+          </p>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={comparison} margin={{ top: 16, right: 8, left: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={{ stroke: "hsl(var(--border))" }} />
+                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} tickLine={false} axisLine={false} width={64} tickFormatter={(v: number) => fmt(v, 0)} />
+                <RTooltip
+                  cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                  contentStyle={{
+                    background: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "0.375rem",
+                    fontSize: "12px",
+                    color: "hsl(var(--popover-foreground))",
+                  }}
+                  formatter={(v: number) => [`${fmt(v)} ETB`, "Total Sales / Unit"]}
+                />
+                <Bar dataKey="value" radius={[3, 3, 0, 0]} maxBarSize={44}>
+                  {comparison.map((d, i) => (
+                    <Cell key={i} fill={d.selected ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.35)"} />
+                  ))}
+                  <LabelList dataKey="name" position="top" style={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/40 px-4 py-3 border-t">
+        <p className="text-xs text-muted-foreground">
+          Selected scenario: <span className="font-semibold text-foreground">{row.desc}</span> · {units} unit{units > 1 ? "s" : ""}
+          {fobUsd > 0 && <> · FOB {fmt(fobUsd)} USD/unit</>}
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Total Sales Value (All Units)</span>
+          <span className="font-mono text-base font-bold text-primary" data-testid="text-report-grandtotal">{fmt(totalAllUnits)} ETB</span>
+        </div>
+      </div>
+    </Card>
   );
 }
 
