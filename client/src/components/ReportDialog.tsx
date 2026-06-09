@@ -378,13 +378,6 @@ export function ReportDialog({ open, onOpenChange, canSave = true }: { open: boo
     }
   };
 
-  const regenerateWithLanguage = (newLang: ReportLanguage) => {
-    setLanguage(newLang);
-    if (report) {
-      generate.mutate({ from: report.from, to: report.to, periodLabel: report.periodLabel, mode, language: newLang });
-    }
-  };
-
   const downloadPdf = async () => {
     if (!report) return;
     try {
@@ -432,32 +425,6 @@ export function ReportDialog({ open, onOpenChange, canSave = true }: { open: boo
 
   const reset = () => { setReport(null); setSelectedPreset(null); setMode("precise"); setLanguage("en"); };
 
-  const LanguageChooser = (
-    <div className="inline-flex rounded-md border p-0.5" data-testid="language-chooser">
-      <Button
-        type="button"
-        size="sm"
-        variant={language === "en" ? "default" : "ghost"}
-        className="h-7"
-        onClick={() => language !== "en" && regenerateWithLanguage("en")}
-        disabled={generate.isPending}
-        data-testid="button-language-en"
-      >
-        English
-      </Button>
-      <Button
-        type="button"
-        size="sm"
-        variant={language === "am" ? "default" : "ghost"}
-        className="h-7"
-        onClick={() => language !== "am" && regenerateWithLanguage("am")}
-        disabled={generate.isPending}
-        data-testid="button-language-am"
-      >
-        አማርኛ
-      </Button>
-    </div>
-  );
 
   const ModeChooser = (
     <div className="flex items-center gap-4 text-sm" data-testid="mode-chooser">
@@ -514,18 +481,6 @@ export function ReportDialog({ open, onOpenChange, canSave = true }: { open: boo
                       ? "Detailed mode produces full narrative paragraphs across all modules."
                       : "Precise mode produces short, factual one-line summaries per module."}
                     {" "}Periods over 7 days include visual charts.
-                  </p>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Report Language</Label>
-                  <div className="mt-2">{LanguageChooser}</div>
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    {language === "am"
-                      ? "Amharic reports are translated by AI; figures, currencies and dates are kept unchanged."
-                      : "Generate the report in English or Amharic (አማርኛ)."}
                   </p>
                 </div>
 
@@ -623,7 +578,6 @@ export function ReportDialog({ open, onOpenChange, canSave = true }: { open: boo
             <div className="px-6 py-2.5 border-b flex items-center justify-between flex-wrap gap-3 shrink-0 bg-muted/30">
               <div className="flex items-center flex-wrap gap-3">
                 {ModeChooser}
-                {LanguageChooser}
               </div>
               {generate.isPending && (
                 <span className="text-xs text-muted-foreground flex items-center gap-1.5">
