@@ -45,13 +45,13 @@ export async function translateReportToAmharic(report: GeneratedReport): Promise
   let map: Record<string, string> = {};
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-5-mini",
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: system },
         { role: "user", content: JSON.stringify({ items: inputMap }) },
       ],
-      max_tokens: 16000,
+      max_completion_tokens: 16000,
     });
     const raw = response.choices[0]?.message?.content ?? "{}";
     const parsed = JSON.parse(raw);
@@ -113,12 +113,12 @@ CURRENT DATA:
 You are an Ethiopian trade expert. Answer concisely about import/export operations, LC management, customs duties, exchange rates, and logistics. Keep responses under 200 words.`;
 
   const response = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: "gpt-5-mini",
     messages: [
       { role: "system", content: context },
       { role: "user", content: userMessage },
     ],
-    max_tokens: 400,
+    max_completion_tokens: 400,
   });
 
   return response.choices[0]?.message?.content || "I couldn't generate a response.";
