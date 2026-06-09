@@ -5,16 +5,34 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ArrowLeft, ArrowRight, Lock, Mail } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import eximmanLogo from "@assets/eximman_logo_trim.png";
 
+const REMEMBER_EMAIL_KEY = "eximman_remember_email";
+
 export default function SignIn() {
   const [, setLocation] = useLocation();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => {
+    try {
+      return localStorage.getItem(REMEMBER_EMAIL_KEY) || "";
+    } catch {
+      return "";
+    }
+  });
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    try {
+      localStorage.setItem(REMEMBER_EMAIL_KEY, value);
+    } catch {
+      /* ignore storage errors */
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +95,7 @@ export default function SignIn() {
                       className="pl-9"
                       placeholder="you@company.com"
                       value={email}
-                      onChange={e => setEmail(e.target.value)}
+                      onChange={e => handleEmailChange(e.target.value)}
                       data-testid="input-email"
                     />
                   </div>
@@ -91,14 +109,25 @@ export default function SignIn() {
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                     <Input
                       id="signin-password"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       autoComplete="current-password"
-                      className="pl-9"
+                      className="pl-9 pr-10"
                       placeholder="••••••••"
                       value={password}
                       onChange={e => setPassword(e.target.value)}
                       data-testid="input-password"
                     />
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2">
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(s => !s)}
+                        className="flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover-elevate active-elevate-2"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        data-testid="button-toggle-password"
+                      >
+                        {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 {error && (

@@ -1,3 +1,4 @@
 - [Drizzle push broken](drizzle-push-broken.md) — drizzle-kit 1.0.0-rc.2 vs drizzle-orm 0.45.2 breaks `db:push`; create/alter tables via raw SQL instead.
 - [RBAC deny-by-default](rbac-deny-by-default.md) — server apiAccessGuard must deny unmapped /api routes; new endpoints need an API_PAGE_RULES entry or they're blocked for non-admins.
 - [Server has no watch mode](server-no-watch.md) — backend .ts edits need restart_workflow; Vite HMR only covers client.
+- [Elevate vs absolute positioning](elevate-positioning.md) — hover-elevate/active-elevate set position:relative and override `absolute`; pin via a wrapper div, elevate the inner control.
