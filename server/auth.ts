@@ -181,12 +181,6 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-const signupSchema = z.object({
-  fullName: z.string().trim().min(2, "Please enter your full name"),
-  email: z.string().trim().email("Please enter a valid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
-
 const loginSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(1),
@@ -205,29 +199,17 @@ const approveSchema = z.object({
   permissions: z.record(permLevelSchema).optional(),
 });
 
+const createUserSchema = z.object({
+  fullName: z.string().trim().min(2, "Please enter a full name"),
+  email: z.string().trim().email("Please enter a valid email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(["admin", "manager", "staff"]).default("staff"),
+});
+
 export function registerAuthRoutes(app: Express) {
-  app.post("/api/auth/signup", async (req, res) => {
-    const parsed = signupSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
-    }
-    const { fullName, email, password } = parsed.data;
-    const existing = await getUserByEmail(email);
-    if (existing) {
-      return res.status(400).json({ message: "An account with this email already exists" });
-    }
-    await db.insert(users).values({
-      id: randomUUID(),
-      email: email.toLowerCase(),
-      passwordHash: await hashPassword(password),
-      fullName,
-      role: "staff",
-      status: "pending",
-      permissions: defaultPermsForRole("staff"),
-      createdAt: new Date().toISOString(),
-    });
-    res.status(201).json({
-      message: "Your account has been created and is pending administrator approval.",
+  app.post("/api/auth/signup", (_req, res) => {
+    res.status(403).json({
+      message: "Self sign-up is disabled. Please request a demo at merisamarketingsolutions@gmail.com.",
     });
   });
 
@@ -273,6 +255,34 @@ export function registerAuthRoutes(app: Express) {
   app.get("/api/users", requireAdmin, async (_req, res) => {
     const rows = await db.select().from(users);
     res.json(rows.map(toSafeUser));
+  });
+
+  // Admins onboard demo requesters directly. Created accounts are active
+  // immediately (no pending step) since an administrator vouched for them.
+  app.post("/api/users", requireAdmin, async (req, res) => {
+    const parsed = createUserSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
+    }
+    const { fullName, email, password, role } = parsed.data;
+    const existing = await getUserByEmail(email);
+    if (existing) {
+      return res.status(400).json({ message: "An account with this email already exists" });
+    }
+    const [created] = await db
+      .insert(users)
+      .values({
+        id: randomUUID(),
+        email: email.toLowerCase(),
+        passwordHash: await hashPassword(password),
+        fullName,
+        role,
+        status: "active",
+        permissions: defaultPermsForRole(role),
+        createdAt: new Date().toISOString(),
+      })
+      .returning();
+    res.status(201).json(toSafeUser(created));
   });
 
   app.post("/api/users/:id/approve", requireAdmin, async (req, res) => {

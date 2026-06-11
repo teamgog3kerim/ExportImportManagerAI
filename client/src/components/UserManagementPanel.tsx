@@ -4,12 +4,14 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
-import { Check, X, Trash2, Ban, ShieldCheck, UserCog, Loader2 } from "lucide-react";
+import { Check, X, Trash2, Ban, ShieldCheck, UserCog, Loader2, UserPlus } from "lucide-react";
 import { useAuth, type AuthUser } from "@/lib/auth";
 import {
   ASSIGNABLE_PAGES, ROLE_LABELS, defaultPermsForRole, type PermLevel, type Role,
@@ -46,8 +48,16 @@ export default function UserManagementPanel() {
   const { user: me } = useAuth();
   const { data: users, isLoading } = useQuery<ManagedUser[]>({ queryKey: ["/api/users"] });
   const [editUser, setEditUser] = useState<ManagedUser | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+
+  const createMutation = useMutation({
+    mutationFn: (body: { fullName: string; email: string; password: string; role: Role }) =>
+      apiRequest("POST", "/api/users", body),
+    onSuccess: () => { invalidate(); setCreateOpen(false); toast({ title: "Employee added" }); },
+    onError: (e: Error) => toast({ title: "Could not add employee", description: stripStatus(e.message), variant: "destructive" }),
+  });
 
   const approveMutation = useMutation({
     mutationFn: (id: string) => apiRequest("POST", `/api/users/${id}/approve`, {}),
@@ -122,10 +132,17 @@ export default function UserManagementPanel() {
       {/* Team */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <UserCog className="h-4 w-4" /> Employees
-          </CardTitle>
-          <p className="text-xs text-muted-foreground">Manage roles, page access, and account status.</p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <UserCog className="h-4 w-4" /> Employees
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">Manage roles, page access, and account status.</p>
+            </div>
+            <Button size="sm" onClick={() => setCreateOpen(true)} data-testid="button-add-user">
+              <UserPlus className="h-3.5 w-3.5 mr-1" /> Add employee
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {team.length === 0 ? (
@@ -183,6 +200,13 @@ export default function UserManagementPanel() {
         </CardContent>
       </Card>
 
+      <CreateUserDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreate={(body) => createMutation.mutate(body)}
+        saving={createMutation.isPending}
+      />
+
       <PermissionDialog
         user={editUser}
         onClose={() => setEditUser(null)}
@@ -196,6 +220,82 @@ export default function UserManagementPanel() {
         saving={patchMutation.isPending}
       />
     </div>
+  );
+}
+
+function CreateUserDialog({
+  open,
+  onClose,
+  onCreate,
+  saving,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreate: (body: { fullName: string; email: string; password: string; role: Role }) => void;
+  saving: boolean;
+}) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<Role>("staff");
+  const [error, setError] = useState("");
+
+  const reset = () => { setFullName(""); setEmail(""); setPassword(""); setRole("staff"); setError(""); };
+
+  const submit = () => {
+    setError("");
+    if (fullName.trim().length < 2) return setError("Please enter the employee's full name.");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setError("Please enter a valid email.");
+    if (password.length < 8) return setError("Password must be at least 8 characters.");
+    onCreate({ fullName: fullName.trim(), email: email.trim(), password, role });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add employee</DialogTitle>
+          <DialogDescription>
+            Create an account for a new team member. They can sign in right away with the
+            email and password you set here.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-1">
+          <div className="space-y-1.5">
+            <Label htmlFor="create-name" className="text-xs">Full name</Label>
+            <Input id="create-name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Employee full name" data-testid="input-create-fullname" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="create-email" className="text-xs">Email</Label>
+            <Input id="create-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="employee@company.com" data-testid="input-create-email" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="create-password" className="text-xs">Temporary password</Label>
+            <Input id="create-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" data-testid="input-create-password" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Role</Label>
+            <Select value={role} onValueChange={(v) => setRole(v as Role)}>
+              <SelectTrigger data-testid="select-create-role">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(ROLE_LABELS) as Role[]).map((r) => (
+                  <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {error && <p className="text-xs text-destructive" data-testid="text-create-error">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { reset(); onClose(); }} data-testid="button-cancel-create">Cancel</Button>
+          <Button onClick={submit} disabled={saving} data-testid="button-confirm-create">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create account"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

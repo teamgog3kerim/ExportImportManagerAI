@@ -139,7 +139,7 @@ export default function SignIn() {
               </form>
               <p className="text-xs text-muted-foreground text-center mt-5">
                 Don't have an account?{" "}
-                <Link href="/signup" className="text-foreground hover:underline" data-testid="link-signup">Create one</Link>
+                <Link href="/signup" className="text-foreground hover:underline" data-testid="link-signup">Request a demo</Link>
               </p>
               <p className="text-[0.7rem] text-muted-foreground text-center mt-5">
                 By signing in you agree to EXIMMAN's terms of service and privacy policy.

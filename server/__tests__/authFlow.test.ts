@@ -82,26 +82,17 @@ after(async () => {
   await pool.end();
 });
 
-test("a new employee can sign up and is left pending", async () => {
+test("self sign-up is disabled for visitors", async () => {
   const anon = makeAgent(baseUrl);
   const res = await anon("POST", "/api/auth/signup", {
     fullName: "E2E Employee",
     email: TEST_EMAIL,
     password: TEST_PASSWORD,
   });
-  assert.equal(res.status, 201, `signup should succeed: ${JSON.stringify(res.body)}`);
+  assert.equal(res.status, 403, "public self sign-up must be disabled");
 });
 
-test("a pending employee cannot log in", async () => {
-  const anon = makeAgent(baseUrl);
-  const res = await anon("POST", "/api/auth/login", {
-    email: TEST_EMAIL,
-    password: TEST_PASSWORD,
-  });
-  assert.equal(res.status, 403, "pending account login must be rejected");
-});
-
-test("admin can sign in and approve the pending employee as staff", async () => {
+test("an admin can create an active employee directly", async () => {
   const admin = makeAgent(baseUrl);
   const login = await admin("POST", "/api/auth/login", {
     email: BOOTSTRAP_ADMIN_EMAIL,
@@ -110,28 +101,29 @@ test("admin can sign in and approve the pending employee as staff", async () => 
   assert.equal(login.status, 200, "bootstrap admin should log in");
   assert.equal(login.body.role, "admin");
 
-  const list = await admin("GET", "/api/users");
-  assert.equal(list.status, 200, "admin can list users");
-  const pending = (list.body as any[]).find((u) => u.email === TEST_EMAIL.toLowerCase());
-  assert.ok(pending, "the new employee should appear in the user list");
-  assert.equal(pending.status, "pending");
-  employeeId = pending.id;
-
-  // Approve as "staff" -> staff defaults give: import-inventory=record (write
-  // allowed), import-lc=view (read-only), finance=none (no access).
-  const approve = await admin("POST", `/api/users/${employeeId}/approve`, { role: "staff" });
-  assert.equal(approve.status, 200, "approval should succeed");
-  assert.equal(approve.body.status, "active");
-  assert.equal(approve.body.role, "staff");
+  // Admins onboard demo requesters directly. The new account is active
+  // immediately. Created as "staff" -> staff defaults give:
+  // import-inventory=record (write allowed), import-lc=view (read-only),
+  // finance=none (no access).
+  const created = await admin("POST", "/api/users", {
+    fullName: "E2E Employee",
+    email: TEST_EMAIL,
+    password: TEST_PASSWORD,
+    role: "staff",
+  });
+  assert.equal(created.status, 201, `admin create should succeed: ${JSON.stringify(created.body)}`);
+  assert.equal(created.body.status, "active");
+  assert.equal(created.body.role, "staff");
+  employeeId = created.body.id;
 });
 
-test("an approved employee can now log in", async () => {
+test("an admin-created employee can log in", async () => {
   const employee = makeAgent(baseUrl);
   const res = await employee("POST", "/api/auth/login", {
     email: TEST_EMAIL,
     password: TEST_PASSWORD,
   });
-  assert.equal(res.status, 200, "approved account should log in");
+  assert.equal(res.status, 200, "active account should log in");
   assert.equal(res.body.status, "active");
 });
 
@@ -178,6 +170,14 @@ test("non-admins cannot reach admin user-management endpoints", async () => {
 
   const list = await employee("GET", "/api/users");
   assert.equal(list.status, 403, "staff must not list users");
+
+  const create = await employee("POST", "/api/users", {
+    fullName: "Sneaky User",
+    email: `sneaky-${Date.now()}@example.test`,
+    password: "Password123!",
+    role: "admin",
+  });
+  assert.equal(create.status, 403, "staff must not create users");
 
   const approve = await employee("POST", `/api/users/${employeeId}/approve`, { role: "admin" });
   assert.equal(approve.status, 403, "staff must not approve users");
