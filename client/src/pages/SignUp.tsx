@@ -101,14 +101,14 @@ function RequestDemo() {
       </div>
 
       <Button asChild className="w-full" data-testid="button-request-demo">
-        <a href={mailtoHref}>
+        <a href={mailtoHref} target="_blank" rel="noopener noreferrer">
           <Mail className="h-4 w-4 mr-1.5" /> Email us to request a demo
           <ArrowRight className="h-4 w-4 ml-1" />
         </a>
       </Button>
       <p className="text-xs text-muted-foreground text-center mt-3" data-testid="text-demo-email">
         Or write to{" "}
-        <a href={`mailto:${DEMO_EMAIL}`} className="text-foreground hover:underline">{DEMO_EMAIL}</a>
+        <a href={`mailto:${DEMO_EMAIL}`} target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline">{DEMO_EMAIL}</a>
       </p>
 
       <p className="text-xs text-muted-foreground text-center mt-5">
