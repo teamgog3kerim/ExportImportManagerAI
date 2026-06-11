@@ -77,7 +77,15 @@ export default function SignIn() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+        <Link href="/" className="mb-8" data-testid="link-logo-main">
+          <img
+            src={eximmanLogo}
+            alt="EXIMMAN — My Export · Import Manager App"
+            className="h-32 sm:h-40 w-auto object-contain"
+            data-testid="img-brand-logo-large"
+          />
+        </Link>
         <div className="w-full max-w-md">
           <Link href="/" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-4" data-testid="link-back">
             <ArrowLeft className="h-3.5 w-3.5" /> Back to home
