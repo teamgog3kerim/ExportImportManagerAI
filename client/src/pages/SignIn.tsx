@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,10 @@ const REMEMBER_EMAIL_KEY = "eximman_remember_email";
 
 export default function SignIn() {
   const [, setLocation] = useLocation();
+  const { data: signupStatus } = useQuery<{ enabled: boolean }>({
+    queryKey: ["/api/auth/signup-status"],
+  });
+  const signupEnabled = signupStatus?.enabled ?? false;
   const [email, setEmail] = useState(() => {
     try {
       return localStorage.getItem(REMEMBER_EMAIL_KEY) || "";
@@ -139,7 +144,9 @@ export default function SignIn() {
               </form>
               <p className="text-xs text-muted-foreground text-center mt-5">
                 Don't have an account?{" "}
-                <Link href="/signup" className="text-foreground hover:underline" data-testid="link-signup">Request a demo</Link>
+                <Link href="/signup" className="text-foreground hover:underline" data-testid="link-signup">
+                  {signupEnabled ? "Create one" : "Request a demo"}
+                </Link>
               </p>
               <p className="text-[0.7rem] text-muted-foreground text-center mt-5">
                 By signing in you agree to EXIMMAN's terms of service and privacy policy.

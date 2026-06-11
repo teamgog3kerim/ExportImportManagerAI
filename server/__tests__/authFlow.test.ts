@@ -10,15 +10,17 @@ import { db, pool } from "../db";
 import { users } from "@shared/schema";
 
 // End-to-end coverage of the most security-sensitive flow in the app:
-// sign-up -> blocked while pending -> admin approval -> login works ->
-// view-only writes blocked while record writes succeed -> non-admins are
-// kept out of the admin user-management endpoints.
+// admin-controlled public sign-up toggle -> sign-up blocked while disabled ->
+// admin can create active employees -> admin can enable sign-up so visitors
+// self-register (pending) -> login rules -> view-only vs record writes ->
+// non-admins are kept out of admin-only endpoints (incl. the sign-up toggle).
 //
 // This runs against the real auth routes (server/auth.ts) and the real RBAC
-// guard + permission rules (shared/permissions.ts). User accounts are stored in
-// the real Postgres database, so the test creates a uniquely-named employee and
-// removes it again in teardown. Business data (inventory, LCs, ...) lives in the
-// in-memory storage of this test's own process and never touches shared state.
+// guard + permission rules (shared/permissions.ts). User accounts and the
+// app_settings row live in the real Postgres database, so the test creates
+// uniquely-named rows and restores the original sign-up setting in teardown.
+// Business data (inventory, LCs, ...) lives in the in-memory storage of this
+// test's own process and never touches shared state.
 
 // A tiny cookie-jar-backed HTTP client so each "agent" keeps its own session,
 // exactly like a separate browser would.
@@ -48,10 +50,20 @@ function makeAgent(baseUrl: string) {
 
 const TEST_EMAIL = `e2e-employee-${Date.now()}@example.test`;
 const TEST_PASSWORD = "EmployeePass123!";
+const SELF_SIGNUP_EMAIL = `e2e-selfsignup-${Date.now()}@example.test`;
 
 let server: Server;
 let baseUrl: string;
 let employeeId: string;
+let originalSignupSetting = "false";
+
+async function setSignupEnabledDirect(enabled: boolean) {
+  await pool.query(
+    `INSERT INTO app_settings (key, value) VALUES ('signup_enabled', $1)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+    [enabled ? "true" : "false"],
+  );
+}
 
 before(async () => {
   const app = express();
@@ -68,8 +80,16 @@ before(async () => {
   if (!addr || typeof addr === "string") throw new Error("Failed to bind test server");
   baseUrl = `http://127.0.0.1:${addr.port}`;
 
-  // Make sure no leftover row from a previous aborted run collides.
+  // Remember the live setting so we can restore it, then start from "disabled".
+  const { rows } = await pool.query<{ value: string }>(
+    `SELECT value FROM app_settings WHERE key = 'signup_enabled'`,
+  );
+  originalSignupSetting = rows[0]?.value ?? "false";
+  await setSignupEnabledDirect(false);
+
+  // Make sure no leftover rows from a previous aborted run collide.
   await db.delete(users).where(eq(users.email, TEST_EMAIL.toLowerCase()));
+  await db.delete(users).where(eq(users.email, SELF_SIGNUP_EMAIL.toLowerCase()));
 });
 
 after(async () => {
@@ -78,18 +98,25 @@ after(async () => {
   } else {
     await db.delete(users).where(eq(users.email, TEST_EMAIL.toLowerCase()));
   }
+  await db.delete(users).where(eq(users.email, SELF_SIGNUP_EMAIL.toLowerCase()));
+  // Restore whatever the live app had configured before the test ran.
+  await setSignupEnabledDirect(originalSignupSetting === "true");
   await new Promise<void>((resolve) => server.close(() => resolve()));
   await pool.end();
 });
 
-test("self sign-up is disabled for visitors", async () => {
+test("self sign-up is disabled by default for visitors", async () => {
   const anon = makeAgent(baseUrl);
+  const status = await anon("GET", "/api/auth/signup-status");
+  assert.equal(status.status, 200);
+  assert.equal(status.body.enabled, false, "sign-up status should report disabled");
+
   const res = await anon("POST", "/api/auth/signup", {
     fullName: "E2E Employee",
     email: TEST_EMAIL,
     password: TEST_PASSWORD,
   });
-  assert.equal(res.status, 403, "public self sign-up must be disabled");
+  assert.equal(res.status, 403, "public self sign-up must be blocked while disabled");
 });
 
 test("an admin can create an active employee directly", async () => {
@@ -115,6 +142,49 @@ test("an admin can create an active employee directly", async () => {
   assert.equal(created.body.status, "active");
   assert.equal(created.body.role, "staff");
   employeeId = created.body.id;
+});
+
+test("an admin can enable public sign-up so visitors can self-register, then disable it again", async () => {
+  const admin = makeAgent(baseUrl);
+  await admin("POST", "/api/auth/login", {
+    email: BOOTSTRAP_ADMIN_EMAIL,
+    password: BOOTSTRAP_ADMIN_PASSWORD,
+  });
+
+  // Enable.
+  const enable = await admin("PATCH", "/api/settings/signup", { enabled: true });
+  assert.equal(enable.status, 200, `admin should be able to enable sign-up: ${JSON.stringify(enable.body)}`);
+  assert.equal(enable.body.enabled, true);
+
+  // Visitor now sees it enabled and can register (account is pending).
+  const anon = makeAgent(baseUrl);
+  const status = await anon("GET", "/api/auth/signup-status");
+  assert.equal(status.body.enabled, true);
+  const signup = await anon("POST", "/api/auth/signup", {
+    fullName: "Self Signup",
+    email: SELF_SIGNUP_EMAIL,
+    password: TEST_PASSWORD,
+  });
+  assert.equal(signup.status, 201, `visitor should be able to self-register when enabled: ${JSON.stringify(signup.body)}`);
+
+  // A self-registered account is pending, so it cannot log in yet.
+  const pendingLogin = await anon("POST", "/api/auth/login", {
+    email: SELF_SIGNUP_EMAIL,
+    password: TEST_PASSWORD,
+  });
+  assert.equal(pendingLogin.status, 403, "pending self-registered account must not log in");
+
+  // Disable again.
+  const disable = await admin("PATCH", "/api/settings/signup", { enabled: false });
+  assert.equal(disable.status, 200);
+  assert.equal(disable.body.enabled, false);
+
+  const blocked = await anon("POST", "/api/auth/signup", {
+    fullName: "Too Late",
+    email: `e2e-toolate-${Date.now()}@example.test`,
+    password: TEST_PASSWORD,
+  });
+  assert.equal(blocked.status, 403, "sign-up must be blocked again once disabled");
 });
 
 test("an admin-created employee can log in", async () => {
@@ -161,7 +231,7 @@ test("permission rules: view-only writes are blocked, record writes succeed", as
   assert.equal(noAccess.status, 403, "none-level pages must be fully blocked");
 });
 
-test("non-admins cannot reach admin user-management endpoints", async () => {
+test("non-admins cannot reach admin user-management or the sign-up toggle", async () => {
   const employee = makeAgent(baseUrl);
   await employee("POST", "/api/auth/login", {
     email: TEST_EMAIL,
@@ -184,4 +254,7 @@ test("non-admins cannot reach admin user-management endpoints", async () => {
 
   const patch = await employee("PATCH", `/api/users/${employeeId}`, { role: "admin" });
   assert.equal(patch.status, 403, "staff must not edit users");
+
+  const toggle = await employee("PATCH", "/api/settings/signup", { enabled: true });
+  assert.equal(toggle.status, 403, "staff must not change the sign-up setting");
 });

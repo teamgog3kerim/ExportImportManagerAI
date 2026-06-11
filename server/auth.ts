@@ -181,10 +181,41 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+const signupSchema = z.object({
+  fullName: z.string().trim().min(2, "Please enter your full name"),
+  email: z.string().trim().email("Please enter a valid email"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
 const loginSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(1),
 });
+
+const signupSettingSchema = z.object({
+  enabled: z.boolean(),
+});
+
+// ----- Public self sign-up toggle (admin-controlled, persisted in Postgres) -----
+const SIGNUP_ENABLED_KEY = "signup_enabled";
+
+// Whether visitors may create their own accounts. Defaults to false (disabled)
+// if the row is missing for any reason, so the safe path is "request a demo".
+export async function isSignupEnabled(): Promise<boolean> {
+  const { rows } = await pool.query<{ value: string }>(
+    `SELECT value FROM app_settings WHERE key = $1`,
+    [SIGNUP_ENABLED_KEY],
+  );
+  return rows[0]?.value === "true";
+}
+
+async function setSignupEnabled(enabled: boolean): Promise<void> {
+  await pool.query(
+    `INSERT INTO app_settings (key, value) VALUES ($1, $2)
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+    [SIGNUP_ENABLED_KEY, enabled ? "true" : "false"],
+  );
+}
 
 const permLevelSchema = z.enum(["none", "view", "record"]);
 const updateUserSchema = z.object({
@@ -207,9 +238,38 @@ const createUserSchema = z.object({
 });
 
 export function registerAuthRoutes(app: Express) {
-  app.post("/api/auth/signup", (_req, res) => {
-    res.status(403).json({
-      message: "Self sign-up is disabled. Please request a demo at merisamarketingsolutions@gmail.com.",
+  // Public: lets the sign-in / sign-up pages adapt to the admin's choice.
+  app.get("/api/auth/signup-status", async (_req, res) => {
+    res.json({ enabled: await isSignupEnabled() });
+  });
+
+  app.post("/api/auth/signup", async (req, res) => {
+    if (!(await isSignupEnabled())) {
+      return res.status(403).json({
+        message: "Self sign-up is disabled. Please request a demo at merisamarketingsolutions@gmail.com.",
+      });
+    }
+    const parsed = signupSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
+    }
+    const { fullName, email, password } = parsed.data;
+    const existing = await getUserByEmail(email);
+    if (existing) {
+      return res.status(400).json({ message: "An account with this email already exists" });
+    }
+    await db.insert(users).values({
+      id: randomUUID(),
+      email: email.toLowerCase(),
+      passwordHash: await hashPassword(password),
+      fullName,
+      role: "staff",
+      status: "pending",
+      permissions: defaultPermsForRole("staff"),
+      createdAt: new Date().toISOString(),
+    });
+    res.status(201).json({
+      message: "Your account has been created and is pending administrator approval.",
     });
   });
 
@@ -249,6 +309,18 @@ export function registerAuthRoutes(app: Express) {
       return res.status(401).json({ message: "Account is no longer active" });
     }
     res.json(toSafeUser(user));
+  });
+
+  // ----- Admin: control whether visitors can self sign-up -----
+  // Lives under /api/settings so the access guard already forces admin-only on
+  // writes; requireAdmin is kept as defense-in-depth.
+  app.patch("/api/settings/signup", requireAdmin, async (req, res) => {
+    const parsed = signupSettingSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: "Invalid input" });
+    }
+    await setSignupEnabled(parsed.data.enabled);
+    res.json({ enabled: parsed.data.enabled });
   });
 
   // ----- Admin: user management -----

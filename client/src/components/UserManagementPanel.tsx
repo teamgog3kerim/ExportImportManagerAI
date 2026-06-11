@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -52,6 +53,16 @@ export default function UserManagementPanel() {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["/api/users"] });
 
+  const { data: signupStatus } = useQuery<{ enabled: boolean }>({ queryKey: ["/api/auth/signup-status"] });
+  const signupMutation = useMutation({
+    mutationFn: (enabled: boolean) => apiRequest("PATCH", "/api/settings/signup", { enabled }),
+    onSuccess: (_res, enabled) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/signup-status"] });
+      toast({ title: enabled ? "Sign-up enabled" : "Sign-up disabled" });
+    },
+    onError: (e: Error) => toast({ title: "Could not update sign-up setting", description: stripStatus(e.message), variant: "destructive" }),
+  });
+
   const createMutation = useMutation({
     mutationFn: (body: { fullName: string; email: string; password: string; role: Role }) =>
       apiRequest("POST", "/api/users", body),
@@ -94,6 +105,34 @@ export default function UserManagementPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Public sign-up toggle */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <UserPlus className="h-4 w-4" /> Public sign-up
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Control whether visitors can create their own account.</p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium" data-testid="text-signup-toggle-label">Allow new users to sign up</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {signupStatus?.enabled
+                  ? "Visitors can sign up and sign in once approved."
+                  : "Visitors can only request a demo."}
+              </p>
+            </div>
+            <Switch
+              checked={signupStatus?.enabled ?? false}
+              onCheckedChange={(v) => signupMutation.mutate(v)}
+              disabled={signupMutation.isPending || signupStatus === undefined}
+              data-testid="switch-signup-enabled"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Pending approvals */}
       <Card>
         <CardHeader className="pb-3">

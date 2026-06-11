@@ -15,6 +15,14 @@ export const users = pgTable("users", {
   createdAt: text("created_at").notNull(),
 });
 
+// Application-wide settings (key/value). Holds runtime toggles such as whether
+// public self sign-up is enabled. Persisted in Postgres so the choice survives
+// restarts. See migrations/0002_app_settings.sql.
+export const appSettings = pgTable("app_settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
+
 // Letters of Credit (Import)
 export const lcs = pgTable("lcs", {
   id: varchar("id").primaryKey(),
