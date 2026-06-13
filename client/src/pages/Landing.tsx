@@ -360,9 +360,6 @@ export default function Landing() {
                     <a href="tel:+251912633329" className="block text-sm font-semibold tabular-nums hover:text-primary" data-testid="link-phone-1">
                       +251 912 633 329
                     </a>
-                    <a href="tel:+251967684490" className="block text-sm font-semibold tabular-nums hover:text-primary" data-testid="link-phone-2">
-                      +251 967 684 490
-                    </a>
                     <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
                       <span className="inline-flex items-center gap-1">
                         <SiWhatsapp className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> WhatsApp
