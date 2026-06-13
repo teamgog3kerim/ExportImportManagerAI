@@ -259,7 +259,7 @@ export default function Landing() {
             </h2>
             <div className="mt-5 space-y-4 text-muted-foreground leading-relaxed">
               <p>
-                EXIMMAN is a software company founded by <span className="text-foreground font-semibold">Abdulkerim Mohammed</span>, engaged in
+                EXIMMAN is a software company founded by <span className="text-foreground font-semibold">Abdulkerim MohammedB</span>, engaged in
                 building web and mobile applications for companies and organizations active in import and export, manufacturing,
                 restaurants, and beyond.
               </p>
