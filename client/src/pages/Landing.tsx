@@ -7,7 +7,7 @@ import pitchDeckPdf from "@assets/EXIMMAN_App_Pitch_Deck_PRESENTATION_1781384251
 import {
   Ship, FileText, Calculator, BrainCircuit, Wallet, Package,
   Globe2, ShieldCheck, Sparkles, ArrowRight, Building2, MapPin, Mail, Phone,
-  Presentation, Maximize2,
+  Presentation, Maximize2, TrendingUp, Coins,
 } from "lucide-react";
 import { SiWhatsapp, SiTelegram } from "react-icons/si";
 
@@ -17,6 +17,8 @@ const features = [
   { icon: Calculator, title: "Customs & Tax Engine", desc: "Calculate Ethiopian customs duties, VAT, surtax and withholding on every HS-coded line item." },
   { icon: Wallet, title: "Finance & FX", desc: "Track ETB exposure with live exchange rate scenarios and cost breakdowns across CIF, FOB and CFR." },
   { icon: Package, title: "Inventory Control", desc: "Reconcile landed cost per unit against goods-in-warehouse to know your true margins." },
+  { icon: TrendingUp, title: "Sales Management", desc: "Track sales orders, customers and revenue against landed cost to see real margins on every deal." },
+  { icon: Coins, title: "Cost Estimator", desc: "Estimate total landed cost upfront — FOB, freight, insurance, duties and inland charges before you commit." },
   { icon: BrainCircuit, title: "AI Insights", desc: "Get predictive alerts on LC expiry, shipment delays and FX volatility tailored to your portfolio." },
 ];
 
