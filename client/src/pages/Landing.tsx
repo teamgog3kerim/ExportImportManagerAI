@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Reveal } from "@/components/Reveal";
 import eximmanLogo from "@assets/eximman_logo_trim.png";
 import pitchDeckPdf from "@assets/EXIMMAN_App_Pitch_Deck_PRESENTATION_1781384251130.pdf";
 import {
@@ -68,17 +69,17 @@ export default function Landing() {
         <div className="absolute -bottom-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-primary/10 blur-3xl" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-28 grid lg:grid-cols-2 gap-10 items-center">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border bg-background/60 backdrop-blur px-3 py-1 text-xs text-muted-foreground mb-6">
+            <div className="inline-flex items-center gap-2 rounded-full border bg-background/60 backdrop-blur px-3 py-1 text-xs text-muted-foreground mb-6 animate-fade-up" style={{ animationDelay: "0ms" }}>
               <Sparkles className="h-3.5 w-3.5 text-primary" />
               Built for Ethiopian businesses, fluent in local and international terms
             </div>
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05]" data-testid="text-hero-title">
+            <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] animate-fade-up" style={{ animationDelay: "80ms" }} data-testid="text-hero-title">
               My Export / Import <span className="text-primary">Manager App</span>
             </h1>
-            <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed" data-testid="text-hero-subtitle">
+            <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed animate-fade-up" style={{ animationDelay: "180ms" }} data-testid="text-hero-subtitle">
               A complete operating system for Ethiopian importers and exporters — Letters of Credit, customs duties, shipment tracking, inventory and FX, all in one place.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
+            <div className="mt-8 flex flex-wrap items-center gap-3 animate-fade-up" style={{ animationDelay: "280ms" }}>
               <Button asChild size="lg" data-testid="button-request-demo-hero">
                 <Link href="/signup">Request a Demo <ArrowRight className="h-4 w-4 ml-1" /></Link>
               </Button>
@@ -86,7 +87,7 @@ export default function Landing() {
                 <Link href="/signin">Sign In to Dashboard</Link>
               </Button>
             </div>
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground animate-fade-up" style={{ animationDelay: "380ms" }}>
               <div className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-primary" /> NBE-aligned workflows</div>
               <div className="flex items-center gap-1.5"><Globe2 className="h-3.5 w-3.5 text-primary" /> UCP 600 & Incoterms ready</div>
               <div className="flex items-center gap-1.5"><BrainCircuit className="h-3.5 w-3.5 text-primary" /> AI-assisted insights</div>
@@ -94,8 +95,8 @@ export default function Landing() {
           </div>
 
           {/* Hero illustration card */}
-          <div className="relative">
-            <Card className="shadow-xl">
+          <div className="relative animate-fade-up" style={{ animationDelay: "320ms" }}>
+            <Card className="shadow-xl animate-float">
               <CardContent className="p-5 space-y-4">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -171,22 +172,24 @@ export default function Landing() {
       {/* Features */}
       <section id="features" className="py-20 sm:py-24 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="max-w-2xl">
+          <Reveal className="max-w-2xl">
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">What's Inside</p>
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2">Everything trade operations need, under one roof.</h2>
             <p className="mt-3 text-muted-foreground">From the moment a Proforma Invoice arrives to the day goods leave the warehouse — EXIMMAN handles the paperwork, the math, and the follow-ups.</p>
-          </div>
+          </Reveal>
           <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {features.map(f => (
-              <Card key={f.title} className="hover-elevate">
-                <CardContent className="p-5">
-                  <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center mb-4">
-                    <f.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <h3 className="font-display font-semibold text-base">{f.title}</h3>
-                  <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed text-left">{f.desc}</p>
-                </CardContent>
-              </Card>
+            {features.map((f, i) => (
+              <Reveal key={f.title} delay={(i % 4) * 80}>
+                <Card className="hover-elevate h-full">
+                  <CardContent className="p-5">
+                    <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center mb-4">
+                      <f.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <h3 className="font-display font-semibold text-base">{f.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed text-left">{f.desc}</p>
+                  </CardContent>
+                </Card>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -195,7 +198,7 @@ export default function Landing() {
       <section id="pitch-deck" className="py-20 sm:py-24 border-b bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-            <div>
+            <Reveal>
               <div className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground mb-5">
                 <Presentation className="h-3.5 w-3.5 text-primary" />
                 Product pitch deck · v1.0
@@ -229,8 +232,9 @@ export default function Landing() {
                   </a>
                 </Button>
               </div>
-            </div>
+            </Reveal>
 
+            <Reveal delay={120}>
             <Card className="overflow-hidden shadow-xl">
               <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
                 <div className="flex items-center gap-2 min-w-0">
@@ -248,13 +252,14 @@ export default function Landing() {
                 />
               </div>
             </Card>
+            </Reveal>
           </div>
         </div>
       </section>
       {/* About EXIMMAN */}
       <section id="about" className="py-20 sm:py-24 border-b bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-12 items-start">
-          <div>
+          <Reveal>
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">About EXIMMAN</p>
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2" data-testid="text-about-title">
               Software built for the way Ethiopian businesses actually trade.
@@ -286,8 +291,9 @@ export default function Landing() {
                 ))}
               </div>
             </div>
-          </div>
+          </Reveal>
 
+          <Reveal delay={120}>
           <Card>
             <CardContent className="p-6 space-y-5">
               <div className="flex items-center gap-3">
@@ -318,12 +324,13 @@ export default function Landing() {
               </div>
             </CardContent>
           </Card>
+          </Reveal>
         </div>
       </section>
       {/* CTA + Contact */}
       <section id="contact" className="py-20 sm:py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center max-w-3xl mx-auto">
+          <Reveal className="text-center max-w-3xl mx-auto">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
               Ready to run your trade operations with confidence?
             </h2>
@@ -341,8 +348,9 @@ export default function Landing() {
                 <a href="mailto:merisamarketingsolutions@gmail.com"><Mail className="h-4 w-4 mr-1" /> Email Us</a>
               </Button>
             </div>
-          </div>
+          </Reveal>
 
+          <Reveal delay={120}>
           <Card className="mt-12">
             <CardContent className="p-6 sm:p-8">
               <div className="text-center mb-6">
@@ -403,6 +411,7 @@ export default function Landing() {
               </div>
             </CardContent>
           </Card>
+          </Reveal>
         </div>
       </section>
       {/* Footer */}
