@@ -209,7 +209,7 @@ export default function Landing() {
                   "Twelve connected modules on one calm surface",
                   "UCP 600 compliant LC workflows, bank-by-bank logic",
                   "Live ETB rates from 26 banks, refreshed every 5 minutes",
-                  "GPT-4o powered risk scoring and FX hedging hints",
+                  "AI-powered risk scoring and FX hedging hints",
                 ].map(point => (
                   <li key={point} className="flex items-start gap-2.5 text-sm">
                     <ShieldCheck className="h-4 w-4 text-primary mt-0.5 shrink-0" />
