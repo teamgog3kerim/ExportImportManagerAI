@@ -249,14 +249,27 @@ export default function Landing() {
                 </div>
                 <span className="text-xs text-muted-foreground shrink-0">PDF · 19 slides</span>
               </div>
-              <div className="bg-muted">
-                <iframe
-                  src={`${pitchDeckPdf}#toolbar=0&navpanes=0&view=FitH`}
-                  title="EXIMMAN Pitch Deck preview"
-                  className="w-full h-[420px] sm:h-[520px] border-0"
-                  data-testid="iframe-pitchdeck"
-                />
-              </div>
+              <a
+                href={pitchDeckPdf}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group block bg-gradient-to-br from-primary/10 via-muted to-background transition-colors hover:from-primary/15"
+                data-testid="link-pitchdeck-preview"
+              >
+                <div className="flex flex-col items-center justify-center text-center h-[420px] sm:h-[520px] px-6">
+                  <div className="h-16 w-16 rounded-md bg-primary/15 flex items-center justify-center mb-5">
+                    <Presentation className="h-8 w-8 text-primary" />
+                  </div>
+                  <p className="font-display text-2xl font-semibold tracking-tight">EXIMMAN Pitch Deck</p>
+                  <p className="mt-2 text-sm text-muted-foreground max-w-sm leading-relaxed">
+                    A guided tour of all twelve modules, built for Ethiopian importers and exporters.
+                  </p>
+                  <span className="mt-6 inline-flex items-center gap-1.5 rounded-md border bg-background px-4 py-2 text-sm font-semibold">
+                    <Maximize2 className="h-4 w-4 text-primary" /> Open Full Deck
+                  </span>
+                  <span className="mt-3 text-xs text-muted-foreground">Opens the PDF in a new tab</span>
+                </div>
+              </a>
             </Card>
             </Reveal>
           </div>
