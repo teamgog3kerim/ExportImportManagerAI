@@ -47,6 +47,9 @@ export default function Landing() {
           </nav>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <Button asChild variant="outline" className="hidden sm:inline-flex" data-testid="button-request-demo-nav">
+              <Link href="/signup">Request a Demo</Link>
+            </Button>
             <Button asChild data-testid="button-signin-nav">
               <Link href="/signin">Sign In <ArrowRight className="h-4 w-4 ml-1" /></Link>
             </Button>
@@ -71,11 +74,11 @@ export default function Landing() {
               A complete operating system for Ethiopian importers and exporters — Letters of Credit, customs duties, shipment tracking, inventory and FX, all in one place.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button asChild size="lg" data-testid="button-signin-hero">
-                <Link href="/signin">Sign In to Dashboard <ArrowRight className="h-4 w-4 ml-1" /></Link>
+              <Button asChild size="lg" data-testid="button-request-demo-hero">
+                <Link href="/signup">Request a Demo <ArrowRight className="h-4 w-4 ml-1" /></Link>
               </Button>
-              <Button asChild size="lg" variant="outline" data-testid="button-learn-more">
-                <a href="#features">Learn More</a>
+              <Button asChild size="lg" variant="outline" data-testid="button-signin-hero">
+                <Link href="/signin">Sign In to Dashboard</Link>
               </Button>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
@@ -263,8 +266,11 @@ export default function Landing() {
               Sign in to your EXIMMAN dashboard and bring every LC, shipment and customs filing into one workspace.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Button asChild size="lg" data-testid="button-signin-cta">
-                <Link href="/signin">Sign In <ArrowRight className="h-4 w-4 ml-1" /></Link>
+              <Button asChild size="lg" data-testid="button-request-demo-cta">
+                <Link href="/signup">Request a Demo <ArrowRight className="h-4 w-4 ml-1" /></Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" data-testid="button-signin-cta">
+                <Link href="/signin">Sign In</Link>
               </Button>
               <Button asChild size="lg" variant="outline" data-testid="button-contact-email">
                 <a href="mailto:merisamarketingsolutions@gmail.com"><Mail className="h-4 w-4 mr-1" /> Email Us</a>
