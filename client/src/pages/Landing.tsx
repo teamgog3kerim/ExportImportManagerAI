@@ -293,8 +293,8 @@ export default function Landing() {
                   AM
                 </div>
                 <div>
-                  <p className="font-display font-semibold text-lg">Abdulkerim Mohammed</p>
-                  <p className="text-xs text-muted-foreground tracking-[0.14em] uppercase">Founder, EXIMMAN</p>
+                  <p className="font-display font-semibold text-lg">Abdulkerim MohammedB</p>
+                  <p className="text-xs text-muted-foreground tracking-[0.14em] uppercase">Founder-CEO, EXIMMAN</p>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">"Ethiopian businesses deserve software's and digital technologies that speaks their language — integrated both with local habits and global trade standards. EXIMMAN is our commitment to that bridge."</p>
