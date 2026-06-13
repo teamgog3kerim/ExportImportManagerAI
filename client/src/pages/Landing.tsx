@@ -320,7 +320,7 @@ export default function Landing() {
       </section>
       {/* CTA + Contact */}
       <section id="contact" className="py-20 sm:py-24">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center max-w-3xl mx-auto">
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight">
               Ready to run your trade operations with confidence?
@@ -383,7 +383,7 @@ export default function Landing() {
                   </div>
                   <a
                     href="mailto:merisamarketingsolutions@gmail.com"
-                    className="text-sm font-semibold break-all hover:text-primary"
+                    className="text-sm font-semibold whitespace-nowrap hover:text-primary"
                     data-testid="link-email"
                   >
                     merisamarketingsolutions@gmail.com
