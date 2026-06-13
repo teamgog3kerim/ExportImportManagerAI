@@ -8,7 +8,7 @@ import pitchDeckPdf from "@assets/EXIMMAN_App_Pitch_Deck_PRESENTATION_1781384251
 import {
   Ship, FileText, Calculator, BrainCircuit, Wallet, Package,
   Globe2, ShieldCheck, Sparkles, ArrowRight, Building2, MapPin, Mail, Phone,
-  Presentation, Maximize2, TrendingUp, Coins,
+  Presentation, Maximize2, TrendingUp, Coins, OctagonX,
 } from "lucide-react";
 import { SiWhatsapp, SiTelegram } from "react-icons/si";
 
@@ -172,7 +172,13 @@ export default function Landing() {
       {/* Features */}
       <section id="features" className="py-20 sm:py-24 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <Reveal className="max-w-2xl">
+          <Reveal className="max-w-3xl">
+            <div className="flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-4 mb-8" data-testid="banner-stop-slogan">
+              <OctagonX className="h-6 w-6 text-destructive shrink-0 mt-0.5" />
+              <p className="font-display text-lg sm:text-xl font-semibold tracking-tight leading-snug">
+                <span className="text-destructive">STOP</span> managing your trade business through spreadsheets and phone calls.
+              </p>
+            </div>
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">What's Inside</p>
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2">Everything trade operations need, under one roof.</h2>
             <p className="mt-3 text-muted-foreground">From the moment a Proforma Invoice arrives to the day goods leave the warehouse — EXIMMAN handles the paperwork, the math, and the follow-ups.</p>
