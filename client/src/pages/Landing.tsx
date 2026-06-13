@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import eximmanLogo from "@assets/eximman_logo_trim.png";
+import pitchDeckPdf from "@assets/EXIMMAN_App_Pitch_Deck_PRESENTATION_1781384251130.pdf";
 import {
   Ship, FileText, Calculator, BrainCircuit, Wallet, Package,
   Globe2, ShieldCheck, Sparkles, ArrowRight, Building2, MapPin, Mail, Phone,
+  Presentation, Maximize2,
 } from "lucide-react";
 import { SiWhatsapp, SiTelegram } from "react-icons/si";
 
@@ -42,6 +44,7 @@ export default function Landing() {
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <a href="#features" className="text-muted-foreground hover:text-foreground" data-testid="link-features">Features</a>
+            <a href="#pitch-deck" className="text-muted-foreground hover:text-foreground" data-testid="link-pitchdeck">Pitch Deck</a>
             <a href="#about" className="text-muted-foreground hover:text-foreground" data-testid="link-about">About</a>
             <a href="#contact" className="text-muted-foreground hover:text-foreground" data-testid="link-contact">Contact</a>
           </nav>
@@ -183,6 +186,66 @@ export default function Landing() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+      {/* Pitch Deck Preview */}
+      <section id="pitch-deck" className="py-20 sm:py-24 border-b bg-muted/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground mb-5">
+                <Presentation className="h-3.5 w-3.5 text-primary" />
+                Product pitch deck · v1.0
+              </div>
+              <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight" data-testid="text-pitchdeck-title">
+                See the whole platform before you commit.
+              </h2>
+              <p className="mt-3 text-muted-foreground leading-relaxed">
+                Flip through our pitch deck for a guided tour of all twelve modules — Letters of Credit, customs, shipments, inventory, finance and AI insights — built specifically for Ethiopian importers and exporters.
+              </p>
+              <ul className="mt-6 space-y-3">
+                {[
+                  "Twelve connected modules on one calm surface",
+                  "UCP 600 compliant LC workflows, bank-by-bank logic",
+                  "Live ETB rates from 26 banks, refreshed every 5 minutes",
+                  "GPT-4o powered risk scoring and FX hedging hints",
+                ].map(point => (
+                  <li key={point} className="flex items-start gap-2.5 text-sm">
+                    <ShieldCheck className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <span className="text-muted-foreground leading-relaxed">{point}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Button asChild size="lg" data-testid="button-request-demo-pitchdeck">
+                  <Link href="/signup">Request a Demo <ArrowRight className="h-4 w-4 ml-1" /></Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" data-testid="button-open-pitchdeck">
+                  <a href={pitchDeckPdf} target="_blank" rel="noopener noreferrer">
+                    <Maximize2 className="h-4 w-4 mr-1.5" /> Open Full Deck
+                  </a>
+                </Button>
+              </div>
+            </div>
+
+            <Card className="overflow-hidden shadow-xl">
+              <div className="flex items-center justify-between gap-2 border-b px-4 py-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className="h-4 w-4 text-primary shrink-0" />
+                  <p className="text-sm font-semibold truncate">EXIMMAN Pitch Deck</p>
+                </div>
+                <span className="text-xs text-muted-foreground shrink-0">PDF · 19 slides</span>
+              </div>
+              <div className="bg-muted">
+                <iframe
+                  src={`${pitchDeckPdf}#toolbar=0&navpanes=0&view=FitH`}
+                  title="EXIMMAN Pitch Deck preview"
+                  className="w-full h-[420px] sm:h-[520px] border-0"
+                  data-testid="iframe-pitchdeck"
+                />
+              </div>
+            </Card>
           </div>
         </div>
       </section>
