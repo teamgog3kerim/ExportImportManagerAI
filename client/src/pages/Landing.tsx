@@ -203,7 +203,7 @@ export default function Landing() {
               <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight" data-testid="text-pitchdeck-title">
                 See the whole platform before you commit.
               </h2>
-              <p className="mt-3 text-muted-foreground leading-relaxed">
+              <p className="mt-3 text-muted-foreground leading-relaxed text-justify">
                 Flip through our pitch deck for a guided tour of all twelve modules — Letters of Credit, customs, shipments, inventory, finance and AI insights — built specifically for Ethiopian importers and exporters.
               </p>
               <ul className="mt-6 space-y-3">
