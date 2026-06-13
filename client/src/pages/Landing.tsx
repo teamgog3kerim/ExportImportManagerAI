@@ -259,7 +259,7 @@ export default function Landing() {
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2" data-testid="text-about-title">
               Software built for the way Ethiopian businesses actually trade.
             </h2>
-            <div className="mt-5 space-y-4 text-muted-foreground leading-relaxed">
+            <div className="mt-5 space-y-4 text-muted-foreground leading-relaxed text-justify">
               <p>
                 EXIMMAN is a software company founded by <span className="text-foreground font-semibold">Abdulkerim MohammedB</span>, engaged in
                 building web and mobile applications for companies and organizations active in import and export, manufacturing,
