@@ -3,10 +3,10 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { randomBytes, randomUUID, scrypt, timingSafeEqual } from "crypto";
 import { promisify } from "util";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 import { db, pool } from "./db";
-import { users } from "@shared/schema";
+import { users, demoRequests, demoRequestSubmissionSchema } from "@shared/schema";
 import {
   defaultPermsForRole,
   isReadStylePost,
@@ -273,6 +273,29 @@ export function registerAuthRoutes(app: Express) {
     });
   });
 
+  // Public: prospective clients submit a demo request from the sign-up page
+  // when self sign-up is disabled. Stored for an admin to review and follow up.
+  app.post("/api/auth/demo-request", async (req, res) => {
+    const parsed = demoRequestSubmissionSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0]?.message ?? "Invalid input" });
+    }
+    const d = parsed.data;
+    await db.insert(demoRequests).values({
+      id: randomUUID(),
+      fullName: d.fullName,
+      companyName: d.companyName,
+      companyCategory: d.companyCategory,
+      categoryOther: d.companyCategory === "other" ? d.categoryOther ?? null : null,
+      position: d.position,
+      phone: d.phone,
+      email: d.email,
+      status: "new",
+      createdAt: new Date().toISOString(),
+    });
+    res.status(201).json({ message: "Your demo request has been received. We'll be in touch shortly." });
+  });
+
   app.post("/api/auth/login", async (req, res) => {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -321,6 +344,32 @@ export function registerAuthRoutes(app: Express) {
     }
     await setSignupEnabled(parsed.data.enabled);
     res.json({ enabled: parsed.data.enabled });
+  });
+
+  // ----- Admin: review demo requests -----
+  // Admins bypass the access guard; non-admins are denied (path is unmapped).
+  // requireAdmin is kept as defense-in-depth.
+  app.get("/api/demo-requests", requireAdmin, async (_req, res) => {
+    const rows = await db.select().from(demoRequests).orderBy(desc(demoRequests.createdAt));
+    res.json(rows);
+  });
+
+  app.patch("/api/demo-requests/:id", requireAdmin, async (req, res) => {
+    const status = String(req.body?.status ?? "");
+    if (status !== "new" && status !== "contacted") {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    const rows = await db.select().from(demoRequests).where(eq(demoRequests.id, req.params.id)).limit(1);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Demo request not found" });
+    }
+    await db.update(demoRequests).set({ status }).where(eq(demoRequests.id, req.params.id));
+    res.json({ id: req.params.id, status });
+  });
+
+  app.delete("/api/demo-requests/:id", requireAdmin, async (req, res) => {
+    await db.delete(demoRequests).where(eq(demoRequests.id, req.params.id));
+    res.json({ message: "Deleted" });
   });
 
   // ----- Admin: user management -----

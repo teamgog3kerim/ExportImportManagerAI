@@ -10,12 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, BanknoteIcon, Users, UserCheck, Award, Bell, Trash2, Plus, Pencil, X, Settings2 } from "lucide-react";
+import { Building2, BanknoteIcon, Users, UserCheck, Award, Bell, Trash2, Plus, Pencil, X, Settings2, Inbox } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ETHIOPIAN_BANKS, swiftForBank } from "@/lib/ethiopianBanks";
 import type { CompanySettings, NotificationSettings, Bank, Supplier, Buyer, Certification } from "@shared/schema";
 import { countriesWith } from "@/lib/countries";
 import UserManagementPanel from "@/components/UserManagementPanel";
+import DemoRequestsPanel from "@/components/DemoRequestsPanel";
 
 const OTHER_BANK = "__other__";
 
@@ -26,6 +27,7 @@ const TABS = [
   { id: "buyers", label: "Buyers", icon: UserCheck },
   { id: "certs", label: "Certifications", icon: Award },
   { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "demo-requests", label: "Demo Requests", icon: Inbox },
   { id: "configurations", label: "Configurations", icon: Settings2 },
 ];
 
@@ -524,6 +526,8 @@ export default function Settings() {
       )}
 
       {/* Configurations Tab */}
+      {tab === "demo-requests" && <DemoRequestsPanel />}
+
       {tab === "configurations" && <UserManagementPanel />}
 
       {/* Bank Modal */}

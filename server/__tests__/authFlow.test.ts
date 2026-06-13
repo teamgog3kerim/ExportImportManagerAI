@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { setupSession, BOOTSTRAP_ADMIN_EMAIL, BOOTSTRAP_ADMIN_PASSWORD } from "../auth";
 import { registerRoutes } from "../routes";
 import { db, pool } from "../db";
-import { users } from "@shared/schema";
+import { users, demoRequests } from "@shared/schema";
 
 // End-to-end coverage of the most security-sensitive flow in the app:
 // admin-controlled public sign-up toggle -> sign-up blocked while disabled ->
@@ -51,6 +51,8 @@ function makeAgent(baseUrl: string) {
 const TEST_EMAIL = `e2e-employee-${Date.now()}@example.test`;
 const TEST_PASSWORD = "EmployeePass123!";
 const SELF_SIGNUP_EMAIL = `e2e-selfsignup-${Date.now()}@example.test`;
+const DEMO_EMAIL = `e2e-demo-${Date.now()}@example.test`;
+let demoRequestId = "";
 
 let server: Server;
 let baseUrl: string;
@@ -99,6 +101,7 @@ after(async () => {
     await db.delete(users).where(eq(users.email, TEST_EMAIL.toLowerCase()));
   }
   await db.delete(users).where(eq(users.email, SELF_SIGNUP_EMAIL.toLowerCase()));
+  await db.delete(demoRequests).where(eq(demoRequests.email, DEMO_EMAIL));
   // Restore whatever the live app had configured before the test ran.
   await setSignupEnabledDirect(originalSignupSetting === "true");
   await new Promise<void>((resolve) => server.close(() => resolve()));
@@ -229,6 +232,75 @@ test("permission rules: view-only writes are blocked, record writes succeed", as
   // finance = none -> no access at all, even for reads.
   const noAccess = await employee("GET", "/api/finance/expenses");
   assert.equal(noAccess.status, 403, "none-level pages must be fully blocked");
+});
+
+test("visitors can submit a demo request; only admins can review and manage it", async () => {
+  // A visitor submits a demo request from the public sign-up page. This is a
+  // public endpoint under /api/auth/* so it is reachable without a session.
+  const anon = makeAgent(baseUrl);
+  const submit = await anon("POST", "/api/auth/demo-request", {
+    fullName: "Demo Visitor",
+    companyName: "Demo Trading PLC",
+    companyCategory: "export_import",
+    position: "General Manager",
+    phone: "+251911000000",
+    email: DEMO_EMAIL,
+  });
+  assert.equal(submit.status, 201, `public demo request should be accepted: ${JSON.stringify(submit.body)}`);
+
+  // "Other" category requires a description, so omitting it must be rejected.
+  const invalid = await anon("POST", "/api/auth/demo-request", {
+    fullName: "Bad Visitor",
+    companyName: "Nope PLC",
+    companyCategory: "other",
+    position: "CEO",
+    phone: "+251911000001",
+    email: `e2e-demo-invalid-${Date.now()}@example.test`,
+  });
+  assert.equal(invalid.status, 400, "'other' category without a description must be rejected");
+
+  // Visitors cannot read the demo-request list.
+  const anonList = await anon("GET", "/api/demo-requests");
+  assert.equal(anonList.status, 401, "anonymous visitors must not list demo requests");
+
+  // An admin can review the submitted request.
+  const admin = makeAgent(baseUrl);
+  await admin("POST", "/api/auth/login", {
+    email: BOOTSTRAP_ADMIN_EMAIL,
+    password: BOOTSTRAP_ADMIN_PASSWORD,
+  });
+  const list = await admin("GET", "/api/demo-requests");
+  assert.equal(list.status, 200, `admin should list demo requests: ${JSON.stringify(list.body)}`);
+  const mine = (list.body as any[]).find((r) => r.email === DEMO_EMAIL);
+  assert.ok(mine, "submitted demo request should appear in the admin list");
+  assert.equal(mine.status, "new", "a fresh demo request defaults to 'new'");
+  demoRequestId = mine.id;
+
+  // Admin can mark it contacted.
+  const patched = await admin("PATCH", `/api/demo-requests/${demoRequestId}`, { status: "contacted" });
+  assert.equal(patched.status, 200, `admin should update status: ${JSON.stringify(patched.body)}`);
+  assert.equal(patched.body.status, "contacted");
+
+  // Admin can delete it.
+  const removed = await admin("DELETE", `/api/demo-requests/${demoRequestId}`);
+  assert.equal(removed.status, 200, "admin should be able to delete a demo request");
+});
+
+test("non-admins cannot reach admin demo-request management", async () => {
+  const employee = makeAgent(baseUrl);
+  await employee("POST", "/api/auth/login", {
+    email: TEST_EMAIL,
+    password: TEST_PASSWORD,
+  });
+
+  const list = await employee("GET", "/api/demo-requests");
+  assert.equal(list.status, 403, "staff must not list demo requests");
+
+  const patch = await employee("PATCH", "/api/demo-requests/some-id", { status: "contacted" });
+  assert.equal(patch.status, 403, "staff must not update demo requests");
+
+  const remove = await employee("DELETE", "/api/demo-requests/some-id");
+  assert.equal(remove.status, 403, "staff must not delete demo requests");
 });
 
 test("non-admins cannot reach admin user-management or the sign-up toggle", async () => {

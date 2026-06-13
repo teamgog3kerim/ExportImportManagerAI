@@ -12,9 +12,17 @@ queries with an ON CONFLICT upsert.
   /api/auth so the unauthenticated sign-in/sign-up pages can adapt).
 - Admin write: `PATCH /api/settings/signup` `{ enabled }` — admin-only via the
   apiAccessGuard settings-write rule AND `requireAdmin`.
-- When DISABLED: `POST /api/auth/signup` -> 403; `/signup` page shows the
-  "Request a demo" mailto screen (name, position, company, phone); SignIn link
-  reads "Request a demo".
+- When DISABLED: `POST /api/auth/signup` -> 403; `/signup` page shows a
+  DB-backed "Request a demo" form (full name, company name, company category =
+  export/import/export_import/other, position, phone, email) that POSTs to the
+  PUBLIC endpoint `POST /api/auth/demo-request` (under /api/auth so no auth
+  needed) and persists a `demo_requests` row (status default `'new'`). The
+  bottom "Or write to ...@gmail.com" mailto link is kept. SignIn link reads
+  "Request a demo". `categoryOther` is required ONLY when category === 'other'
+  (refined `demoRequestSubmissionSchema`); server nulls it otherwise.
+  Admins review/manage leads via admin-only `GET/PATCH/DELETE /api/demo-requests`
+  (status new|contacted), surfaced in the Settings "Demo Requests" tab
+  (DemoRequestsPanel).
 - When ENABLED: signup creates a `status:"pending"` staff user awaiting admin
   approval; `/signup` shows the create-account form; SignIn link reads
   "Create one".

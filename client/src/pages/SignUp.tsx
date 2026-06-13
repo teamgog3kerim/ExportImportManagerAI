@@ -5,37 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
-  ArrowLeft, ArrowRight, Mail, Building2, Phone, User, Briefcase,
-  Lock, CheckCircle2, Loader2,
+  ArrowLeft, ArrowRight, Mail, User,
+  Lock, CheckCircle2, Loader2, Send,
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import eximmanLogo from "@assets/eximman_logo_trim.png";
 
 const DEMO_EMAIL = "merisamarketingsolutions@gmail.com";
 
-const DEMO_SUBJECT = "Demo request — EXIMMAN";
-const DEMO_BODY = [
-  "Hello EXIMMAN team,",
-  "",
-  "I would like to request a demo of EXIMMAN. My details are below:",
-  "",
-  "Full name: ",
-  "Position in the company: ",
-  "Company name: ",
-  "Phone number: ",
-  "",
-  "Thank you.",
-].join("\n");
-
-const mailtoHref = `mailto:${DEMO_EMAIL}?subject=${encodeURIComponent(DEMO_SUBJECT)}&body=${encodeURIComponent(DEMO_BODY)}`;
-
-const DETAILS = [
-  { icon: User, label: "Your full name" },
-  { icon: Briefcase, label: "Your position in the company" },
-  { icon: Building2, label: "Your company name" },
-  { icon: Phone, label: "Your phone number" },
+const CATEGORY_OPTIONS = [
+  { value: "export", label: "Export" },
+  { value: "import", label: "Import" },
+  { value: "export_import", label: "Export and Import" },
+  { value: "other", label: "Other (please describe)" },
 ];
 
 function PageShell({ children }: { children: React.ReactNode }) {
@@ -84,37 +72,178 @@ function PageShell({ children }: { children: React.ReactNode }) {
 }
 
 function RequestDemo() {
+  const [fullName, setFullName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [companyCategory, setCompanyCategory] = useState("");
+  const [categoryOther, setCategoryOther] = useState("");
+  const [position, setPosition] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (fullName.trim().length < 2) return setError("Please enter your full name.");
+    if (!companyName.trim()) return setError("Please enter your company name.");
+    if (!companyCategory) return setError("Please select your company category.");
+    if (companyCategory === "other" && !categoryOther.trim())
+      return setError("Please describe your company category.");
+    if (!position.trim()) return setError("Please enter your position in the company.");
+    if (!phone.trim()) return setError("Please enter your phone number.");
+    if (!email.trim()) return setError("Please enter your email.");
+    setSubmitting(true);
+    try {
+      await apiRequest("POST", "/api/auth/demo-request", {
+        fullName: fullName.trim(),
+        companyName: companyName.trim(),
+        companyCategory,
+        categoryOther: companyCategory === "other" ? categoryOther.trim() : undefined,
+        position: position.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+      });
+      setDone(true);
+    } catch (err: any) {
+      setError(err?.message?.replace(/^\d+:\s*/, "") || "Could not send your request. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <div className="text-center py-6" data-testid="text-demo-success">
+        <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+          <CheckCircle2 className="h-6 w-6 text-primary" />
+        </div>
+        <h1 className="font-display text-xl font-semibold tracking-tight">Request received</h1>
+        <p className="text-sm text-muted-foreground mt-2">
+          Thank you. Our team has received your demo request and will reach back to you shortly.
+        </p>
+        <Button asChild className="mt-6 w-full" data-testid="button-go-signin">
+          <Link href="/signin">Back to sign in</Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="mb-6">
         <h1 className="font-display text-2xl font-semibold tracking-tight" data-testid="text-demo-title">Request a demo</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          EXIMMAN accounts are set up by our team. Send us an email and we'll reach
-          back to arrange your demo in a short period of time.
+          EXIMMAN accounts are set up by our team. Fill in your details below and
+          we'll reach back to arrange your demo in a short period of time.
         </p>
       </div>
 
-      <div className="rounded-md border p-4 mb-5">
-        <p className="text-xs font-semibold mb-3" data-testid="text-demo-instructions">
-          In your email, please include:
-        </p>
-        <ul className="space-y-2.5">
-          {DETAILS.map(({ icon: Icon, label }) => (
-            <li key={label} className="flex items-center gap-2.5 text-sm" data-testid={`item-detail-${label}`}>
-              <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span>{label}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <form onSubmit={submit} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="demo-name" className="text-xs">Full name</Label>
+          <Input
+            id="demo-name"
+            placeholder="Your full name"
+            value={fullName}
+            onChange={e => setFullName(e.target.value)}
+            data-testid="input-fullname"
+          />
+        </div>
 
-      <Button asChild className="w-full" data-testid="button-request-demo">
-        <a href={mailtoHref} target="_blank" rel="noopener noreferrer">
-          <Mail className="h-4 w-4 mr-1.5" /> Email us to request a demo
-          <ArrowRight className="h-4 w-4 ml-1" />
-        </a>
-      </Button>
-      <p className="text-xs text-muted-foreground text-center mt-3" data-testid="text-demo-email">
+        <div className="space-y-1.5">
+          <Label htmlFor="demo-company" className="text-xs">Company name</Label>
+          <Input
+            id="demo-company"
+            placeholder="Your company name"
+            value={companyName}
+            onChange={e => setCompanyName(e.target.value)}
+            data-testid="input-company-name"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="demo-category" className="text-xs">Company category</Label>
+          <Select value={companyCategory} onValueChange={setCompanyCategory}>
+            <SelectTrigger id="demo-category" data-testid="select-company-category">
+              <SelectValue placeholder="Select a category" />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORY_OPTIONS.map(opt => (
+                <SelectItem key={opt.value} value={opt.value} data-testid={`option-category-${opt.value}`}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {companyCategory === "other" && (
+          <div className="space-y-1.5">
+            <Label htmlFor="demo-category-other" className="text-xs">Please describe</Label>
+            <Textarea
+              id="demo-category-other"
+              placeholder="Describe your company category"
+              value={categoryOther}
+              onChange={e => setCategoryOther(e.target.value)}
+              className="resize-none"
+              rows={2}
+              data-testid="input-category-other"
+            />
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <Label htmlFor="demo-position" className="text-xs">Your position in the company</Label>
+          <Input
+            id="demo-position"
+            placeholder="e.g. General Manager"
+            value={position}
+            onChange={e => setPosition(e.target.value)}
+            data-testid="input-position"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="demo-phone" className="text-xs">Phone number</Label>
+          <Input
+            id="demo-phone"
+            type="tel"
+            placeholder="e.g. +251 ..."
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            data-testid="input-phone"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="demo-email" className="text-xs">Email</Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              id="demo-email"
+              type="email"
+              autoComplete="email"
+              className="pl-9"
+              placeholder="you@company.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              data-testid="input-email"
+            />
+          </div>
+        </div>
+
+        {error && (
+          <p className="text-xs text-destructive" data-testid="text-demo-error">{error}</p>
+        )}
+
+        <Button type="submit" className="w-full" disabled={submitting} data-testid="button-request-demo">
+          {submitting ? "Sending..." : <><Send className="h-4 w-4 mr-1.5" /> Send us your request</>}
+        </Button>
+      </form>
+
+      <p className="text-xs text-muted-foreground text-center mt-4" data-testid="text-demo-email">
         Or write to{" "}
         <a href={`mailto:${DEMO_EMAIL}`} target="_blank" rel="noopener noreferrer" className="text-foreground hover:underline">{DEMO_EMAIL}</a>
       </p>

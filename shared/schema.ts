@@ -23,6 +23,22 @@ export const appSettings = pgTable("app_settings", {
   value: text("value").notNull(),
 });
 
+// Demo requests submitted by prospective clients from the public sign-up page
+// when self sign-up is disabled. Persisted so an admin can review the leads and
+// follow up. See migrations/0003_demo_requests.sql.
+export const demoRequests = pgTable("demo_requests", {
+  id: varchar("id").primaryKey(),
+  fullName: text("full_name").notNull(),
+  companyName: text("company_name").notNull(),
+  companyCategory: text("company_category").notNull(),
+  categoryOther: text("category_other"),
+  position: text("position").notNull(),
+  phone: text("phone").notNull(),
+  email: text("email").notNull(),
+  status: text("status").notNull().default("new"),
+  createdAt: text("created_at").notNull(),
+});
+
 // Letters of Credit (Import)
 export const lcs = pgTable("lcs", {
   id: varchar("id").primaryKey(),
@@ -370,6 +386,25 @@ export const reports = pgTable("reports", {
 
 // Schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
+
+export const COMPANY_CATEGORIES = ["export", "import", "export_import", "other"] as const;
+export const insertDemoRequestSchema = createInsertSchema(demoRequests)
+  .omit({ id: true, createdAt: true, status: true });
+// Validation used for the public demo-request submission.
+export const demoRequestSubmissionSchema = z.object({
+  fullName: z.string().trim().min(2, "Please enter your full name"),
+  companyName: z.string().trim().min(1, "Please enter your company name"),
+  companyCategory: z.enum(COMPANY_CATEGORIES, {
+    errorMap: () => ({ message: "Please select your company category" }),
+  }),
+  categoryOther: z.string().trim().max(200).optional().nullable(),
+  position: z.string().trim().min(1, "Please enter your position"),
+  phone: z.string().trim().min(1, "Please enter your phone number"),
+  email: z.string().trim().email("Please enter a valid email"),
+}).refine(
+  (d) => d.companyCategory !== "other" || (d.categoryOther && d.categoryOther.trim().length > 0),
+  { message: "Please describe your company category", path: ["categoryOther"] },
+);
 export const insertReportSchema = createInsertSchema(reports).omit({ id: true, createdAt: true });
 export const insertLcSchema = createInsertSchema(lcs).omit({ id: true, createdAt: true });
 export const insertShipmentSchema = createInsertSchema(shipments).omit({ id: true, createdAt: true });
@@ -476,3 +511,5 @@ export type CustomerPayment = typeof customerPayments.$inferSelect;
 export type InsertCustomerPayment = z.infer<typeof insertCustomerPaymentSchema>;
 export type Report = typeof reports.$inferSelect;
 export type InsertReport = z.infer<typeof insertReportSchema>;
+export type DemoRequest = typeof demoRequests.$inferSelect;
+export type InsertDemoRequest = z.infer<typeof insertDemoRequestSchema>;
