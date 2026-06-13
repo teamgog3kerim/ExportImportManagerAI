@@ -184,7 +184,7 @@ export default function Landing() {
                     <f.icon className="h-5 w-5 text-primary" />
                   </div>
                   <h3 className="font-display font-semibold text-base">{f.title}</h3>
-                  <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed text-justify">{f.desc}</p>
+                  <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed text-left">{f.desc}</p>
                 </CardContent>
               </Card>
             ))}
