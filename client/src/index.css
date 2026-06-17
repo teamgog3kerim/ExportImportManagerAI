@@ -37,8 +37,8 @@
 
   --sidebar-border: 38 14% 80%;
 
-  /* Primary: deep heritage brown — more sophisticated than #8A7650 */
-  --sidebar-primary: 30 32% 32%;
+  /* Primary: heritage green #607456 */
+  --sidebar-primary: 100 15% 40%;
 
   --sidebar-primary-foreground: 42 45% 97%;
 
@@ -46,7 +46,7 @@
 
   --sidebar-accent-foreground: 30 22% 22%;
 
-  --sidebar-ring: 30 32% 32%;
+  --sidebar-ring: 100 15% 40%;
 
   --popover: 42 38% 98%;
 
@@ -54,8 +54,8 @@
 
   --popover-border: 40 18% 86%;
 
-  /* Primary: deep heritage brown — sophisticated, professional */
-  --primary: 30 32% 32%;
+  /* Primary: heritage green #607456 */
+  --primary: 100 15% 40%;
 
   --primary-foreground: 42 45% 97%;
 
@@ -79,9 +79,9 @@
   --destructive-foreground: 0 0% 98%;
 
   --input: 40 16% 76%;
-  --ring: 30 32% 32%;
+  --ring: 100 15% 40%;
   /* Chart colors: warm refined earthy */
-  --chart-1: 30 32% 32%;
+  --chart-1: 100 15% 40%;
   --chart-2: 78 18% 42%;
   --chart-3: 42 50% 50%;
   --chart-4: 14 55% 42%;
@@ -164,7 +164,7 @@
   --sidebar-border: 38 10% 16%;
 
   /* Lighter warm brown for dark mode */
-  --sidebar-primary: 39 32% 58%;
+  --sidebar-primary: 100 16% 56%;
 
   --sidebar-primary-foreground: 47 45% 97%;
 
@@ -172,7 +172,7 @@
 
   --sidebar-accent-foreground: 47 18% 78%;
 
-  --sidebar-ring: 39 32% 58%;
+  --sidebar-ring: 100 16% 56%;
 
   --popover: 38 16% 13%;
 
@@ -180,7 +180,7 @@
 
   --popover-border: 38 12% 17%;
 
-  --primary: 39 32% 58%;
+  --primary: 100 16% 56%;
 
   --primary-foreground: 47 45% 97%;
 
@@ -201,7 +201,7 @@
   --destructive-foreground: 0 0% 98%;
 
   --input: 38 12% 26%;
-  --ring: 39 32% 58%;
+  --ring: 100 16% 56%;
   /* Chart colors: warm earthy in dark */
   --chart-1: 39 40% 62%;
   --chart-2: 80 26% 60%;
