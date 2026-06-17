@@ -30,19 +30,19 @@
 
   --card-border: 40 18% 86%;
 
-  /* Sidebar: warm parchment, slightly deeper than bg for definition */
-  --sidebar: 78 19% 66%;
+  /* Sidebar: soft cream #E4DFB5 */
+  --sidebar: 54 47% 80%;
 
   --sidebar-foreground: 30 24% 16%;
 
-  --sidebar-border: 38 14% 80%;
+  --sidebar-border: 54 28% 64%;
 
   /* Primary: heritage green #607456 */
   --sidebar-primary: 100 15% 40%;
 
   --sidebar-primary-foreground: 42 45% 97%;
 
-  --sidebar-accent: 38 18% 82%;
+  --sidebar-accent: 54 36% 70%;
 
   --sidebar-accent-foreground: 30 22% 22%;
 
