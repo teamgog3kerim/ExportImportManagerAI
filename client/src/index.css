@@ -30,19 +30,19 @@
 
   --card-border: 40 18% 86%;
 
-  /* Sidebar: soft cream #E4DFB5 */
-  --sidebar: 54 47% 80%;
+  /* Sidebar: soft olive #C3CC9B */
+  --sidebar: 71 32% 70%;
 
   --sidebar-foreground: 30 24% 16%;
 
-  --sidebar-border: 54 28% 64%;
+  --sidebar-border: 71 24% 54%;
 
   /* Primary: heritage green #607456 */
   --sidebar-primary: 100 15% 40%;
 
   --sidebar-primary-foreground: 42 45% 97%;
 
-  --sidebar-accent: 54 36% 70%;
+  --sidebar-accent: 71 28% 60%;
 
   --sidebar-accent-foreground: 30 22% 22%;
 
