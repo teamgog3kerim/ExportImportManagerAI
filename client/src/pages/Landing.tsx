@@ -215,28 +215,28 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Top Nav */}
-      <header className="sticky top-0 z-50 bg-background/85 backdrop-blur border-b">
+      <header className="sticky top-0 z-50 bg-banner/95 backdrop-blur border-b border-banner-foreground/15 text-banner-foreground">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 sm:px-6 py-3">
           <div className="flex items-center">
             <img
               src={eximmanLogo}
               alt="EXIMMAN — My Export · Import Manager App"
-              className="h-16 w-auto object-contain"
+              className="h-16 w-auto object-contain rounded-md"
               data-testid="img-brand-logo"
             />
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm">
-            <a href="#features" className="text-muted-foreground hover:text-foreground" data-testid="link-features">Features</a>
-            <a href="#pitch-deck" className="text-muted-foreground hover:text-foreground" data-testid="link-pitchdeck">Pitch Deck</a>
-            <a href="#about" className="text-muted-foreground hover:text-foreground" data-testid="link-about">About</a>
-            <a href="#contact" className="text-muted-foreground hover:text-foreground" data-testid="link-contact">Contact</a>
+            <a href="#features" className="text-banner-foreground/75 hover:text-banner-foreground" data-testid="link-features">Features</a>
+            <a href="#pitch-deck" className="text-banner-foreground/75 hover:text-banner-foreground" data-testid="link-pitchdeck">Pitch Deck</a>
+            <a href="#about" className="text-banner-foreground/75 hover:text-banner-foreground" data-testid="link-about">About</a>
+            <a href="#contact" className="text-banner-foreground/75 hover:text-banner-foreground" data-testid="link-contact">Contact</a>
           </nav>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button asChild variant="outline" className="hidden sm:inline-flex" data-testid="button-request-demo-nav">
+            <Button asChild variant="outline" className="hidden sm:inline-flex border-banner-foreground/40 bg-banner-foreground/5 text-banner-foreground backdrop-blur" data-testid="button-request-demo-nav">
               <a href="#request-demo">Request a Demo</a>
             </Button>
-            <Button asChild data-testid="button-signin-nav">
+            <Button asChild className="bg-gold text-gold-foreground border-transparent" data-testid="button-signin-nav">
               <Link href="/signin">Sign In <ArrowRight className="h-4 w-4 ml-1" /></Link>
             </Button>
           </div>
@@ -244,17 +244,17 @@ export default function Landing() {
       </header>
       {/* Hero */}
       <section className="relative overflow-hidden border-b">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" />
-        <div className="absolute -top-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-primary/15 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-banner/10 via-background to-background" />
+        <div className="absolute -top-40 -right-40 h-[28rem] w-[28rem] rounded-full bg-gold/15 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-[28rem] w-[28rem] rounded-full bg-banner/12 blur-3xl" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 sm:py-28 grid lg:grid-cols-2 gap-10 items-center">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border bg-background/60 backdrop-blur px-3 py-1 text-xs text-muted-foreground mb-6 animate-fade-up" style={{ animationDelay: "0ms" }}>
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <Sparkles className="h-3.5 w-3.5 text-gold" />
               Built for Ethiopian businesses, fluent in local and international terms
             </div>
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight leading-[1.05] animate-fade-up" style={{ animationDelay: "80ms" }} data-testid="text-hero-title">
-              My Export / Import <span className="text-primary">Manager App</span>
+              My Export / Import <span className="text-gold">Manager App</span>
             </h1>
             <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-xl leading-relaxed animate-fade-up" style={{ animationDelay: "180ms" }} data-testid="text-hero-subtitle">
               A complete operating system for Ethiopian importers and exporters — Letters of Credit, customs duties, shipment tracking, inventory and FX, all in one place.
@@ -268,9 +268,9 @@ export default function Landing() {
               </Button>
             </div>
             <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-muted-foreground animate-fade-up" style={{ animationDelay: "380ms" }}>
-              <div className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-primary" /> NBE-aligned workflows</div>
-              <div className="flex items-center gap-1.5"><Globe2 className="h-3.5 w-3.5 text-primary" /> UCP 600 & Incoterms ready</div>
-              <div className="flex items-center gap-1.5"><BrainCircuit className="h-3.5 w-3.5 text-primary" /> AI-assisted insights</div>
+              <div className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-gold" /> NBE-aligned workflows</div>
+              <div className="flex items-center gap-1.5"><Globe2 className="h-3.5 w-3.5 text-gold" /> UCP 600 & Incoterms ready</div>
+              <div className="flex items-center gap-1.5"><BrainCircuit className="h-3.5 w-3.5 text-gold" /> AI-assisted insights</div>
             </div>
           </div>
 
@@ -359,8 +359,8 @@ export default function Landing() {
                 <span className="font-bold">STOP</span> managing your trade business through spreadsheets and phone calls.
               </p>
             </div>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">What's Inside</p>
-            <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2">Everything trade operations need, under one roof.</h2>
+            <p className="text-xs uppercase tracking-[0.18em] text-gold font-semibold">What's Inside</p>
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2 heading-rule">Everything trade operations need, under one roof.</h2>
             <p className="mt-3 text-muted-foreground">From the moment a Proforma Invoice arrives to the day goods leave the warehouse — EXIMMAN handles the paperwork, the math, and the follow-ups.</p>
           </Reveal>
           <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -389,7 +389,7 @@ export default function Landing() {
                 <Presentation className="h-3.5 w-3.5 text-primary" />
                 Product pitch deck · v1.0
               </div>
-              <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight" data-testid="text-pitchdeck-title">
+              <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight heading-rule" data-testid="text-pitchdeck-title">
                 See the whole platform before you commit.
               </h2>
               <p className="mt-3 text-muted-foreground leading-relaxed text-justify">
@@ -459,8 +459,8 @@ export default function Landing() {
       <section id="about" className="py-20 sm:py-24 border-b bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-12 items-start">
           <Reveal>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">About EXIMMAN</p>
-            <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2" data-testid="text-about-title">
+            <p className="text-xs uppercase tracking-[0.18em] text-gold font-semibold">About EXIMMAN</p>
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2 heading-rule" data-testid="text-about-title">
               Software built for the way Ethiopian businesses actually trade.
             </h2>
             <div className="mt-5 space-y-4 text-muted-foreground leading-relaxed text-justify">
@@ -481,7 +481,7 @@ export default function Landing() {
             </div>
 
             <div className="mt-8">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-3">Who we serve</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-gold font-semibold mb-3">Who we serve</p>
               <div className="flex flex-wrap gap-2">
                 {audiences.map(a => (
                   <span key={a} className="inline-flex items-center rounded-md border bg-background px-2.5 py-1 text-xs">
@@ -530,7 +530,7 @@ export default function Landing() {
       <section id="request-demo" className="py-20 sm:py-24 border-b bg-muted/30">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <Reveal className="text-center mb-10">
-            <p className="text-base sm:text-lg uppercase tracking-[0.18em] font-bold" style={{ color: "#617557" }}>Request a Demo</p>
+            <p className="text-base sm:text-lg uppercase tracking-[0.18em] font-bold text-gold">Request a Demo</p>
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2" data-testid="text-request-demo-title">
               See EXIMMAN in action.
             </h2>
@@ -574,7 +574,7 @@ export default function Landing() {
           <Card className="mt-12">
             <CardContent className="p-6 sm:p-8">
               <div className="text-center mb-6">
-                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">Contact Us</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-gold font-semibold">Contact Us</p>
                 <h3 className="font-display text-2xl font-semibold tracking-tight mt-2">Get in touch with EXIMMAN</h3>
               </div>
 
@@ -584,7 +584,7 @@ export default function Landing() {
                     <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
                       <Phone className="h-4 w-4 text-primary" />
                     </div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">Phone</p>
+                    <p className="text-xs uppercase tracking-[0.16em] text-gold font-semibold">Phone</p>
                   </div>
                   <div className="space-y-2">
                     <a href="tel:+251912633329" className="block text-sm font-semibold tabular-nums hover:text-primary" data-testid="link-phone-1">
@@ -606,7 +606,7 @@ export default function Landing() {
                     <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
                       <Mail className="h-4 w-4 text-primary" />
                     </div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">Email</p>
+                    <p className="text-xs uppercase tracking-[0.16em] text-gold font-semibold">Email</p>
                   </div>
                   <a
                     href="mailto:merisamarketingsolutions@gmail.com"
@@ -623,7 +623,7 @@ export default function Landing() {
                     <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
                       <MapPin className="h-4 w-4 text-primary" />
                     </div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground font-semibold">Address</p>
+                    <p className="text-xs uppercase tracking-[0.16em] text-gold font-semibold">Address</p>
                   </div>
                   <p className="text-sm font-semibold" data-testid="text-address">Addis Ababa, Ethiopia</p>
                   <p className="text-xs text-muted-foreground mt-2">EXIMMAN Software — by appointment.</p>
