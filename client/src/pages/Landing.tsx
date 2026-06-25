@@ -366,7 +366,7 @@ export default function Landing() {
           <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {features.map((f, i) => (
               <Reveal key={f.title} delay={(i % 4) * 80}>
-                <Card className="hover-elevate h-full">
+                <Card className="hover-elevate h-full transition-transform duration-300 ease-out hover:-translate-y-1.5">
                   <CardContent className="p-5">
                     <div className="h-10 w-10 rounded-md bg-primary/10 flex items-center justify-center mb-4">
                       <f.icon className="h-5 w-5 text-primary" />
