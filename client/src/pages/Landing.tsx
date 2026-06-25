@@ -355,8 +355,8 @@ export default function Landing() {
           <Reveal className="max-w-3xl">
             <div className="flex items-start gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-4 mb-8" data-testid="banner-stop-slogan">
               <OctagonX className="h-6 w-6 text-destructive shrink-0 mt-0.5" />
-              <p className="font-display text-lg sm:text-xl font-semibold tracking-tight leading-snug">
-                <span className="text-destructive">STOP</span> managing your trade business through spreadsheets and phone calls.
+              <p className="font-display text-lg sm:text-xl font-semibold tracking-tight leading-snug animate-text-shimmer">
+                <span className="font-bold">STOP</span> managing your trade business through spreadsheets and phone calls.
               </p>
             </div>
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">What's Inside</p>

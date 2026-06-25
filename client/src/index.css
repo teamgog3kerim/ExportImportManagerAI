@@ -348,6 +348,31 @@
     .animate-float {
       animation: reveal-float 7s ease-in-out infinite;
     }
+
+    @keyframes text-shimmer {
+      0% {
+        background-position: 200% center;
+      }
+      100% {
+        background-position: -200% center;
+      }
+    }
+    .animate-text-shimmer {
+      background-image: linear-gradient(
+        100deg,
+        hsl(var(--destructive)) 0%,
+        hsl(var(--destructive)) 35%,
+        hsl(var(--foreground)) 50%,
+        hsl(var(--destructive)) 65%,
+        hsl(var(--destructive)) 100%
+      );
+      background-size: 200% auto;
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      animation: text-shimmer 4s linear infinite;
+    }
   }
 
   /* Hide ugly search cancel button in Chrome until we can style it properly */
