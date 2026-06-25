@@ -30,23 +30,24 @@
 
   --card-border: 40 18% 86%;
 
-  /* Sidebar: pale chartreuse #F1F3E0 */
-  --sidebar: 66 44% 92%;
+  /* Sidebar: deep forest green (matches header banner) */
+  --sidebar: 156 42% 14%;
 
-  --sidebar-foreground: 30 24% 16%;
+  --sidebar-foreground: 44 38% 88%;
 
-  --sidebar-border: 66 24% 78%;
+  --sidebar-border: 156 30% 22%;
 
-  /* Primary: heritage green #607456 */
-  --sidebar-primary: 100 15% 40%;
+  /* Active nav pill: gold */
+  --sidebar-primary: 41 47% 48%;
 
-  --sidebar-primary-foreground: 42 45% 97%;
+  --sidebar-primary-foreground: 38 32% 12%;
 
-  --sidebar-accent: 66 36% 84%;
+  /* Hover/active surface: lighter forest green */
+  --sidebar-accent: 156 32% 22%;
 
-  --sidebar-accent-foreground: 30 22% 22%;
+  --sidebar-accent-foreground: 44 40% 92%;
 
-  --sidebar-ring: 100 15% 40%;
+  --sidebar-ring: 41 47% 48%;
 
   --popover: 42 38% 98%;
 
@@ -165,22 +166,22 @@
 
   --card-border: 38 12% 14%;
 
-  --sidebar: 38 14% 13%;
+  --sidebar: 156 34% 10%;
 
-  --sidebar-foreground: 47 28% 86%;
+  --sidebar-foreground: 44 36% 86%;
 
-  --sidebar-border: 38 10% 16%;
+  --sidebar-border: 156 22% 18%;
 
-  /* Lighter warm brown for dark mode */
-  --sidebar-primary: 100 16% 56%;
+  /* Active nav pill: brighter gold for dark */
+  --sidebar-primary: 42 56% 62%;
 
-  --sidebar-primary-foreground: 47 45% 97%;
+  --sidebar-primary-foreground: 38 28% 10%;
 
-  --sidebar-accent: 38 12% 20%;
+  --sidebar-accent: 156 24% 18%;
 
-  --sidebar-accent-foreground: 47 18% 78%;
+  --sidebar-accent-foreground: 44 36% 90%;
 
-  --sidebar-ring: 100 16% 56%;
+  --sidebar-ring: 42 56% 62%;
 
   --popover: 38 16% 13%;
 

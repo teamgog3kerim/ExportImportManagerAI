@@ -55,7 +55,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="px-2 py-3 border-b">
+      <SidebarHeader className="px-2 py-3 border-b border-sidebar-border bg-background">
         <div className="flex items-center justify-center">
           <img
             src={eximmanLogo}
@@ -71,7 +71,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {navVisible.map(item => (
                 <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={location === item.url}>
+                  <SidebarMenuButton asChild isActive={location === item.url} className="data-[active=true]:!bg-sidebar-primary data-[active=true]:!text-sidebar-primary-foreground data-[active=true]:font-medium">
                     <a href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                       <item.icon className="h-4 w-4 shrink-0" />
                       <span>{item.title}</span>
@@ -97,7 +97,7 @@ export function AppSidebar() {
               <SidebarMenu>
                 {importVisible.map(item => (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={location === item.url}>
+                    <SidebarMenuButton asChild isActive={location === item.url} className="data-[active=true]:!bg-sidebar-primary data-[active=true]:!text-sidebar-primary-foreground data-[active=true]:font-medium">
                       <a href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                         <item.icon className="h-4 w-4 shrink-0" />
                         <span>{item.title}</span>
@@ -125,7 +125,7 @@ export function AppSidebar() {
               <SidebarMenu>
                 {exportVisible.map(item => (
                   <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={location === item.url}>
+                    <SidebarMenuButton asChild isActive={location === item.url} className="data-[active=true]:!bg-sidebar-primary data-[active=true]:!text-sidebar-primary-foreground data-[active=true]:font-medium">
                       <a href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/[\s/]+/g, "-")}`}>
                         <item.icon className="h-4 w-4 shrink-0" />
                         <span>{item.title}</span>
@@ -145,7 +145,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {otherVisible.map(item => (
                 <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={location === item.url}>
+                  <SidebarMenuButton asChild isActive={location === item.url} className="data-[active=true]:!bg-sidebar-primary data-[active=true]:!text-sidebar-primary-foreground data-[active=true]:font-medium">
                     <a href={item.url} data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}>
                       <item.icon className="h-4 w-4 shrink-0" />
                       <span>{item.title}</span>
@@ -158,15 +158,15 @@ export function AppSidebar() {
         </SidebarGroup>
         )}
       </SidebarContent>
-      <SidebarFooter className="px-4 py-3 border-t">
+      <SidebarFooter className="px-4 py-3 border-t border-sidebar-border">
         <div className="flex items-center gap-2.5">
           <span className="relative flex h-2 w-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-50" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-50" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
           </span>
           <div>
-            <p className="text-[0.65rem] tracking-[0.16em] uppercase text-muted-foreground">Platform Status</p>
-            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">AI Engine Active</p>
+            <p className="text-[0.65rem] tracking-[0.16em] uppercase text-sidebar-foreground/55">Platform Status</p>
+            <p className="text-xs font-medium text-emerald-300">AI Engine Active</p>
           </div>
         </div>
       </SidebarFooter>
