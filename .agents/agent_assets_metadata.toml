@@ -12,3 +12,9 @@ id = "IP3zwazfT0MzGPyd95Ym9"
 uri = "file://eximman_app_prompt.json"
 type = "unspecified"
 title = "EXIMMAN — Full App JSON Prompt"
+
+[[outputs]]
+id = "krD6sduzKBjhaUGq_rPMq"
+uri = "file://attached_assets/eximman_qr.png"
+type = "image"
+title = "EXIMMAN Website QR Code (eximman.tech)"
