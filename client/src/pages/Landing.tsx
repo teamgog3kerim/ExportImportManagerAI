@@ -530,7 +530,7 @@ export default function Landing() {
       <section id="request-demo" className="py-20 sm:py-24 border-b bg-muted/30">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <Reveal className="text-center mb-10">
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">Request a Demo</p>
+            <p className="text-base sm:text-lg uppercase tracking-[0.18em] font-bold" style={{ color: "#617557" }}>Request a Demo</p>
             <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2" data-testid="text-request-demo-title">
               See EXIMMAN in action.
             </h2>
