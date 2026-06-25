@@ -1,16 +1,196 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Reveal } from "@/components/Reveal";
+import { apiRequest } from "@/lib/queryClient";
 import eximmanLogo from "@assets/eximman_logo_trim.png";
 import pitchDeckPdf from "@assets/EXIMMAN_App_Pitch_Deck_PRESENTATION_1781384251130.pdf";
 import {
   Ship, FileText, Calculator, BrainCircuit, Wallet, Package,
   Globe2, ShieldCheck, Sparkles, ArrowRight, Building2, MapPin, Mail, Phone,
-  Presentation, Maximize2, TrendingUp, Coins, OctagonX,
+  Presentation, Maximize2, TrendingUp, Coins, OctagonX, Send, CheckCircle2,
 } from "lucide-react";
 import { SiWhatsapp, SiTelegram } from "react-icons/si";
+
+const CATEGORY_OPTIONS = [
+  { value: "export", label: "Export" },
+  { value: "import", label: "Import" },
+  { value: "export_import", label: "Export and Import" },
+  { value: "other", label: "Other (please describe)" },
+];
+
+function LandingDemoForm() {
+  const [fullName, setFullName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [companyCategory, setCompanyCategory] = useState("");
+  const [categoryOther, setCategoryOther] = useState("");
+  const [position, setPosition] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (fullName.trim().length < 2) return setError("Please enter your full name.");
+    if (!companyName.trim()) return setError("Please enter your company name.");
+    if (!companyCategory) return setError("Please select your company category.");
+    if (companyCategory === "other" && !categoryOther.trim())
+      return setError("Please describe your company category.");
+    if (!position.trim()) return setError("Please enter your position in the company.");
+    if (!phone.trim()) return setError("Please enter your phone number.");
+    if (!email.trim()) return setError("Please enter your email.");
+    setSubmitting(true);
+    try {
+      await apiRequest("POST", "/api/auth/demo-request", {
+        fullName: fullName.trim(),
+        companyName: companyName.trim(),
+        companyCategory,
+        categoryOther: companyCategory === "other" ? categoryOther.trim() : undefined,
+        position: position.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+      });
+      setDone(true);
+    } catch (err: any) {
+      setError(err?.message?.replace(/^\d+:\s*/, "") || "Could not send your request. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (done) {
+    return (
+      <div className="text-center py-10" data-testid="text-landing-demo-success">
+        <div className="mx-auto mb-4 h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+          <CheckCircle2 className="h-7 w-7 text-primary" />
+        </div>
+        <h3 className="font-display text-2xl font-semibold tracking-tight">Request received</h3>
+        <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+          Thank you. Our team has received your demo request and will reach back to you shortly.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-4" data-testid="form-landing-demo">
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="ld-name" className="text-xs">Full name</Label>
+          <Input
+            id="ld-name"
+            placeholder="Your full name"
+            value={fullName}
+            onChange={e => setFullName(e.target.value)}
+            data-testid="input-landing-fullname"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ld-company" className="text-xs">Company name</Label>
+          <Input
+            id="ld-company"
+            placeholder="Your company name"
+            value={companyName}
+            onChange={e => setCompanyName(e.target.value)}
+            data-testid="input-landing-company"
+          />
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="ld-category" className="text-xs">Company category</Label>
+          <Select value={companyCategory} onValueChange={setCompanyCategory}>
+            <SelectTrigger id="ld-category" data-testid="select-landing-category">
+              <SelectValue placeholder="Select a category" />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORY_OPTIONS.map(opt => (
+                <SelectItem key={opt.value} value={opt.value} data-testid={`option-landing-category-${opt.value}`}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ld-position" className="text-xs">Your position</Label>
+          <Input
+            id="ld-position"
+            placeholder="e.g. General Manager"
+            value={position}
+            onChange={e => setPosition(e.target.value)}
+            data-testid="input-landing-position"
+          />
+        </div>
+      </div>
+
+      {companyCategory === "other" && (
+        <div className="space-y-1.5">
+          <Label htmlFor="ld-category-other" className="text-xs">Please describe</Label>
+          <Textarea
+            id="ld-category-other"
+            placeholder="Describe your company category"
+            value={categoryOther}
+            onChange={e => setCategoryOther(e.target.value)}
+            className="resize-none"
+            rows={2}
+            data-testid="input-landing-category-other"
+          />
+        </div>
+      )}
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="ld-phone" className="text-xs">Phone number</Label>
+          <Input
+            id="ld-phone"
+            type="tel"
+            placeholder="e.g. +251 ..."
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            data-testid="input-landing-phone"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="ld-email" className="text-xs">Email</Label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              id="ld-email"
+              type="email"
+              autoComplete="email"
+              className="pl-9"
+              placeholder="you@company.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              data-testid="input-landing-email"
+            />
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <p className="text-xs text-destructive" data-testid="text-landing-demo-error">{error}</p>
+      )}
+
+      <Button type="submit" size="lg" className="w-full" disabled={submitting} data-testid="button-landing-request-demo">
+        {submitting ? "Sending..." : <><Send className="h-4 w-4 mr-1.5" /> Send us your request</>}
+      </Button>
+    </form>
+  );
+}
 
 const features = [
   { icon: FileText, title: "Letter of Credit Management", desc: "Issue, track and settle LCs with Ethiopian bank workflows and international UCP terminology built in." },
@@ -54,7 +234,7 @@ export default function Landing() {
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button asChild variant="outline" className="hidden sm:inline-flex" data-testid="button-request-demo-nav">
-              <Link href="/signup">Request a Demo</Link>
+              <a href="#request-demo">Request a Demo</a>
             </Button>
             <Button asChild data-testid="button-signin-nav">
               <Link href="/signin">Sign In <ArrowRight className="h-4 w-4 ml-1" /></Link>
@@ -81,7 +261,7 @@ export default function Landing() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3 animate-fade-up" style={{ animationDelay: "280ms" }}>
               <Button asChild size="lg" data-testid="button-request-demo-hero">
-                <Link href="/signup">Request a Demo <ArrowRight className="h-4 w-4 ml-1" /></Link>
+                <a href="#request-demo">Request a Demo <ArrowRight className="h-4 w-4 ml-1" /></a>
               </Button>
               <Button asChild size="lg" variant="outline" data-testid="button-signin-hero">
                 <Link href="/signin">Sign In to Dashboard</Link>
@@ -230,7 +410,7 @@ export default function Landing() {
               </ul>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Button asChild size="lg" data-testid="button-request-demo-pitchdeck">
-                  <Link href="/signup">Request a Demo <ArrowRight className="h-4 w-4 ml-1" /></Link>
+                  <a href="#request-demo">Request a Demo <ArrowRight className="h-4 w-4 ml-1" /></a>
                 </Button>
                 <Button asChild size="lg" variant="outline" data-testid="button-open-pitchdeck">
                   <a href={pitchDeckPdf} target="_blank" rel="noopener noreferrer">
@@ -346,6 +526,27 @@ export default function Landing() {
           </Reveal>
         </div>
       </section>
+      {/* Request a Demo */}
+      <section id="request-demo" className="py-20 sm:py-24 border-b bg-muted/30">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <Reveal className="text-center mb-10">
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground font-semibold">Request a Demo</p>
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight mt-2" data-testid="text-request-demo-title">
+              See EXIMMAN in action.
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Tell us about your business and our team will reach back to arrange a personalized demo in a short period of time.
+            </p>
+          </Reveal>
+          <Reveal delay={120}>
+            <Card>
+              <CardContent className="p-6 sm:p-8">
+                <LandingDemoForm />
+              </CardContent>
+            </Card>
+          </Reveal>
+        </div>
+      </section>
       {/* CTA + Contact */}
       <section id="contact" className="py-20 sm:py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -358,7 +559,7 @@ export default function Landing() {
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Button asChild size="lg" data-testid="button-request-demo-cta">
-                <Link href="/signup">Request a Demo <ArrowRight className="h-4 w-4 ml-1" /></Link>
+                <a href="#request-demo">Request a Demo <ArrowRight className="h-4 w-4 ml-1" /></a>
               </Button>
               <Button asChild size="lg" variant="outline" data-testid="button-signin-cta">
                 <Link href="/signin">Sign In</Link>
