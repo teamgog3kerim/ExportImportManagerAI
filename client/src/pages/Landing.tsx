@@ -211,6 +211,22 @@ const audiences = [
   "Logistics & Clearing Agents",
 ];
 
+const WHATSAPP_NUMBER = "251955218191";
+const WHATSAPP_MESSAGE = `Hello EXIMMAN team! Warm greetings.
+
+I'd like to request a demo of the My Export / Import Manager App. To help your team prepare, here are my details:
+
+1. Full name:
+2. Company name:
+3. Company category (Export / Import / Export and Import / Other):
+4. Your position:
+5. Phone number:
+6. Email:
+
+Please stay in touch — I look forward to your team reaching back to me shortly. Thank you!`;
+const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`;
+const CALL_NUMBER = "+251912633329";
+
 export default function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -636,6 +652,29 @@ export default function Landing() {
           </Reveal>
         </div>
       </section>
+      {/* Floating contact buttons */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+        <a
+          href={WHATSAPP_LINK}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Chat with EXIMMAN on WhatsApp"
+          className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-3 text-white shadow-lg hover-elevate active-elevate-2"
+          data-testid="button-whatsapp-float"
+        >
+          <SiWhatsapp className="h-5 w-5 shrink-0" />
+          <span className="text-sm font-semibold">Chat on WhatsApp</span>
+        </a>
+        <a
+          href={`tel:${CALL_NUMBER}`}
+          aria-label="Call EXIMMAN now"
+          className="inline-flex items-center gap-2 rounded-full bg-banner px-5 py-3 text-banner-foreground shadow-lg hover-elevate active-elevate-2"
+          data-testid="button-call-float"
+        >
+          <Phone className="h-5 w-5 shrink-0" />
+          <span className="text-sm font-semibold">Call Now</span>
+        </a>
+      </div>
       {/* Footer */}
       <footer className="border-t py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
