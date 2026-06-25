@@ -218,12 +218,14 @@ export default function Landing() {
       <header className="sticky top-0 z-50 bg-banner/95 backdrop-blur border-b border-banner-foreground/15 text-banner-foreground">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 px-4 sm:px-6 py-3">
           <div className="flex items-center">
-            <img
-              src={eximmanLogo}
-              alt="EXIMMAN — My Export · Import Manager App"
-              className="h-16 w-auto object-contain rounded-md"
-              data-testid="img-brand-logo"
-            />
+            <div className="inline-flex items-center rounded-full bg-background px-6 py-2 shadow-sm">
+              <img
+                src={eximmanLogo}
+                alt="EXIMMAN — My Export · Import Manager App"
+                className="h-14 w-auto object-contain"
+                data-testid="img-brand-logo"
+              />
+            </div>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm">
             <a href="#features" className="text-banner-foreground/75 hover:text-banner-foreground" data-testid="link-features">Features</a>
