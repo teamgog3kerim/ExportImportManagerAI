@@ -57,11 +57,11 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="px-2 py-3 border-b border-sidebar-border">
         <div className="flex items-center justify-center">
-          <div className="inline-flex items-center rounded-full bg-background px-6 py-2 shadow-sm">
+          <div className="inline-flex items-center rounded-full bg-background px-7 py-3 shadow-sm">
             <img
               src={eximmanLogo}
               alt="EXIMMAN — My Export · Import Manager App"
-              className="h-12 w-auto object-contain"
+              className="h-20 w-auto object-contain"
               data-testid="img-brand-logo"
             />
           </div>
