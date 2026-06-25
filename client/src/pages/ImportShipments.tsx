@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -110,17 +111,16 @@ export default function ImportShipments() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">Shipments</h1>
-          <p className="text-sm text-muted-foreground">Manage and track your global logistics lifecycle</p>
-        </div>
-        {writable && (
+      <PageHeader
+        eyebrow="Import"
+        title="Shipments"
+        description="Manage and track your global logistics lifecycle"
+        actions={writable && (
           <Button onClick={openNew} data-testid="button-create-shipment">
             <Plus className="h-4 w-4 mr-1.5" /> Create Shipment
           </Button>
         )}
-      </div>
+      />
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />

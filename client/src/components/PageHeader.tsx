@@ -12,7 +12,7 @@ export function PageHeader({ eyebrow, title, description, actions }: PageHeaderP
     <div className="flex flex-wrap items-end justify-between gap-4 pb-2">
       <div className="heading-rule">
         {eyebrow && (
-          <p className="text-[0.7rem] font-medium tracking-[0.18em] uppercase text-primary/80 mb-1.5" data-testid="text-eyebrow">
+          <p className="text-[0.7rem] font-semibold tracking-[0.18em] uppercase text-gold mb-1.5" data-testid="text-eyebrow">
             {eyebrow}
           </p>
         )}

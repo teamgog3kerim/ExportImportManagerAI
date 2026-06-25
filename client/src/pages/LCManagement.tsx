@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -155,17 +156,16 @@ export default function LCManagement() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">LC Management</h1>
-          <p className="text-sm text-muted-foreground">Review and process bank-issued letters of credit</p>
-        </div>
-        {writable && (
+      <PageHeader
+        eyebrow="Import"
+        title="LC Management"
+        description="Review and process bank-issued letters of credit"
+        actions={writable && (
           <Button onClick={openNew} data-testid="button-open-new-lc">
             <Plus className="h-4 w-4 mr-1.5" /> Open New LC
           </Button>
         )}
-      </div>
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">

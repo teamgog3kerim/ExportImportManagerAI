@@ -99,29 +99,29 @@ function AppLayout({ user }: { user: AuthUser }) {
       <div className="flex h-screen w-full overflow-hidden">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center gap-3 px-4 py-2 border-b bg-background shrink-0" style={{ height: "52px" }}>
-            <SidebarTrigger data-testid="button-sidebar-toggle" className="shrink-0" />
+          <header className="flex items-center gap-3 px-4 py-2 border-b border-banner-foreground/15 bg-banner text-banner-foreground shrink-0" style={{ height: "52px" }}>
+            <SidebarTrigger data-testid="button-sidebar-toggle" className="shrink-0 text-banner-foreground" />
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
                 placeholder="Search shipments, LCs, or documents..."
-                className="pl-9 h-8 text-sm"
+                className="pl-9 h-8 text-sm bg-background text-foreground placeholder:text-muted-foreground border-transparent"
                 data-testid="input-search"
               />
             </div>
             <div className="flex items-center gap-2 ml-auto">
-              <button className="relative h-8 w-8 flex items-center justify-center rounded-md hover-elevate" data-testid="button-notifications">
+              <button className="relative h-8 w-8 flex items-center justify-center rounded-md hover-elevate text-banner-foreground" data-testid="button-notifications">
                 <Bell className="h-4 w-4" />
                 <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" />
               </button>
               <ThemeToggle />
-              <div className="flex items-center gap-2 pl-2 border-l">
-                <div className="h-7 w-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold" data-testid="text-user-initials">{initials(user.fullName)}</div>
+              <div className="flex items-center gap-2 pl-2 border-l border-banner-foreground/20">
+                <div className="h-7 w-7 rounded-full bg-gold flex items-center justify-center text-gold-foreground text-xs font-bold" data-testid="text-user-initials">{initials(user.fullName)}</div>
                 <div className="hidden sm:block">
                   <p className="text-xs font-semibold leading-none" data-testid="text-user-name">{user.fullName}</p>
-                  <p className="text-xs text-muted-foreground leading-none mt-0.5" data-testid="text-user-role">{ROLE_LABEL[user.role] ?? user.role}</p>
+                  <p className="text-xs text-banner-foreground/70 leading-none mt-0.5" data-testid="text-user-role">{ROLE_LABEL[user.role] ?? user.role}</p>
                 </div>
-                <Button size="icon" variant="ghost" onClick={signOut} data-testid="button-signout" title="Sign out">
+                <Button size="icon" variant="ghost" onClick={signOut} data-testid="button-signout" title="Sign out" className="text-banner-foreground">
                   <LogOut className="h-4 w-4" />
                 </Button>
               </div>

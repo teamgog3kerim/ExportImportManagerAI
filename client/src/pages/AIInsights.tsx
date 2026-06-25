@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,10 +60,11 @@ export default function AIInsights() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">AI Insights Engine</h1>
-        <p className="text-sm text-muted-foreground">Powered by GPT-4o · Ethiopian trade intelligence</p>
-      </div>
+      <PageHeader
+        eyebrow="Intelligence"
+        title="AI Insights Engine"
+        description="Powered by GPT-4o · Ethiopian trade intelligence"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Efficiency Score */}

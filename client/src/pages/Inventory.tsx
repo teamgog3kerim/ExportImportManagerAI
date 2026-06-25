@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,17 +76,16 @@ export default function InventoryPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">Inventory</h1>
-          <p className="text-sm text-muted-foreground">Post-clearance stock tracking and warehouse management</p>
-        </div>
-        {writable && (
+      <PageHeader
+        eyebrow="Import"
+        title="Inventory"
+        description="Post-clearance stock tracking and warehouse management"
+        actions={writable && (
           <Button onClick={openNew} data-testid="button-create-inventory">
             <Plus className="h-4 w-4 mr-1.5" /> Create New Inventory
           </Button>
         )}
-      </div>
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>

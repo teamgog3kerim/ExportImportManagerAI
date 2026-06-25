@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -208,10 +209,11 @@ export default function Settings() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-sm text-muted-foreground">Manage your company profile, bank accounts, and application preferences</p>
-      </div>
+      <PageHeader
+        eyebrow="Configuration"
+        title="Settings"
+        description="Manage your company profile, bank accounts, and application preferences"
+      />
 
       {/* Tab Bar */}
       <div className="flex flex-wrap gap-1 border-b pb-2">

@@ -2,6 +2,7 @@ import { Fragment, useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -177,17 +178,16 @@ export default function Sales() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">Sales</h1>
-          <p className="text-sm text-muted-foreground">Sell cleared inventory by serial number with full traceability</p>
-        </div>
-        {writable && (
+      <PageHeader
+        eyebrow="Import"
+        title="Sales"
+        description="Sell cleared inventory by serial number with full traceability"
+        actions={writable && (
           <Button onClick={openNew} data-testid="button-new-sale">
             <Plus className="h-4 w-4 mr-1.5" /> New Sale
           </Button>
         )}
-      </div>
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

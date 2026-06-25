@@ -87,6 +87,14 @@
   --chart-4: 14 55% 42%;
   --chart-5: 145 25% 36%;
 
+  /* Gold accent — section rules, eyebrows, key figures (#bf9a4a) */
+  --gold: 41 47% 48%;
+  --gold-foreground: 38 32% 12%;
+
+  /* Deep forest-green banner — app header / brand surface (#15392b) */
+  --banner: 156 42% 14%;
+  --banner-foreground: 44 38% 91%;
+
   --font-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-serif: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
   --font-mono: 'JetBrains Mono', Menlo, monospace;
@@ -209,6 +217,14 @@
   --chart-4: 14 62% 58%;
   --chart-5: 145 30% 52%;
 
+  /* Gold accent — brighter in dark for contrast */
+  --gold: 42 56% 62%;
+  --gold-foreground: 38 28% 10%;
+
+  /* Deep forest-green banner — app header / brand surface */
+  --banner: 156 32% 11%;
+  --banner-foreground: 44 36% 90%;
+
   --shadow-2xs: 0px 1px 2px 0px hsl(38 50% 5% / 0.30);
   --shadow-xs: 0px 1px 2px 0px hsl(38 50% 5% / 0.40);
   --shadow-sm: 0px 1px 3px 0px hsl(38 50% 5% / 0.45), 0px 1px 2px -1px hsl(38 50% 5% / 0.45);
@@ -274,9 +290,9 @@
     position: absolute;
     left: 0;
     bottom: 0;
-    width: 2.5rem;
+    width: 3.5rem;
     height: 2px;
-    background: hsl(var(--primary));
+    background: hsl(var(--gold));
     border-radius: 2px;
   }
 }
