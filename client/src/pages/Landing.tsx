@@ -227,7 +227,7 @@ export default function Landing() {
               />
             </div>
           </div>
-          <nav className="hidden md:flex items-center gap-6 text-sm">
+          <nav className="hidden md:flex items-center gap-6 text-base">
             <a href="#features" className="text-banner-foreground/75 hover:text-banner-foreground" data-testid="link-features">Features</a>
             <a href="#pitch-deck" className="text-banner-foreground/75 hover:text-banner-foreground" data-testid="link-pitchdeck">Pitch Deck</a>
             <a href="#about" className="text-banner-foreground/75 hover:text-banner-foreground" data-testid="link-about">About</a>
@@ -235,10 +235,10 @@ export default function Landing() {
           </nav>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button asChild variant="outline" className="hidden sm:inline-flex border-banner-foreground/40 bg-banner-foreground/5 text-banner-foreground backdrop-blur" data-testid="button-request-demo-nav">
+            <Button asChild size="lg" variant="outline" className="hidden sm:inline-flex border-banner-foreground/40 bg-banner-foreground/5 text-banner-foreground backdrop-blur text-base" data-testid="button-request-demo-nav">
               <a href="#request-demo">Request a Demo</a>
             </Button>
-            <Button asChild className="bg-gold text-gold-foreground border-transparent" data-testid="button-signin-nav">
+            <Button asChild size="lg" className="bg-gold text-gold-foreground border-transparent text-base" data-testid="button-signin-nav">
               <Link href="/signin">Sign In <ArrowRight className="h-4 w-4 ml-1" /></Link>
             </Button>
           </div>
