@@ -983,6 +983,7 @@ export class MemStorage implements IStorage {
       aiPitch: lead.aiPitch ?? null,
       telegramChatId: null,
       telegramUsername: null,
+      telegramBusinessConnectionId: null,
       status: "discovered",
       createdAt: new Date().toISOString(),
     };

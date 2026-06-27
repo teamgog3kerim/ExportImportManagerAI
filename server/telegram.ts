@@ -55,19 +55,34 @@ export async function getBotInfo(): Promise<TelegramBotInfo> {
   return callTelegram<TelegramBotInfo>("getMe", {});
 }
 
-export async function sendTelegramMessage(chatId: string | number, text: string): Promise<void> {
-  await callTelegram("sendMessage", {
+export async function sendTelegramMessage(
+  chatId: string | number,
+  text: string,
+  businessConnectionId?: string,
+): Promise<void> {
+  const params: Record<string, unknown> = {
     chat_id: chatId,
     text,
     parse_mode: "Markdown",
     disable_web_page_preview: true,
-  });
+  };
+  // When the message originated from a Telegram Business chat we must reply on
+  // behalf of the connected business account, otherwise Telegram rejects it.
+  if (businessConnectionId) params.business_connection_id = businessConnectionId;
+  await callTelegram("sendMessage", params);
 }
 
 export async function setTelegramWebhook(url: string): Promise<void> {
   const params: Record<string, unknown> = {
     url,
-    allowed_updates: ["message"],
+    // Subscribe to regular chats AND Telegram Business chats so the bot can
+    // answer messages on behalf of the CEO's business account.
+    allowed_updates: [
+      "message",
+      "business_connection",
+      "business_message",
+      "edited_business_message",
+    ],
     drop_pending_updates: true,
   };
   const secret = getWebhookSecret();
@@ -79,13 +94,29 @@ export async function deleteTelegramWebhook(): Promise<void> {
   await callTelegram("deleteWebhook", { drop_pending_updates: false });
 }
 
-// Minimal shape of an incoming Telegram update we care about.
+// Minimal shape of an incoming Telegram message we care about.
+export interface TelegramMessage {
+  message_id: number;
+  from?: { id: number; is_bot: boolean; first_name?: string; last_name?: string; username?: string };
+  chat: { id: number; type: string; title?: string; first_name?: string; username?: string };
+  text?: string;
+  // Present only on messages arriving through a Telegram Business connection.
+  business_connection_id?: string;
+}
+
+// Minimal shape of an incoming Telegram update we care about. Regular chats use
+// `message`; Telegram Business chats use `business_message` and also send a
+// `business_connection` update when the CEO connects/disconnects the bot.
 export interface TelegramUpdate {
   update_id: number;
-  message?: {
-    message_id: number;
-    from?: { id: number; is_bot: boolean; first_name?: string; last_name?: string; username?: string };
-    chat: { id: number; type: string; title?: string; first_name?: string; username?: string };
-    text?: string;
+  message?: TelegramMessage;
+  business_message?: TelegramMessage;
+  business_connection?: {
+    id: string;
+    user?: { id: number; first_name?: string; username?: string };
+    user_chat_id?: number;
+    is_enabled?: boolean;
+    can_reply?: boolean;
+    rights?: { can_reply?: boolean };
   };
 }

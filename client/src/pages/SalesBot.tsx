@@ -847,6 +847,17 @@ function SettingsPanel({ config, status }: { config?: SalesBotConfig; status?: B
           <Button onClick={() => webhookMut.mutate()} disabled={!status?.telegramConfigured || webhookMut.isPending} data-testid="button-setup-webhook">
             {webhookMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Connect webhook
           </Button>
+
+          <div className="rounded-md border p-3 space-y-1" data-testid="text-business-mode-help">
+            <p className="text-sm font-medium text-foreground">Use with Telegram Business (answer on your behalf)</p>
+            <p className="text-xs text-muted-foreground">
+              Seeing “This bot doesn’t support Telegram Business yet”? You must turn on Business Mode for the bot:<br />
+              1. Open <span className="font-medium">@BotFather</span> → <span className="font-mono">/mybots</span> → select your bot.<br />
+              2. <span className="font-medium">Bot Settings</span> → <span className="font-medium">Business Mode</span> → <span className="font-medium">Turn on</span>.<br />
+              3. Back here, click <span className="font-medium">Connect webhook</span> again so the bot receives business chats.<br />
+              4. In Telegram <span className="font-medium">Settings → Telegram Business → Chat Automation</span>, add your bot. It will now auto-reply to customers who message your account.
+            </p>
+          </div>
           <p className="text-xs text-muted-foreground">
             Telegram does not let bots message people first. For each approved lead, use
             <span className="font-medium"> Copy invite link</span> in the pipeline and send it to the contact — when they tap

@@ -540,6 +540,9 @@ export const salesLeads = pgTable("sales_leads", {
   aiPitch: text("ai_pitch"),
   telegramChatId: text("telegram_chat_id"),
   telegramUsername: text("telegram_username"),
+  // Set when the lead reached us through a Telegram Business chat. Outbound
+  // messages to this lead must be sent on behalf of that business connection.
+  telegramBusinessConnectionId: text("telegram_business_connection_id"),
   // discovered | approved | rejected | contacted | in_conversation | meeting_booked | won | lost
   status: text("status").notNull().default("discovered"),
   createdAt: text("created_at").notNull(),
@@ -551,6 +554,7 @@ export const insertSalesLeadSchema = createInsertSchema(salesLeads).omit({
   status: true,
   telegramChatId: true,
   telegramUsername: true,
+  telegramBusinessConnectionId: true,
 });
 
 // One message in a Telegram sales conversation (or an internal note).

@@ -738,7 +738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const history = await storage.getSalesMessages(lead.id);
         const slots = (await storage.getSalesSlots()).filter(s => s.status === "available");
         const opener = await generateSalesReply(config, lead, history, "[The CEO just approved this lead for outreach. Send a warm, professional opening message introducing yourself and the company.]", slots);
-        await sendTelegramMessage(lead.telegramChatId, opener);
+        await sendTelegramMessage(lead.telegramChatId, opener, lead.telegramBusinessConnectionId ?? undefined);
         await storage.createSalesMessage({ leadId: lead.id, direction: "outbound", channel: "telegram", body: opener });
         await storage.updateSalesLead(lead.id, { status: "contacted" });
       } catch (e) {
@@ -768,7 +768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const history = await storage.getSalesMessages(lead.id);
       const slots = (await storage.getSalesSlots()).filter(s => s.status === "available");
       const opener = await generateSalesReply(config, lead, history, "[The CEO just approved this lead for outreach. Send a warm, professional opening message introducing yourself and the company.]", slots);
-      await sendTelegramMessage(lead.telegramChatId, opener);
+      await sendTelegramMessage(lead.telegramChatId, opener, lead.telegramBusinessConnectionId ?? undefined);
       await storage.createSalesMessage({ leadId: lead.id, direction: "outbound", channel: "telegram", body: opener });
       const out = await storage.updateSalesLead(lead.id, { status: "contacted" });
       res.json(out);
@@ -807,7 +807,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!lead.telegramChatId) return res.status(400).json({ message: "This lead has not connected on Telegram yet, so we cannot message them." });
     if (!isTelegramConfigured()) return res.status(400).json({ message: "TELEGRAM_BOT_TOKEN is not configured." });
     try {
-      await sendTelegramMessage(lead.telegramChatId, body);
+      await sendTelegramMessage(lead.telegramChatId, body, lead.telegramBusinessConnectionId ?? undefined);
       const msg = await storage.createSalesMessage({ leadId: lead.id, direction: "outbound", channel: "telegram", body });
       res.status(201).json(msg);
     } catch (e) {
@@ -958,9 +958,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const update = req.body as TelegramUpdate;
-      const message = update?.message;
+
+      // A Telegram Business connection update arrives when the CEO connects or
+      // disconnects the bot from their business account. Nothing to store — just
+      // acknowledge so it isn't treated as a message.
+      if (update?.business_connection) return;
+
+      // Regular chats deliver `message`; Telegram Business chats deliver
+      // `business_message`. The latter carries a business_connection_id that we
+      // must echo back when replying so the answer is sent on the CEO's behalf.
+      const message = update?.message ?? update?.business_message;
+      const businessConnectionId = update?.business_message?.business_connection_id;
       const text = message?.text?.trim();
       if (!message || !text) return;
+      // For business chats, ignore messages the CEO sends manually. In a private
+      // business chat the customer's user id equals the chat id; anything else
+      // (the owner replying, or another bot) should not trigger an auto-reply.
+      if (businessConnectionId) {
+        if (message.from?.is_bot) return;
+        if (message.from && message.from.id !== message.chat.id) return;
+      }
       const chatId = String(message.chat.id);
       const username = message.from?.username ?? message.chat.username;
       const displayName =
@@ -992,6 +1009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lead = (await storage.updateSalesLead(target.id, {
               telegramChatId: chatId,
               telegramUsername: username ?? null,
+              telegramBusinessConnectionId: businessConnectionId ?? null,
               status: "in_conversation",
             }))!;
           }
@@ -1007,8 +1025,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lead = (await storage.updateSalesLead(lead.id, {
           telegramChatId: chatId,
           telegramUsername: username ?? null,
+          telegramBusinessConnectionId: businessConnectionId ?? null,
           status: "in_conversation",
         }))!;
+      } else if (businessConnectionId && lead.telegramBusinessConnectionId !== businessConnectionId) {
+        // Keep the stored business connection fresh (it can change if the CEO
+        // reconnects the bot) so later outbound messages reach the lead.
+        lead = (await storage.updateSalesLead(lead.id, { telegramBusinessConnectionId: businessConnectionId }))! ?? lead;
       }
 
       // Don't store the raw "/start ..." command as a conversation turn.
@@ -1025,7 +1048,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? "[The user just started the conversation. Greet them warmly, introduce yourself and the company in 2-3 sentences, and ask one qualifying question.]"
         : text;
       const reply = await generateSalesReply(config, lead, history, incoming, slots);
-      await sendTelegramMessage(chatId, reply);
+      await sendTelegramMessage(chatId, reply, businessConnectionId);
       await storage.createSalesMessage({ leadId: lead.id, direction: "outbound", channel: "telegram", body: reply });
       if (lead.status === "in_conversation" || lead.status === "approved" || lead.status === "contacted") {
         await storage.updateSalesLead(lead.id, { status: "in_conversation" });

@@ -20,6 +20,28 @@ them and runs the conversation.
 **Why:** Avoids promising an impossible "the bot will text them automatically"
 feature. Explain this honestly in the UI.
 
+# Telegram Business mode (answer on the CEO's behalf)
+
+"This bot doesn't support Telegram Business yet" is caused by a **BotFather**
+toggle, not by our code: BotFather → /mybots → bot → Bot Settings → Business Mode
+→ Turn on. There is no Bot API method to enable it — it must be done in BotFather,
+so always surface this instruction in the UI.
+
+Once enabled, business chats are NOT delivered as `message`. They arrive as
+`business_message` (a Message that also carries `business_connection_id`), and a
+separate `business_connection` update fires when the CEO connects/disconnects.
+
+**How to apply:**
+- setWebhook `allowed_updates` must include `business_connection`,
+  `business_message`, `edited_business_message` or business chats never arrive.
+  Re-run setWebhook after changing allowed_updates — it only takes effect then.
+- To reply in a business chat you MUST pass `business_connection_id` to
+  sendMessage; a normal send is rejected. Persist that id on the lead so later
+  outbound (openers, manual messages) also work, not just the inbound auto-reply.
+- In a private business chat the customer's user id equals the chat id. Use
+  `from.id === chat.id` (and `!from.is_bot`) to avoid auto-replying to the CEO's
+  own manual messages in the same thread.
+
 # Other durable notes for this module
 
 - Auto-booking a meeting from the AI conversation runs after every inbound reply.
