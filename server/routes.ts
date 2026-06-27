@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { generateAIResponse, generateDailySummary } from "./openai";
-import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema, updateSupplierPaymentSchema, updateCustomerPaymentSchema, insertSaleSchema, insertSalesLeadSchema, insertSalesMeetingSchema, updateSalesBotConfigSchema } from "@shared/schema";
+import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema, updateSupplierPaymentSchema, updateCustomerPaymentSchema, insertSaleSchema, insertSalesLeadSchema, insertSalesMeetingSchema, insertSalesSlotSchema, updateSalesBotConfigSchema } from "@shared/schema";
 import { isTelegramConfigured, getBotInfo, sendTelegramMessage, setTelegramWebhook, getWebhookSecret, type TelegramUpdate } from "./telegram";
 import { generateSalesReply, qualifyLead, discoverLeads, parseCsvLeads, detectMeeting } from "./salesBot";
 import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
@@ -62,13 +62,24 @@ async function maybeBookMeetingAndNotify(leadId: string): Promise<void> {
     if (existing.length > 0) return;
 
     const history = await storage.getSalesMessages(leadId);
-    const detected = await detectMeeting(config, lead, history);
-    if (!detected) return;
+    // Bookings are restricted to the admin's pre-arranged availability slots. If
+    // none are open, the bot does not auto-book any time — it tells the lead it
+    // will follow up (see the prompt in generateSalesReply).
+    const availableSlots = (await storage.getSalesSlots()).filter(s => s.status === "available");
+    if (availableSlots.length === 0) return;
+
+    const detected = await detectMeeting(config, lead, history, availableSlots);
+    if (!detected || !detected.slotId) return;
 
     // Re-check after the AI call (an async gap) in case a meeting was booked in
-    // the meantime, then create.
+    // the meantime.
     const stillNone = (await storage.getSalesMeetings()).filter(m => m.leadId === leadId && m.status !== "cancelled").length === 0;
     if (!stillNone) return;
+
+    // Atomically reserve the chosen slot so two different leads can never grab
+    // the same one. If the reservation loses, skip booking.
+    const reserved = await storage.reserveSalesSlot(detected.slotId);
+    if (!reserved) return;
 
     const meeting = await storage.createSalesMeeting({
       leadId,
@@ -79,6 +90,7 @@ async function maybeBookMeetingAndNotify(leadId: string): Promise<void> {
       notes: detected.notes,
       status: "confirmed",
     });
+    await storage.updateSalesSlot(reserved.id, { meetingId: meeting.id });
     await storage.updateSalesLead(leadId, { status: "meeting_booked" });
 
     const when = new Date(meeting.scheduledAt).toLocaleString("en-US", {
@@ -724,7 +736,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (lead.telegramChatId && isTelegramConfigured() && config.autoOutreachEnabled) {
       try {
         const history = await storage.getSalesMessages(lead.id);
-        const opener = await generateSalesReply(config, lead, history, "[The CEO just approved this lead for outreach. Send a warm, professional opening message introducing yourself and the company.]");
+        const slots = (await storage.getSalesSlots()).filter(s => s.status === "available");
+        const opener = await generateSalesReply(config, lead, history, "[The CEO just approved this lead for outreach. Send a warm, professional opening message introducing yourself and the company.]", slots);
         await sendTelegramMessage(lead.telegramChatId, opener);
         await storage.createSalesMessage({ leadId: lead.id, direction: "outbound", channel: "telegram", body: opener });
         await storage.updateSalesLead(lead.id, { status: "contacted" });
@@ -753,7 +766,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const config = await storage.getSalesBotConfig();
       const history = await storage.getSalesMessages(lead.id);
-      const opener = await generateSalesReply(config, lead, history, "[The CEO just approved this lead for outreach. Send a warm, professional opening message introducing yourself and the company.]");
+      const slots = (await storage.getSalesSlots()).filter(s => s.status === "available");
+      const opener = await generateSalesReply(config, lead, history, "[The CEO just approved this lead for outreach. Send a warm, professional opening message introducing yourself and the company.]", slots);
       await sendTelegramMessage(lead.telegramChatId, opener);
       await storage.createSalesMessage({ leadId: lead.id, direction: "outbound", channel: "telegram", body: opener });
       const out = await storage.updateSalesLead(lead.id, { status: "contacted" });
@@ -870,6 +884,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).end();
   });
 
+  // --- Availability slots (admin pre-arranges bookable meeting times) ---
+  app.get("/api/sales-bot/slots", async (_req, res) => {
+    res.json(await storage.getSalesSlots());
+  });
+  app.post("/api/sales-bot/slots", async (req, res) => {
+    const parsed = insertSalesSlotSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid slot", errors: parsed.error.flatten() });
+    const slot = await storage.createSalesSlot(parsed.data);
+    res.status(201).json(slot);
+  });
+  // Bulk-generate morning/evening slots across a whole month so the CEO can set
+  // up availability in advance with one action.
+  app.post("/api/sales-bot/slots/generate", async (req, res) => {
+    const timeRe = /^([01]\d|2[0-3]):[0-5]\d$/; // 00:00 .. 23:59
+    const schema = z.object({
+      month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/), // YYYY-MM, months 01-12
+      morningTime: z.string().regex(timeRe).optional(),
+      eveningTime: z.string().regex(timeRe).optional(),
+      includeMorning: z.boolean().default(true),
+      includeEvening: z.boolean().default(true),
+      weekdaysOnly: z.boolean().default(true),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid request", errors: parsed.error.flatten() });
+    const { month, includeMorning, includeEvening, weekdaysOnly } = parsed.data;
+    const morningTime = parsed.data.morningTime ?? "09:00";
+    const eveningTime = parsed.data.eveningTime ?? "16:00";
+    if (!includeMorning && !includeEvening) {
+      return res.status(400).json({ message: "Select at least one of morning or evening." });
+    }
+
+    const [year, mon] = month.split("-").map(Number);
+    const daysInMonth = new Date(year, mon, 0).getDate();
+    const existing = await storage.getSalesSlots();
+    const taken = new Set(existing.map(s => `${s.date}|${s.period}`));
+
+    let created = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = `${year}-${String(mon).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+      const dow = new Date(year, mon - 1, day).getDay(); // 0=Sun..6=Sat
+      if (weekdaysOnly && (dow === 0 || dow === 6)) continue;
+      if (includeMorning && !taken.has(`${date}|morning`)) {
+        await storage.createSalesSlot({ date, period: "morning", startTime: morningTime });
+        created++;
+      }
+      if (includeEvening && !taken.has(`${date}|evening`)) {
+        await storage.createSalesSlot({ date, period: "evening", startTime: eveningTime });
+        created++;
+      }
+    }
+    res.status(201).json({ created, slots: await storage.getSalesSlots() });
+  });
+  app.delete("/api/sales-bot/slots/:id", async (req, res) => {
+    const slots = await storage.getSalesSlots();
+    const slot = slots.find(s => s.id === req.params.id);
+    if (!slot) return res.status(404).json({ message: "Slot not found" });
+    if (slot.status === "booked") return res.status(400).json({ message: "Cannot delete a booked slot." });
+    await storage.deleteSalesSlot(req.params.id);
+    res.status(204).end();
+  });
+
   // --- Telegram webhook (called by Telegram; bypasses session guard) ---
   app.post("/api/telegram/webhook", async (req, res) => {
     // Verify the secret token if one is configured.
@@ -945,10 +1020,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!config.autoReplyEnabled || !isTelegramConfigured()) return;
 
       const history = await storage.getSalesMessages(lead.id);
+      const slots = (await storage.getSalesSlots()).filter(s => s.status === "available");
       const incoming = isStart
         ? "[The user just started the conversation. Greet them warmly, introduce yourself and the company in 2-3 sentences, and ask one qualifying question.]"
         : text;
-      const reply = await generateSalesReply(config, lead, history, incoming);
+      const reply = await generateSalesReply(config, lead, history, incoming, slots);
       await sendTelegramMessage(chatId, reply);
       await storage.createSalesMessage({ leadId: lead.id, direction: "outbound", channel: "telegram", body: reply });
       if (lead.status === "in_conversation" || lead.status === "approved" || lead.status === "contacted") {

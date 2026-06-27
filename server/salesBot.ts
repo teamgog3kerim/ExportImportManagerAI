@@ -6,7 +6,7 @@
 // Plus parseCsvLeads, a dependency-free CSV importer for user-provided lists.
 
 import OpenAI from "openai";
-import type { SalesBotConfig, SalesLead, SalesMessage, InsertSalesLead } from "@shared/schema";
+import type { SalesBotConfig, SalesLead, SalesMessage, InsertSalesLead, SalesSlot } from "@shared/schema";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -50,7 +50,38 @@ function leadProfile(lead: SalesLead): string {
   return parts.join("\n");
 }
 
-function botSystemPrompt(config: SalesBotConfig, lead: SalesLead): string {
+// East Africa Time (Ethiopia) offset for building absolute datetimes from the
+// admin's date + start-time slots.
+const EAT_OFFSET = "+03:00";
+
+export function slotToIso(slot: Pick<SalesSlot, "date" | "startTime">): string {
+  return `${slot.date}T${slot.startTime}:00${EAT_OFFSET}`;
+}
+
+function slotLabel(slot: SalesSlot): string {
+  const d = new Date(slotToIso(slot));
+  const day = isNaN(d.getTime())
+    ? slot.date
+    : d.toLocaleDateString("en-US", {
+        weekday: "long", month: "short", day: "numeric", timeZone: "Africa/Addis_Ababa",
+      });
+  const periodLabel = slot.period === "evening" ? "evening" : "morning";
+  return `${day} (${periodLabel}) at ${slot.startTime}`;
+}
+
+// Compact, AI-readable list of the admin's open availability slots.
+function availabilityBlock(slots: SalesSlot[]): string {
+  if (slots.length === 0) return "";
+  const lines = slots.map(s => `- [${s.id}] ${slotLabel(s)}`);
+  return [
+    "",
+    "AVAILABLE MEETING TIMES (admin-approved — you may ONLY offer and book these exact times):",
+    ...lines,
+    "When proposing a meeting, offer 2 of these options and ask which suits them. Never invent any other time.",
+  ].join("\n");
+}
+
+function botSystemPrompt(config: SalesBotConfig, lead: SalesLead, slots: SalesSlot[] = []): string {
   return [
     config.persona,
     "",
@@ -64,10 +95,13 @@ function botSystemPrompt(config: SalesBotConfig, lead: SalesLead): string {
     "Guidelines:",
     "- Keep each reply short (2-5 sentences), friendly and professional. Plain text suitable for a chat app.",
     "- Discover their needs, connect them to a concrete benefit of the product, and handle objections calmly.",
-    "- Your primary goal is to book a short in-person meeting or a live demo. When the person shows interest, propose 2 specific time options and ask which suits them.",
+    slots.length > 0
+      ? "- Your primary goal is to book a short in-person meeting or a live demo. Offer ONLY the available meeting times listed below and ask which suits them — never propose any other time."
+      : "- Your primary goal is to book a short in-person meeting or a live demo. When the person shows interest, say you will check available times and follow up shortly. Do not commit to a specific time yet.",
     config.meetingLink ? `- If they prefer online, you may share this link: ${config.meetingLink}` : "",
     "- Never invent prices or features that are not in the product description. If unsure, offer to confirm with the team.",
     "- Do not use emojis.",
+    availabilityBlock(slots),
   ].filter(Boolean).join("\n");
 }
 
@@ -76,9 +110,10 @@ export async function generateSalesReply(
   lead: SalesLead,
   history: SalesMessage[],
   incomingText: string,
+  availableSlots: SalesSlot[] = [],
 ): Promise<string> {
   const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-    { role: "system", content: botSystemPrompt(config, lead) },
+    { role: "system", content: botSystemPrompt(config, lead, availableSlots) },
   ];
   for (const m of history.slice(-16)) {
     messages.push({
@@ -192,22 +227,70 @@ export interface DetectedMeeting {
   location: string;
   mode: string; // physical | demo | online
   notes: string;
+  slotId?: string; // set when the agreement matches an admin-defined slot
 }
 
 // Inspects the latest conversation to decide whether the lead has agreed to a
 // concrete meeting or demo at a specific date/time. Only returns confirmed:true
 // when a parseable date/time was actually agreed — vague intent is ignored so we
 // never auto-book a meeting on a maybe.
+//
+// When `availableSlots` is non-empty, the agreement MUST match one of the
+// admin-defined slots: the AI returns the chosen slot id and we book that exact
+// slot. If the lead agreed to a time not on the list, nothing is booked.
 export async function detectMeeting(
   config: SalesBotConfig,
   lead: SalesLead,
   history: SalesMessage[],
+  availableSlots: SalesSlot[] = [],
 ): Promise<DetectedMeeting | null> {
   const transcript = history
     .slice(-16)
     .map(m => `${m.direction === "inbound" ? "Lead" : "Agent"}: ${m.body}`)
     .join("\n");
   const nowIso = new Date().toISOString();
+
+  // Slot-constrained path: only book one of the admin's pre-approved slots.
+  if (availableSlots.length > 0) {
+    const slotList = availableSlots.map(s => `- [${s.id}] ${slotLabel(s)}`).join("\n");
+    const system =
+      `You analyse a sales chat for ${config.companyName}. The current date/time is ${nowIso}. ` +
+      "The admin offers ONLY the meeting times in the list below. Decide if the LEAD has clearly agreed to ONE of these exact times. " +
+      "Match the lead's agreement to the correct slot id from the list. If the lead agreed to a time that is NOT in the list, or did not clearly agree, set confirmed=false. " +
+      'Respond ONLY as JSON: {"confirmed": <true|false>, "slotId": "<id from the list or empty>", "title": "<short meeting title>", "location": "<place or empty>", "mode": "<physical|demo|online>", "notes": "<one short sentence of context>"}.\n\n' +
+      `Available slots:\n${slotList}`;
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-5-mini",
+        response_format: { type: "json_object" },
+        reasoning_effort: "low",
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: `Lead: ${lead.companyName}\n\nConversation:\n${transcript}` },
+        ],
+        max_completion_tokens: 2000,
+      });
+      const parsed = safeParseJson(response.choices[0]?.message?.content ?? "");
+      if (!parsed.confirmed) return null;
+      const slotId = String(parsed.slotId ?? "").trim();
+      const slot = availableSlots.find(s => s.id === slotId);
+      if (!slot) return null; // agreed time not on the admin's list -> don't book
+      const mode = ["physical", "demo", "online"].includes(parsed.mode) ? parsed.mode : "physical";
+      return {
+        confirmed: true,
+        title: String(parsed.title ?? "").trim() || `Meeting with ${lead.companyName}`,
+        scheduledAt: slotToIso(slot),
+        location: String(parsed.location ?? "").trim(),
+        mode,
+        notes: String(parsed.notes ?? "").trim(),
+        slotId: slot.id,
+      };
+    } catch (e) {
+      console.error("[salesBot] detectMeeting (slots) failed:", (e as Error).message);
+      return null;
+    }
+  }
+
   const system =
     `You analyse a sales chat for ${config.companyName}. The current date/time is ${nowIso}. ` +
     "Decide if the LEAD has clearly agreed to a specific meeting or product demo at a concrete date AND time. " +

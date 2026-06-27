@@ -29,3 +29,11 @@ feature. Explain this honestly in the UI.
 - Admin meeting alerts go to a Telegram `adminChatId` the CEO obtains by sending
   `/myid` to the bot (the webhook replies with the chat id and exits early without
   creating a lead).
+- Meeting booking is constrained to admin-defined availability slots (morning/evening
+  per day, pre-arranged per month). The bot offers ONLY open slots and auto-books one;
+  if zero slots are open it must NOT book any free-form time (the prompt tells it to
+  follow up later). **Why:** the CEO controls when meetings happen.
+  **How to apply:** booking must atomically reserve the slot (compare-and-set
+  available→booked with no await between read and write) before creating the meeting —
+  the per-lead lock alone does not stop two *different* leads from grabbing the same
+  slot. Slot datetimes are built with the fixed East Africa Time offset (+03:00).

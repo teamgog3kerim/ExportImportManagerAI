@@ -586,6 +586,26 @@ export const insertSalesMeetingSchema = createInsertSchema(salesMeetings).omit({
   createdAt: true,
 });
 
+// An admin-defined bookable availability slot. The CEO pre-fills morning/evening
+// slots for the month in advance; the bot offers only these times and books one
+// when a lead agrees.
+export const salesSlots = pgTable("sales_slots", {
+  id: varchar("id").primaryKey(),
+  date: text("date").notNull(), // YYYY-MM-DD (East Africa Time)
+  period: text("period").notNull(), // morning | evening
+  startTime: text("start_time").notNull(), // HH:mm 24h
+  status: text("status").notNull().default("available"), // available | booked
+  meetingId: varchar("meeting_id"), // set when this slot is booked
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertSalesSlotSchema = createInsertSchema(salesSlots).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  meetingId: true,
+});
+
 // Single-row configuration for the AI sales agent + discovery engine.
 export const salesBotConfig = pgTable("sales_bot_config", {
   id: varchar("id").primaryKey(),
@@ -615,3 +635,5 @@ export type SalesMeeting = typeof salesMeetings.$inferSelect;
 export type InsertSalesMeeting = z.infer<typeof insertSalesMeetingSchema>;
 export type SalesBotConfig = typeof salesBotConfig.$inferSelect;
 export type UpdateSalesBotConfig = z.infer<typeof updateSalesBotConfigSchema>;
+export type SalesSlot = typeof salesSlots.$inferSelect;
+export type InsertSalesSlot = z.infer<typeof insertSalesSlotSchema>;

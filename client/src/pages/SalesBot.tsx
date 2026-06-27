@@ -20,9 +20,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import {
   Bot, CheckCircle2, XCircle, Sparkles, Upload, Send, CalendarPlus, Trash2,
-  Loader2, MessageSquare, Plus, ShieldAlert, Link2, RefreshCw,
+  Loader2, MessageSquare, Plus, ShieldAlert, Link2, RefreshCw, CalendarClock, Sun, Moon,
 } from "lucide-react";
-import type { SalesLead, SalesMessage, SalesMeeting, SalesBotConfig } from "@shared/schema";
+import type { SalesLead, SalesMessage, SalesMeeting, SalesBotConfig, SalesSlot } from "@shared/schema";
 
 const SEGMENTS = [
   { value: "import_export", label: "Import / Export" },
@@ -140,6 +140,7 @@ export default function SalesBot() {
           <TabsTrigger value="pipeline" data-testid="tab-pipeline">Pipeline</TabsTrigger>
           <TabsTrigger value="conversations" data-testid="tab-conversations">Conversations</TabsTrigger>
           <TabsTrigger value="meetings" data-testid="tab-meetings">Meetings</TabsTrigger>
+          <TabsTrigger value="availability" data-testid="tab-availability">Availability</TabsTrigger>
           <TabsTrigger value="discovery" data-testid="tab-discovery">Discover &amp; Import</TabsTrigger>
           <TabsTrigger value="settings" data-testid="tab-settings">Settings</TabsTrigger>
         </TabsList>
@@ -256,6 +257,11 @@ export default function SalesBot() {
               </CardContent>
             </Card>
           ))}
+        </TabsContent>
+
+        {/* AVAILABILITY */}
+        <TabsContent value="availability" className="mt-4">
+          <AvailabilityPanel />
         </TabsContent>
 
         {/* DISCOVERY & IMPORT */}
@@ -545,6 +551,152 @@ function ConversationsPanel({ leads, activeLeadId, setActiveLeadId, botConfigure
             {sendMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
+      </Card>
+    </div>
+  );
+}
+
+function formatSlotDate(date: string) {
+  const d = new Date(`${date}T00:00:00`);
+  if (isNaN(d.getTime())) return date;
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
+function AvailabilityPanel() {
+  const { toast } = useToast();
+  const now = new Date();
+  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const [month, setMonth] = useState(defaultMonth);
+  const [morningTime, setMorningTime] = useState("09:00");
+  const [eveningTime, setEveningTime] = useState("16:00");
+  const [includeMorning, setIncludeMorning] = useState(true);
+  const [includeEvening, setIncludeEvening] = useState(true);
+  const [weekdaysOnly, setWeekdaysOnly] = useState(true);
+
+  const { data: slots = [], isLoading } = useQuery<SalesSlot[]>({ queryKey: ["/api/sales-bot/slots"] });
+
+  const genMut = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/sales-bot/slots/generate", {
+      month, morningTime, eveningTime, includeMorning, includeEvening, weekdaysOnly,
+    }),
+    onSuccess: async (res: any) => {
+      const data = await res.json();
+      queryClient.invalidateQueries({ queryKey: ["/api/sales-bot/slots"] });
+      toast({ title: `${data.created} time slots added`, description: "The bot will now offer and book only these times." });
+    },
+    onError: (e: any) => toast({ title: "Could not generate slots", description: e.message, variant: "destructive" }),
+  });
+
+  const delMut = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/sales-bot/slots/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/sales-bot/slots"] }),
+    onError: (e: any) => toast({ title: "Could not remove slot", description: e.message, variant: "destructive" }),
+  });
+
+  const available = slots.filter(s => s.status === "available");
+  const booked = slots.filter(s => s.status === "booked");
+
+  // Group available slots by date for a tidy calendar-like list.
+  const byDate = new Map<string, SalesSlot[]>();
+  for (const s of available) {
+    const arr = byDate.get(s.date) ?? [];
+    arr.push(s);
+    byDate.set(s.date, arr);
+  }
+  const dates = Array.from(byDate.keys()).sort();
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarClock className="h-4 w-4 text-gold" /> Set monthly availability
+          </CardTitle>
+          <CardDescription>
+            Pre-arrange the morning and evening times you are open to meet for a whole month. The sales bot will only ever offer and book these times.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="slot-month">Month</Label>
+            <Input id="slot-month" type="month" value={month} onChange={e => setMonth(e.target.value)} data-testid="input-slot-month" />
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="inc-morning" className="flex items-center gap-2"><Sun className="h-4 w-4 text-muted-foreground" /> Morning slots</Label>
+              <Switch id="inc-morning" checked={includeMorning} onCheckedChange={setIncludeMorning} data-testid="switch-include-morning" />
+            </div>
+            {includeMorning && (
+              <Input type="time" value={morningTime} onChange={e => setMorningTime(e.target.value)} data-testid="input-morning-time" />
+            )}
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="inc-evening" className="flex items-center gap-2"><Moon className="h-4 w-4 text-muted-foreground" /> Evening slots</Label>
+              <Switch id="inc-evening" checked={includeEvening} onCheckedChange={setIncludeEvening} data-testid="switch-include-evening" />
+            </div>
+            {includeEvening && (
+              <Input type="time" value={eveningTime} onChange={e => setEveningTime(e.target.value)} data-testid="input-evening-time" />
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="weekdays-only">Weekdays only</Label>
+            <Switch id="weekdays-only" checked={weekdaysOnly} onCheckedChange={setWeekdaysOnly} data-testid="switch-weekdays-only" />
+          </div>
+          <Button
+            className="w-full"
+            onClick={() => genMut.mutate()}
+            disabled={genMut.isPending || (!includeMorning && !includeEvening)}
+            data-testid="button-generate-slots"
+          >
+            {genMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Generate slots for month
+          </Button>
+          <p className="text-xs text-muted-foreground">Existing slots for these days are kept — generating again only fills in any gaps.</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
+          <CardTitle className="text-base">Available times</CardTitle>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary" data-testid="badge-available-count">{available.length} open</Badge>
+            <Badge variant="default" data-testid="badge-booked-count">{booked.length} booked</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+          ) : available.length === 0 ? (
+            <EmptyState icon={CalendarClock} title="No availability set" text="Generate morning and evening slots for the month so the bot can book meetings." />
+          ) : (
+            <div className="space-y-4">
+              {dates.map(date => (
+                <div key={date} data-testid={`group-slots-${date}`}>
+                  <p className="text-sm font-medium text-foreground mb-2">{formatSlotDate(date)}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {byDate.get(date)!.sort((a, b) => a.startTime.localeCompare(b.startTime)).map(s => (
+                      <div
+                        key={s.id}
+                        className="flex items-center gap-1.5 rounded-md border bg-card px-2 py-1"
+                        data-testid={`slot-${s.id}`}
+                      >
+                        {s.period === "evening" ? <Moon className="h-3.5 w-3.5 text-muted-foreground" /> : <Sun className="h-3.5 w-3.5 text-muted-foreground" />}
+                        <span className="text-sm">{s.startTime}</span>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => delMut.mutate(s.id)}
+                          disabled={delMut.isPending}
+                          data-testid={`button-delete-slot-${s.id}`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
       </Card>
     </div>
   );

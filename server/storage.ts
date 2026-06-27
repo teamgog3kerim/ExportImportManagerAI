@@ -40,6 +40,7 @@ import type {
   SalesMessage, InsertSalesMessage,
   SalesMeeting, InsertSalesMeeting,
   SalesBotConfig, UpdateSalesBotConfig,
+  SalesSlot, InsertSalesSlot,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -156,6 +157,14 @@ export interface IStorage {
   createSalesMeeting(m: InsertSalesMeeting): Promise<SalesMeeting>;
   updateSalesMeeting(id: string, patch: Partial<SalesMeeting>): Promise<SalesMeeting | undefined>;
   deleteSalesMeeting(id: string): Promise<boolean>;
+  // Sales Bot — Availability slots
+  getSalesSlots(): Promise<SalesSlot[]>;
+  createSalesSlot(s: InsertSalesSlot): Promise<SalesSlot>;
+  updateSalesSlot(id: string, patch: Partial<SalesSlot>): Promise<SalesSlot | undefined>;
+  // Atomically flip an available slot to booked. Returns the slot if the caller
+  // won the reservation, or undefined if it was already taken/missing.
+  reserveSalesSlot(id: string): Promise<SalesSlot | undefined>;
+  deleteSalesSlot(id: string): Promise<boolean>;
   // Sales Bot — Config
   getSalesBotConfig(): Promise<SalesBotConfig>;
   updateSalesBotConfig(patch: UpdateSalesBotConfig): Promise<SalesBotConfig>;
@@ -185,6 +194,7 @@ export class MemStorage implements IStorage {
   private salesLeads = new Map<string, SalesLead>();
   private salesMessages = new Map<string, SalesMessage>();
   private salesMeetings = new Map<string, SalesMeeting>();
+  private salesSlots = new Map<string, SalesSlot>();
   private salesBotConfigRow: SalesBotConfig | undefined;
 
   constructor() { this.seed(); }
@@ -1041,6 +1051,46 @@ export class MemStorage implements IStorage {
     return updated;
   }
   async deleteSalesMeeting(id: string) { return this.salesMeetings.delete(id); }
+
+  // === Sales Bot — Availability slots ===
+  async getSalesSlots(): Promise<SalesSlot[]> {
+    return Array.from(this.salesSlots.values()).sort((a, b) => {
+      const ka = `${a.date} ${a.startTime}`;
+      const kb = `${b.date} ${b.startTime}`;
+      return ka.localeCompare(kb);
+    });
+  }
+  async createSalesSlot(s: InsertSalesSlot): Promise<SalesSlot> {
+    const id = randomUUID();
+    const n: SalesSlot = {
+      id,
+      date: s.date,
+      period: s.period,
+      startTime: s.startTime,
+      status: "available",
+      meetingId: null,
+      createdAt: new Date().toISOString(),
+    };
+    this.salesSlots.set(id, n);
+    return n;
+  }
+  async updateSalesSlot(id: string, patch: Partial<SalesSlot>) {
+    const existing = this.salesSlots.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...patch, id: existing.id, createdAt: existing.createdAt };
+    this.salesSlots.set(id, updated);
+    return updated;
+  }
+  async reserveSalesSlot(id: string) {
+    // No await between the read and write — this is an atomic compare-and-set so
+    // two concurrent leads can never reserve the same slot.
+    const existing = this.salesSlots.get(id);
+    if (!existing || existing.status !== "available") return undefined;
+    const updated: SalesSlot = { ...existing, status: "booked" };
+    this.salesSlots.set(id, updated);
+    return updated;
+  }
+  async deleteSalesSlot(id: string) { return this.salesSlots.delete(id); }
 
   // === Sales Bot — Config ===
   async getSalesBotConfig(): Promise<SalesBotConfig> {
