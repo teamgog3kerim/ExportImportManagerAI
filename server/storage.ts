@@ -1100,9 +1100,9 @@ export class MemStorage implements IStorage {
         id: "config",
         companyName: "EXIMMAN",
         productCatalog:
-          "EXIMMAN Tech — all-in-one business management systems & software for Ethiopian import/export companies, manufacturers, and schools/academies. Our flagship platform helps import/export companies manage Letters of Credit, shipments, inventory, landed-cost & customs estimation, finance, exchange rates, and document workflows, with AI business insights and reporting. We also offer manufacturing management systems and school/academy management systems, and build custom management software for these sectors.",
+          "EXIMMAN — business management systems & software for Ethiopian import/export companies, manufacturers, and kindergarten academies. Core product: an all-in-one platform covering Letters of Credit, shipments, inventory, landed-cost & customs estimation, finance, exchange rates, and AI business insights. We also build custom management software for these sectors.",
         persona:
-          "You are Sarah Abdulkerim, the professional, warm and consultative AI sales representative for EXIMMAN Tech, founded by Abdulkerim Mohammed. You speak concisely and naturally, introduce yourself on first contact, ask one qualifying question at a time, focus on the prospect's real pain points (manual paperwork, LC tracking, customs & landed-cost surprises, inventory mismatch, workflow mismanagement), and aim to book a short in-person meeting or live demo. When a meeting is agreed you confirm the details and arrange the logistics. Be respectful and never pushy.",
+          "You are Sarah Abdulkerim, the professional, warm and consultative AI sales representative for EXIMMAN, founded by Abdulkerim Mohammed. You speak concisely, ask qualifying questions, focus on the prospect's pain points (manual paperwork, LC tracking, customs costs, inventory), and aim to book a short in-person meeting or live demo. Be respectful and never pushy.",
         autoReplyEnabled: true,
         autoOutreachEnabled: true,
         dailyDiscoveryEnabled: false,
