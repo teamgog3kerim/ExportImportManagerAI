@@ -13,6 +13,24 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+// gpt-5 models are reasoning models: reasoning tokens count against
+// max_completion_tokens, so we keep effort low and budgets generous to ensure
+// there is room left for the actual visible output.
+function safeParseJson(raw: string): any {
+  const text = (raw ?? "").trim();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    // Best-effort: pull the first {...} block out of the response.
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch { /* fall through */ }
+    }
+    return {};
+  }
+}
+
 const SEGMENT_LABELS: Record<string, string> = {
   import_export: "import/export company",
   manufacturing: "manufacturing company",
@@ -73,7 +91,8 @@ export async function generateSalesReply(
   const response = await openai.chat.completions.create({
     model: "gpt-5-mini",
     messages,
-    max_completion_tokens: 500,
+    reasoning_effort: "low",
+    max_completion_tokens: 2000,
   });
   return (
     response.choices[0]?.message?.content?.trim() ||
@@ -96,14 +115,14 @@ export async function qualifyLead(config: SalesBotConfig, lead: SalesLead): Prom
     const response = await openai.chat.completions.create({
       model: "gpt-5-mini",
       response_format: { type: "json_object" },
+      reasoning_effort: "low",
       messages: [
         { role: "system", content: system },
         { role: "user", content: leadProfile(lead) },
       ],
-      max_completion_tokens: 300,
+      max_completion_tokens: 2000,
     });
-    const raw = response.choices[0]?.message?.content ?? "{}";
-    const parsed = JSON.parse(raw);
+    const parsed = safeParseJson(response.choices[0]?.message?.content ?? "");
     const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
     return {
       score,
@@ -142,14 +161,14 @@ export async function discoverLeads(
     const response = await openai.chat.completions.create({
       model: "gpt-5-mini",
       response_format: { type: "json_object" },
+      reasoning_effort: "low",
       messages: [
         { role: "system", content: system },
         { role: "user", content: `Suggest ${count} ${segLabel} prospects in ${region}.` },
       ],
-      max_completion_tokens: 1200,
+      max_completion_tokens: 4000,
     });
-    const raw = response.choices[0]?.message?.content ?? "{}";
-    const parsed = JSON.parse(raw);
+    const parsed = safeParseJson(response.choices[0]?.message?.content ?? "");
     const list = Array.isArray(parsed.candidates) ? parsed.candidates : [];
     return list
       .filter((c: any) => c && typeof c.companyName === "string" && c.companyName.trim())
