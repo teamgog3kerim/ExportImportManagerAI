@@ -1,9 +1,13 @@
 // Thin wrapper around the Telegram Bot API (HTTP). No external SDK needed —
 // every call is a POST to https://api.telegram.org/bot<token>/<method>.
 // The bot token comes from BotFather and is stored as the TELEGRAM_BOT_TOKEN
-// secret. A separate TELEGRAM_WEBHOOK_SECRET (optional) is echoed back by
-// Telegram in the X-Telegram-Bot-Api-Secret-Token header so we can verify
-// that webhook calls genuinely originate from Telegram.
+// secret. The webhook secret is echoed back by Telegram in the
+// X-Telegram-Bot-Api-Secret-Token header so we can verify that webhook calls
+// genuinely originate from Telegram. It is taken from TELEGRAM_WEBHOOK_SECRET
+// when set, otherwise derived deterministically from the bot token so the
+// webhook is always authenticated (never an open, unauthenticated write path).
+
+import { createHmac } from "crypto";
 
 const API_BASE = "https://api.telegram.org";
 
@@ -16,7 +20,13 @@ export function isTelegramConfigured(): boolean {
 }
 
 export function getWebhookSecret(): string | undefined {
-  return process.env.TELEGRAM_WEBHOOK_SECRET;
+  const explicit = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (explicit) return explicit;
+  const token = getBotToken();
+  if (!token) return undefined;
+  // Deterministic, non-reversible secret derived from the bot token. Telegram
+  // only allows [A-Za-z0-9_-], 1-256 chars, so a hex digest is safe.
+  return createHmac("sha256", token).update("eximman-telegram-webhook").digest("hex");
 }
 
 async function callTelegram<T = any>(method: string, params: Record<string, unknown>): Promise<T> {

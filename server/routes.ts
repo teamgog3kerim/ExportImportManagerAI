@@ -744,6 +744,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const leadId = typeof req.query.leadId === "string" ? req.query.leadId : undefined;
     res.json(await storage.getSalesMessages(leadId));
   });
+  app.get("/api/sales-bot/messages/:leadId", async (req, res) => {
+    res.json(await storage.getSalesMessages(req.params.leadId));
+  });
 
   // --- Meetings ---
   app.get("/api/sales-bot/meetings", async (_req, res) => {
