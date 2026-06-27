@@ -13,6 +13,7 @@ export interface PageDef {
 export const PAGES: PageDef[] = [
   { key: "dashboard", label: "Dashboard", path: "/dashboard", group: "Main" },
   { key: "ai-insights", label: "AI Insights", path: "/ai-insights", group: "Main" },
+  { key: "sales-bot", label: "Sales Bot", path: "/sales-bot", group: "Main" },
   { key: "finance", label: "Finance", path: "/finance", group: "Main" },
   { key: "exchange-rates", label: "Exchange Rates", path: "/exchange-rates", group: "Main" },
   { key: "import-lc", label: "LC Management", path: "/import/lc-management", group: "Import" },
@@ -50,6 +51,7 @@ export const ROLE_DEFAULTS: Record<Role, Record<string, PermLevel>> = {
   manager: {
     dashboard: "view",
     "ai-insights": "view",
+    "sales-bot": "record",
     finance: "record",
     "exchange-rates": "view",
     "import-lc": "record",
@@ -66,6 +68,7 @@ export const ROLE_DEFAULTS: Record<Role, Record<string, PermLevel>> = {
   staff: {
     dashboard: "view",
     "ai-insights": "view",
+    "sales-bot": "none",
     finance: "none",
     "exchange-rates": "view",
     "import-lc": "view",
@@ -90,6 +93,7 @@ export const API_PAGE_RULES: { test: RegExp; page: string }[] = [
   { test: /^\/api\/dashboard/, page: "dashboard" },
   { test: /^\/api\/reports/, page: "dashboard" },
   { test: /^\/api\/ai\//, page: "ai-insights" },
+  { test: /^\/api\/sales-bot/, page: "sales-bot" },
   { test: /^\/api\/finance\//, page: "finance" },
   { test: /^\/api\/exchange-rates/, page: "exchange-rates" },
   { test: /^\/api\/lcs/, page: "import-lc" },

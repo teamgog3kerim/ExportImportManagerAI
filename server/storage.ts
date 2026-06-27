@@ -36,6 +36,10 @@ import type {
   SupplierPayment, InsertSupplierPayment,
   CustomerPayment, InsertCustomerPayment,
   Report, InsertReport,
+  SalesLead, InsertSalesLead,
+  SalesMessage, InsertSalesMessage,
+  SalesMeeting, InsertSalesMeeting,
+  SalesBotConfig, UpdateSalesBotConfig,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -136,6 +140,25 @@ export interface IStorage {
   getReport(id: string): Promise<Report | undefined>;
   createReport(r: InsertReport): Promise<Report>;
   deleteReport(id: string): Promise<boolean>;
+
+  // Sales Bot — Leads
+  getSalesLeads(): Promise<SalesLead[]>;
+  getSalesLead(id: string): Promise<SalesLead | undefined>;
+  getSalesLeadByChatId(chatId: string): Promise<SalesLead | undefined>;
+  createSalesLead(lead: InsertSalesLead): Promise<SalesLead>;
+  updateSalesLead(id: string, patch: Partial<SalesLead>): Promise<SalesLead | undefined>;
+  deleteSalesLead(id: string): Promise<boolean>;
+  // Sales Bot — Messages
+  getSalesMessages(leadId?: string): Promise<SalesMessage[]>;
+  createSalesMessage(m: InsertSalesMessage): Promise<SalesMessage>;
+  // Sales Bot — Meetings
+  getSalesMeetings(): Promise<SalesMeeting[]>;
+  createSalesMeeting(m: InsertSalesMeeting): Promise<SalesMeeting>;
+  updateSalesMeeting(id: string, patch: Partial<SalesMeeting>): Promise<SalesMeeting | undefined>;
+  deleteSalesMeeting(id: string): Promise<boolean>;
+  // Sales Bot — Config
+  getSalesBotConfig(): Promise<SalesBotConfig>;
+  updateSalesBotConfig(patch: UpdateSalesBotConfig): Promise<SalesBotConfig>;
 }
 
 export class MemStorage implements IStorage {
@@ -159,6 +182,10 @@ export class MemStorage implements IStorage {
   private supplierPayments = new Map<string, SupplierPayment>();
   private customerPayments = new Map<string, CustomerPayment>();
   private reports = new Map<string, Report>();
+  private salesLeads = new Map<string, SalesLead>();
+  private salesMessages = new Map<string, SalesMessage>();
+  private salesMeetings = new Map<string, SalesMeeting>();
+  private salesBotConfigRow: SalesBotConfig | undefined;
 
   constructor() { this.seed(); }
 
@@ -917,6 +944,133 @@ export class MemStorage implements IStorage {
     return n;
   }
   async deleteReport(id: string) { return this.reports.delete(id); }
+
+  // === Sales Bot — Leads ===
+  async getSalesLeads(): Promise<SalesLead[]> {
+    return Array.from(this.salesLeads.values()).sort((a, b) =>
+      (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+  }
+  async getSalesLead(id: string) { return this.salesLeads.get(id); }
+  async getSalesLeadByChatId(chatId: string) {
+    return Array.from(this.salesLeads.values()).find(l => l.telegramChatId === chatId);
+  }
+  async createSalesLead(lead: InsertSalesLead): Promise<SalesLead> {
+    const id = randomUUID();
+    const n: SalesLead = {
+      id,
+      companyName: lead.companyName,
+      segment: lead.segment ?? "import_export",
+      contactName: lead.contactName ?? null,
+      contactTitle: lead.contactTitle ?? null,
+      phone: lead.phone ?? null,
+      email: lead.email ?? null,
+      website: lead.website ?? null,
+      location: lead.location ?? null,
+      source: lead.source ?? "manual",
+      notes: lead.notes ?? null,
+      aiScore: lead.aiScore ?? "0",
+      aiQualification: lead.aiQualification ?? null,
+      aiPitch: lead.aiPitch ?? null,
+      telegramChatId: null,
+      telegramUsername: null,
+      status: "discovered",
+      createdAt: new Date().toISOString(),
+    };
+    this.salesLeads.set(id, n);
+    return n;
+  }
+  async updateSalesLead(id: string, patch: Partial<SalesLead>) {
+    const existing = this.salesLeads.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...patch, id: existing.id, createdAt: existing.createdAt };
+    this.salesLeads.set(id, updated);
+    return updated;
+  }
+  async deleteSalesLead(id: string) {
+    Array.from(this.salesMessages.values()).filter(m => m.leadId === id).forEach(m => this.salesMessages.delete(m.id));
+    Array.from(this.salesMeetings.values()).filter(m => m.leadId === id).forEach(m => this.salesMeetings.delete(m.id));
+    return this.salesLeads.delete(id);
+  }
+
+  // === Sales Bot — Messages ===
+  async getSalesMessages(leadId?: string): Promise<SalesMessage[]> {
+    const all = Array.from(this.salesMessages.values());
+    const filtered = leadId ? all.filter(m => m.leadId === leadId) : all;
+    return filtered.sort((a, b) => (a.createdAt ?? "").localeCompare(b.createdAt ?? ""));
+  }
+  async createSalesMessage(m: InsertSalesMessage): Promise<SalesMessage> {
+    const id = randomUUID();
+    const n: SalesMessage = {
+      id,
+      leadId: m.leadId,
+      direction: m.direction,
+      channel: m.channel ?? "telegram",
+      body: m.body,
+      createdAt: new Date().toISOString(),
+    };
+    this.salesMessages.set(id, n);
+    return n;
+  }
+
+  // === Sales Bot — Meetings ===
+  async getSalesMeetings(): Promise<SalesMeeting[]> {
+    return Array.from(this.salesMeetings.values()).sort((a, b) =>
+      (a.scheduledAt ?? "").localeCompare(b.scheduledAt ?? ""));
+  }
+  async createSalesMeeting(m: InsertSalesMeeting): Promise<SalesMeeting> {
+    const id = randomUUID();
+    const n: SalesMeeting = {
+      id,
+      leadId: m.leadId,
+      title: m.title,
+      scheduledAt: m.scheduledAt,
+      location: m.location ?? null,
+      mode: m.mode ?? "physical",
+      notes: m.notes ?? null,
+      status: m.status ?? "proposed",
+      createdAt: new Date().toISOString(),
+    };
+    this.salesMeetings.set(id, n);
+    return n;
+  }
+  async updateSalesMeeting(id: string, patch: Partial<SalesMeeting>) {
+    const existing = this.salesMeetings.get(id);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...patch, id: existing.id, createdAt: existing.createdAt };
+    this.salesMeetings.set(id, updated);
+    return updated;
+  }
+  async deleteSalesMeeting(id: string) { return this.salesMeetings.delete(id); }
+
+  // === Sales Bot — Config ===
+  async getSalesBotConfig(): Promise<SalesBotConfig> {
+    if (!this.salesBotConfigRow) {
+      this.salesBotConfigRow = {
+        id: "config",
+        companyName: "EXIMMAN",
+        productCatalog:
+          "EXIMMAN — business management systems & software for Ethiopian import/export companies, manufacturers, and kindergarten academies. Core product: an all-in-one platform covering Letters of Credit, shipments, inventory, landed-cost & customs estimation, finance, exchange rates, and AI business insights. We also build custom management software for these sectors.",
+        persona:
+          "You are Selam, the professional, warm and consultative AI sales representative for EXIMMAN, founded by Abdulkerim Mohammed. You speak concisely, ask qualifying questions, focus on the prospect's pain points (manual paperwork, LC tracking, customs costs, inventory), and aim to book a short in-person meeting or live demo. Be respectful and never pushy.",
+        autoReplyEnabled: true,
+        dailyDiscoveryEnabled: false,
+        meetingLink: null,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    return this.salesBotConfigRow;
+  }
+  async updateSalesBotConfig(patch: UpdateSalesBotConfig): Promise<SalesBotConfig> {
+    const current = await this.getSalesBotConfig();
+    const updated: SalesBotConfig = {
+      ...current,
+      ...patch,
+      id: "config",
+      updatedAt: new Date().toISOString(),
+    };
+    this.salesBotConfigRow = updated;
+    return updated;
+  }
 }
 
 export const storage = new MemStorage();

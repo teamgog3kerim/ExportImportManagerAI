@@ -513,3 +513,100 @@ export type Report = typeof reports.$inferSelect;
 export type InsertReport = z.infer<typeof insertReportSchema>;
 export type DemoRequest = typeof demoRequests.$inferSelect;
 export type InsertDemoRequest = z.infer<typeof insertDemoRequestSchema>;
+
+// ===================================================================
+// Telegram AI Sales Bot / Lead CRM
+// Company leads (import-export, manufacturing, kindergarten academies)
+// flow through a manual CEO approval gate before any automated outreach.
+// ===================================================================
+
+// A discovered or imported company lead.
+export const salesLeads = pgTable("sales_leads", {
+  id: varchar("id").primaryKey(),
+  companyName: text("company_name").notNull(),
+  // import_export | manufacturing | kindergarten_academy | other
+  segment: text("segment").notNull().default("import_export"),
+  contactName: text("contact_name"),
+  contactTitle: text("contact_title"),
+  phone: text("phone"),
+  email: text("email"),
+  website: text("website"),
+  location: text("location"),
+  // manual | csv | ai_discovery | telegram_inbound
+  source: text("source").notNull().default("manual"),
+  notes: text("notes"),
+  aiScore: numeric("ai_score").notNull().default("0"),
+  aiQualification: text("ai_qualification"),
+  aiPitch: text("ai_pitch"),
+  telegramChatId: text("telegram_chat_id"),
+  telegramUsername: text("telegram_username"),
+  // discovered | approved | rejected | contacted | in_conversation | meeting_booked | won | lost
+  status: text("status").notNull().default("discovered"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertSalesLeadSchema = createInsertSchema(salesLeads).omit({
+  id: true,
+  createdAt: true,
+  status: true,
+  telegramChatId: true,
+  telegramUsername: true,
+});
+
+// One message in a Telegram sales conversation (or an internal note).
+export const salesMessages = pgTable("sales_messages", {
+  id: varchar("id").primaryKey(),
+  leadId: varchar("lead_id").notNull(),
+  direction: text("direction").notNull(), // inbound | outbound
+  channel: text("channel").notNull().default("telegram"), // telegram | note
+  body: text("body").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertSalesMessageSchema = createInsertSchema(salesMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+// A scheduled physical meeting or demo presentation with a lead.
+export const salesMeetings = pgTable("sales_meetings", {
+  id: varchar("id").primaryKey(),
+  leadId: varchar("lead_id").notNull(),
+  title: text("title").notNull(),
+  scheduledAt: text("scheduled_at").notNull(),
+  location: text("location"),
+  mode: text("mode").notNull().default("physical"), // physical | demo | online
+  notes: text("notes"),
+  status: text("status").notNull().default("proposed"), // proposed | confirmed | completed | cancelled
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertSalesMeetingSchema = createInsertSchema(salesMeetings).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Single-row configuration for the AI sales agent + discovery engine.
+export const salesBotConfig = pgTable("sales_bot_config", {
+  id: varchar("id").primaryKey(),
+  companyName: text("company_name").notNull().default("EXIMMAN"),
+  productCatalog: text("product_catalog").notNull().default(""),
+  persona: text("persona").notNull().default(""),
+  autoReplyEnabled: boolean("auto_reply_enabled").notNull().default(true),
+  dailyDiscoveryEnabled: boolean("daily_discovery_enabled").notNull().default(false),
+  meetingLink: text("meeting_link"),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const updateSalesBotConfigSchema = createInsertSchema(salesBotConfig)
+  .omit({ id: true, updatedAt: true })
+  .partial();
+
+export type SalesLead = typeof salesLeads.$inferSelect;
+export type InsertSalesLead = z.infer<typeof insertSalesLeadSchema>;
+export type SalesMessage = typeof salesMessages.$inferSelect;
+export type InsertSalesMessage = z.infer<typeof insertSalesMessageSchema>;
+export type SalesMeeting = typeof salesMeetings.$inferSelect;
+export type InsertSalesMeeting = z.infer<typeof insertSalesMeetingSchema>;
+export type SalesBotConfig = typeof salesBotConfig.$inferSelect;
+export type UpdateSalesBotConfig = z.infer<typeof updateSalesBotConfigSchema>;

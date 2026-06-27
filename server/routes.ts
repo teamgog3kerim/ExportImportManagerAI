@@ -3,7 +3,9 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { generateAIResponse, generateDailySummary } from "./openai";
-import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema, updateSupplierPaymentSchema, updateCustomerPaymentSchema, insertSaleSchema } from "@shared/schema";
+import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema, updateSupplierPaymentSchema, updateCustomerPaymentSchema, insertSaleSchema, insertSalesLeadSchema, insertSalesMeetingSchema, updateSalesBotConfigSchema } from "@shared/schema";
+import { isTelegramConfigured, getBotInfo, sendTelegramMessage, setTelegramWebhook, getWebhookSecret, type TelegramUpdate } from "./telegram";
+import { generateSalesReply, qualifyLead, discoverLeads, parseCsvLeads } from "./salesBot";
 import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
 import { buildReport } from "./lib/reportNarrator";
 import { apiAccessGuard, ensureBootstrapAdmin, registerAuthRoutes } from "./auth";
@@ -570,6 +572,261 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const ok = await storage.deleteReport(req.params.id);
     if (!ok) return res.status(404).json({ message: "Report not found" });
     res.status(204).end();
+  });
+
+  // ================================================================
+  // Telegram AI Sales Bot / Lead CRM
+  // ================================================================
+  const leadUpdateSchema = z.object({
+    status: z.string(),
+    notes: z.string(),
+    contactName: z.string(),
+    contactTitle: z.string(),
+    phone: z.string(),
+    email: z.string(),
+    website: z.string(),
+    location: z.string(),
+    segment: z.string(),
+  }).partial();
+
+  // --- Bot status & webhook setup ---
+  app.get("/api/sales-bot/status", async (_req, res) => {
+    const configured = isTelegramConfigured();
+    let bot: { username?: string; first_name?: string } | null = null;
+    if (configured) {
+      try { const info = await getBotInfo(); bot = { username: info.username, first_name: info.first_name }; }
+      catch { bot = null; }
+    }
+    res.json({ telegramConfigured: configured, bot });
+  });
+
+  app.post("/api/sales-bot/setup-webhook", async (req, res) => {
+    if (!isTelegramConfigured()) {
+      return res.status(400).json({ message: "TELEGRAM_BOT_TOKEN is not configured. Add it in Secrets first." });
+    }
+    try {
+      const host = (req.headers["x-forwarded-host"] as string) || req.get("host");
+      const url = (req.body?.url as string) || `https://${host}/api/telegram/webhook`;
+      await setTelegramWebhook(url);
+      res.json({ message: "Webhook configured", url });
+    } catch (e) {
+      res.status(502).json({ message: (e as Error).message });
+    }
+  });
+
+  // --- Config ---
+  app.get("/api/sales-bot/config", async (_req, res) => {
+    res.json(await storage.getSalesBotConfig());
+  });
+  app.patch("/api/sales-bot/config", async (req, res) => {
+    const parsed = updateSalesBotConfigSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid config", errors: parsed.error.flatten() });
+    res.json(await storage.updateSalesBotConfig(parsed.data));
+  });
+
+  // --- Leads ---
+  app.get("/api/sales-bot/leads", async (_req, res) => {
+    res.json(await storage.getSalesLeads());
+  });
+  app.post("/api/sales-bot/leads", async (req, res) => {
+    const parsed = insertSalesLeadSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid lead", errors: parsed.error.flatten() });
+    res.status(201).json(await storage.createSalesLead(parsed.data));
+  });
+  app.patch("/api/sales-bot/leads/:id", async (req, res) => {
+    const parsed = leadUpdateSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid update", errors: parsed.error.flatten() });
+    const updated = await storage.updateSalesLead(req.params.id, parsed.data);
+    if (!updated) return res.status(404).json({ message: "Lead not found" });
+    res.json(updated);
+  });
+  app.delete("/api/sales-bot/leads/:id", async (req, res) => {
+    const ok = await storage.deleteSalesLead(req.params.id);
+    if (!ok) return res.status(404).json({ message: "Lead not found" });
+    res.status(204).end();
+  });
+
+  app.post("/api/sales-bot/leads/:id/approve", async (req, res) => {
+    const lead = await storage.getSalesLead(req.params.id);
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
+    const updated = await storage.updateSalesLead(lead.id, { status: "approved" });
+    // If this lead has already connected on Telegram, send an AI opener now.
+    if (lead.telegramChatId && isTelegramConfigured()) {
+      try {
+        const config = await storage.getSalesBotConfig();
+        const history = await storage.getSalesMessages(lead.id);
+        const opener = await generateSalesReply(config, lead, history, "[The CEO just approved this lead for outreach. Send a warm, professional opening message introducing yourself and the company.]");
+        await sendTelegramMessage(lead.telegramChatId, opener);
+        await storage.createSalesMessage({ leadId: lead.id, direction: "outbound", channel: "telegram", body: opener });
+        await storage.updateSalesLead(lead.id, { status: "contacted" });
+      } catch (e) {
+        console.error("[sales-bot] approve opener failed:", (e as Error).message);
+      }
+    }
+    res.json(await storage.getSalesLead(lead.id) ?? updated);
+  });
+
+  app.post("/api/sales-bot/leads/:id/reject", async (req, res) => {
+    const updated = await storage.updateSalesLead(req.params.id, { status: "rejected" });
+    if (!updated) return res.status(404).json({ message: "Lead not found" });
+    res.json(updated);
+  });
+
+  app.post("/api/sales-bot/leads/:id/qualify", async (req, res) => {
+    const lead = await storage.getSalesLead(req.params.id);
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
+    try {
+      const config = await storage.getSalesBotConfig();
+      const q = await qualifyLead(config, lead);
+      const updated = await storage.updateSalesLead(lead.id, {
+        aiScore: String(q.score), aiQualification: q.qualification, aiPitch: q.pitch,
+      });
+      res.json(updated);
+    } catch (e) {
+      res.status(502).json({ message: (e as Error).message });
+    }
+  });
+
+  // Manually send a message to a connected lead (CEO can step into the chat).
+  app.post("/api/sales-bot/leads/:id/message", async (req, res) => {
+    const lead = await storage.getSalesLead(req.params.id);
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
+    const body = typeof req.body?.body === "string" ? req.body.body.trim() : "";
+    if (!body) return res.status(400).json({ message: "Message body required" });
+    if (!lead.telegramChatId) return res.status(400).json({ message: "This lead has not connected on Telegram yet, so we cannot message them." });
+    if (!isTelegramConfigured()) return res.status(400).json({ message: "TELEGRAM_BOT_TOKEN is not configured." });
+    try {
+      await sendTelegramMessage(lead.telegramChatId, body);
+      const msg = await storage.createSalesMessage({ leadId: lead.id, direction: "outbound", channel: "telegram", body });
+      res.status(201).json(msg);
+    } catch (e) {
+      res.status(502).json({ message: (e as Error).message });
+    }
+  });
+
+  // --- Import (CSV / pasted list) ---
+  app.post("/api/sales-bot/import", async (req, res) => {
+    const csv = typeof req.body?.csv === "string" ? req.body.csv : "";
+    if (!csv.trim()) return res.status(400).json({ message: "Provide CSV text in the 'csv' field." });
+    const parsed = parseCsvLeads(csv);
+    if (parsed.length === 0) return res.status(400).json({ message: "No valid leads found. Ensure each row has at least a company name." });
+    const created = [];
+    for (const p of parsed) created.push(await storage.createSalesLead(p));
+    res.status(201).json({ count: created.length, leads: created });
+  });
+
+  // --- AI discovery (suggests prospects to verify before outreach) ---
+  app.post("/api/sales-bot/discover", async (req, res) => {
+    const segment = typeof req.body?.segment === "string" ? req.body.segment : "import_export";
+    const region = typeof req.body?.region === "string" && req.body.region.trim() ? req.body.region : "Ethiopia";
+    const count = Math.max(1, Math.min(15, Number(req.body?.count) || 6));
+    try {
+      const config = await storage.getSalesBotConfig();
+      const candidates = await discoverLeads(config, segment, region, count);
+      const created = [];
+      for (const c of candidates) {
+        created.push(await storage.createSalesLead({
+          companyName: c.companyName,
+          segment: c.segment,
+          location: c.location,
+          source: "ai_discovery",
+          notes: c.rationale ? `AI suggestion (verify before outreach): ${c.rationale}` : "AI suggestion — verify before outreach.",
+        }));
+      }
+      res.status(201).json({ count: created.length, leads: created });
+    } catch (e) {
+      res.status(502).json({ message: (e as Error).message });
+    }
+  });
+
+  // --- Messages ---
+  app.get("/api/sales-bot/messages", async (req, res) => {
+    const leadId = typeof req.query.leadId === "string" ? req.query.leadId : undefined;
+    res.json(await storage.getSalesMessages(leadId));
+  });
+
+  // --- Meetings ---
+  app.get("/api/sales-bot/meetings", async (_req, res) => {
+    res.json(await storage.getSalesMeetings());
+  });
+  app.post("/api/sales-bot/meetings", async (req, res) => {
+    const parsed = insertSalesMeetingSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid meeting", errors: parsed.error.flatten() });
+    const meeting = await storage.createSalesMeeting(parsed.data);
+    await storage.updateSalesLead(parsed.data.leadId, { status: "meeting_booked" });
+    res.status(201).json(meeting);
+  });
+  app.patch("/api/sales-bot/meetings/:id", async (req, res) => {
+    const schema = z.object({ status: z.string(), scheduledAt: z.string(), location: z.string(), notes: z.string(), title: z.string(), mode: z.string() }).partial();
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ message: "Invalid update", errors: parsed.error.flatten() });
+    const updated = await storage.updateSalesMeeting(req.params.id, parsed.data);
+    if (!updated) return res.status(404).json({ message: "Meeting not found" });
+    res.json(updated);
+  });
+  app.delete("/api/sales-bot/meetings/:id", async (req, res) => {
+    const ok = await storage.deleteSalesMeeting(req.params.id);
+    if (!ok) return res.status(404).json({ message: "Meeting not found" });
+    res.status(204).end();
+  });
+
+  // --- Telegram webhook (called by Telegram; bypasses session guard) ---
+  app.post("/api/telegram/webhook", async (req, res) => {
+    // Verify the secret token if one is configured.
+    const expected = getWebhookSecret();
+    if (expected) {
+      const got = req.headers["x-telegram-bot-api-secret-token"];
+      if (got !== expected) return res.status(401).end();
+    }
+    // Always acknowledge quickly so Telegram does not retry.
+    res.status(200).json({ ok: true });
+
+    try {
+      const update = req.body as TelegramUpdate;
+      const message = update?.message;
+      const text = message?.text?.trim();
+      if (!message || !text) return;
+      const chatId = String(message.chat.id);
+      const username = message.from?.username ?? message.chat.username;
+      const displayName =
+        message.chat.title ||
+        [message.from?.first_name, message.from?.last_name].filter(Boolean).join(" ") ||
+        message.chat.first_name ||
+        (username ? `@${username}` : `Telegram ${chatId}`);
+
+      let lead = await storage.getSalesLeadByChatId(chatId);
+      if (!lead) {
+        lead = await storage.createSalesLead({
+          companyName: displayName,
+          segment: "other",
+          source: "telegram_inbound",
+          notes: "Inbound contact who messaged the Telegram bot.",
+        });
+        lead = (await storage.updateSalesLead(lead.id, {
+          telegramChatId: chatId,
+          telegramUsername: username ?? null,
+          status: "in_conversation",
+        }))!;
+      }
+
+      await storage.createSalesMessage({ leadId: lead.id, direction: "inbound", channel: "telegram", body: text });
+
+      const config = await storage.getSalesBotConfig();
+      if (!config.autoReplyEnabled || !isTelegramConfigured()) return;
+
+      const history = await storage.getSalesMessages(lead.id);
+      const incoming = text === "/start"
+        ? "[The user just started the conversation. Greet them warmly, introduce yourself and the company in 2-3 sentences, and ask one qualifying question.]"
+        : text;
+      const reply = await generateSalesReply(config, lead, history, incoming);
+      await sendTelegramMessage(chatId, reply);
+      await storage.createSalesMessage({ leadId: lead.id, direction: "outbound", channel: "telegram", body: reply });
+      if (lead.status === "in_conversation" || lead.status === "approved" || lead.status === "contacted") {
+        await storage.updateSalesLead(lead.id, { status: "in_conversation" });
+      }
+    } catch (e) {
+      console.error("[telegram] webhook handling failed:", (e as Error).message);
+    }
   });
 
   const httpServer = createServer(app);

@@ -123,6 +123,9 @@ export function apiAccessGuard() {
   return async (req: Request, res: Response, next: NextFunction) => {
     if (!req.path.startsWith("/api/")) return next();
     if (req.path.startsWith("/api/auth/")) return next();
+    // Telegram webhook is called by Telegram's servers (no session). It is
+    // protected separately by a secret token verified in the handler.
+    if (req.path.startsWith("/api/telegram/")) return next();
 
     const userId = req.session?.userId;
     if (!userId) return res.status(401).json({ message: "Not authenticated" });

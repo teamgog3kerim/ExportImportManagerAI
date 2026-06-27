@@ -19,6 +19,7 @@ import SignIn from "@/pages/SignIn";
 import SignUp from "@/pages/SignUp";
 import Dashboard from "@/pages/Dashboard";
 import AIInsights from "@/pages/AIInsights";
+import SalesBot from "@/pages/SalesBot";
 import Finance from "@/pages/Finance";
 import ExchangeRates from "@/pages/ExchangeRates";
 import LCManagement from "@/pages/LCManagement";
@@ -50,6 +51,7 @@ function AppRouter({ user }: { user: AuthUser | null }) {
     <Switch>
       <Route path="/dashboard">{() => <Guarded user={user} pageKey="dashboard"><Dashboard /></Guarded>}</Route>
       <Route path="/ai-insights">{() => <Guarded user={user} pageKey="ai-insights"><AIInsights /></Guarded>}</Route>
+      <Route path="/sales-bot">{() => <Guarded user={user} pageKey="sales-bot"><SalesBot /></Guarded>}</Route>
       <Route path="/finance">{() => <Guarded user={user} pageKey="finance"><Finance /></Guarded>}</Route>
       <Route path="/exchange-rates">{() => <Guarded user={user} pageKey="exchange-rates"><ExchangeRates /></Guarded>}</Route>
       <Route path="/import/lc-management">{() => <Guarded user={user} pageKey="import-lc"><LCManagement /></Guarded>}</Route>

@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/sidebar";
 import {
   LayoutDashboard, BrainCircuit, Wallet, TrendingUp, FileText, Ship, Package,
-  Calculator, Settings, ChevronDown, ChevronRight, ShoppingCart, Banknote, Send, ShoppingBag,
+  Calculator, Settings, ChevronDown, ChevronRight, ShoppingCart, Banknote, Send, ShoppingBag, Bot,
 } from "lucide-react";
 import { useState } from "react";
 import eximmanLogo from "@assets/eximman_logo_trim.png";
@@ -15,6 +15,7 @@ import { pageForRoute } from "@shared/permissions";
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "AI Insights", url: "/ai-insights", icon: BrainCircuit },
+  { title: "Sales Bot", url: "/sales-bot", icon: Bot },
   { title: "Finance", url: "/finance", icon: Wallet },
   { title: "Exchange Rates", url: "/exchange-rates", icon: TrendingUp },
 ];
