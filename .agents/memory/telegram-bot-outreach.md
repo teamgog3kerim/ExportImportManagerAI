@@ -20,6 +20,17 @@ them and runs the conversation.
 **Why:** Avoids promising an impossible "the bot will text them automatically"
 feature. Explain this honestly in the UI.
 
+Because the bot cannot text phone numbers, the chosen UX is CEO-driven outbound:
+the pipeline gives each not-yet-connected lead WhatsApp / SMS / Copy-message
+buttons that prefill a ready-made invite (greeting + `t.me/<bot>?start=<leadId>`)
+to the lead's phone, which the CEO sends from their own phone.
+**How to apply (deep links from a web button):**
+- WhatsApp: `https://wa.me/<intlDigits>?text=<encoded>` — number must be
+  international digits only, no `+`. Normalise Ethiopian input: `0x`→`251x`,
+  `00`→strip, bare 9-digit `9xxxxxxxx`→`2519xxxxxxxx`; reject implausible lengths.
+- SMS: iOS needs `sms:<n>&body=...` while Android/others accept `?body=...` —
+  pick the separator by sniffing the user agent or the body is dropped.
+
 # Telegram Business mode (answer on the CEO's behalf)
 
 "This bot doesn't support Telegram Business yet" is caused by a **BotFather**

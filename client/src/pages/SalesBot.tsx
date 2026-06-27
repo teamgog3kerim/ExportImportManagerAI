@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Bot, CheckCircle2, XCircle, Sparkles, Upload, Send, CalendarPlus, Trash2,
   Loader2, MessageSquare, Plus, ShieldAlert, Link2, RefreshCw, CalendarClock, Sun, Moon,
+  Copy, Phone, MessageCircle,
 } from "lucide-react";
 import type { SalesLead, SalesMessage, SalesMeeting, SalesBotConfig, SalesSlot } from "@shared/schema";
 
@@ -88,18 +89,72 @@ export default function SalesBot() {
   });
 
   const botUsername = status?.bot?.username;
-  const copyInvite = async (leadId: string) => {
-    if (!botUsername) {
-      toast({ title: "Connect the bot first", description: "Set up the Telegram bot before sharing invite links.", variant: "destructive" });
-      return;
-    }
-    const link = `https://t.me/${botUsername}?start=${leadId}`;
+  const companyName = config?.companyName || "EXIMMAN";
+
+  const inviteLink = (leadId: string) => `https://t.me/${botUsername}?start=${leadId}`;
+
+  // A ready-to-send outreach message the CEO can paste into their own SMS or
+  // WhatsApp. Telegram bots cannot text phone numbers first, so we hand the CEO
+  // a complete message (with the invite link) to send from their phone.
+  const buildInviteMessage = (lead: SalesLead) => {
+    const greeting = lead.contactName ? `Hello ${lead.contactName},` : "Hello,";
+    return (
+      `${greeting}\n\n` +
+      `This is ${companyName}. We'd love to connect with you about import/export opportunities. ` +
+      `Tap the link below to chat with us directly on Telegram:\n\n` +
+      `${inviteLink(lead.id)}`
+    );
+  };
+
+  // Normalise common Ethiopian formats to an international number (no +). Handles
+  // 00 prefixes, a leading 0, a bare 9-digit local mobile (9xxxxxxxx), and numbers
+  // already in 251... form. Returns "" when the result is not a plausible length.
+  const intlPhone = (phone?: string | null) => {
+    if (!phone) return "";
+    let d = phone.replace(/\D/g, "");
+    if (d.startsWith("00")) d = d.slice(2);
+    else if (d.startsWith("0")) d = `251${d.slice(1)}`;
+    else if (d.length === 9 && d.startsWith("9")) d = `251${d}`; // 912345678 -> 251912345678
+    // Plausible international length check (country code + subscriber number).
+    if (d.length < 8 || d.length > 15) return "";
+    return d;
+  };
+
+  // iOS expects `&body=` while Android/others accept `?body=`. Detect iOS so the
+  // prefilled message isn't dropped.
+  const smsSeparator = () => (/iP(hone|ad|od)/.test(navigator.userAgent) ? "&" : "?");
+
+  const requireBot = () => {
+    if (botUsername) return true;
+    toast({ title: "Connect the bot first", description: "Set up the Telegram bot before sharing invite links.", variant: "destructive" });
+    return false;
+  };
+
+  const noPhoneToast = () => toast({ title: "Invalid phone number", description: "Add a valid phone number for this lead first.", variant: "destructive" });
+
+  const copyInvite = async (lead: SalesLead) => {
+    if (!requireBot()) return;
+    const message = buildInviteMessage(lead);
     try {
-      await navigator.clipboard.writeText(link);
-      toast({ title: "Invite link copied", description: "Send it to this contact. When they tap Start, the bot greets them automatically." });
+      await navigator.clipboard.writeText(message);
+      toast({ title: "Message copied", description: "Paste it into SMS or WhatsApp and send it to this contact." });
     } catch {
-      toast({ title: "Copy this invite link", description: link });
+      toast({ title: "Copy this message", description: message });
     }
+  };
+
+  const openSms = (lead: SalesLead) => {
+    if (!requireBot()) return;
+    const num = intlPhone(lead.phone);
+    if (!num) { noPhoneToast(); return; }
+    window.open(`sms:${num}${smsSeparator()}body=${encodeURIComponent(buildInviteMessage(lead))}`, "_blank");
+  };
+
+  const openWhatsApp = (lead: SalesLead) => {
+    if (!requireBot()) return;
+    const num = intlPhone(lead.phone);
+    if (!num) { noPhoneToast(); return; }
+    window.open(`https://wa.me/${num}?text=${encodeURIComponent(buildInviteMessage(lead))}`, "_blank");
   };
 
   return (
@@ -213,9 +268,17 @@ export default function SalesBot() {
                       </Button>
                     )
                   ) : (
-                    <Button size="sm" variant="outline" onClick={() => copyInvite(lead.id)} data-testid={`button-invite-${lead.id}`}>
-                      <Link2 className="h-4 w-4" /> Copy invite link
-                    </Button>
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => openWhatsApp(lead)} data-testid={`button-whatsapp-${lead.id}`}>
+                        <MessageCircle className="h-4 w-4" /> WhatsApp
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => openSms(lead)} data-testid={`button-sms-${lead.id}`}>
+                        <Phone className="h-4 w-4" /> SMS
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => copyInvite(lead)} data-testid={`button-invite-${lead.id}`}>
+                        <Copy className="h-4 w-4" /> Copy message
+                      </Button>
+                    </>
                   )}
                   <Button size="sm" variant="outline" onClick={() => { setActiveLeadId(lead.id); setTab("conversations"); }} data-testid={`button-open-chat-${lead.id}`}>
                     <MessageSquare className="h-4 w-4" /> Chat
@@ -859,8 +922,9 @@ function SettingsPanel({ config, status }: { config?: SalesBotConfig; status?: B
             </p>
           </div>
           <p className="text-xs text-muted-foreground">
-            Telegram does not let bots message people first. For each approved lead, use
-            <span className="font-medium"> Copy invite link</span> in the pipeline and send it to the contact — when they tap
+            Telegram does not let bots message phone numbers first. For each approved lead, use
+            <span className="font-medium"> WhatsApp</span>, <span className="font-medium">SMS</span> or <span className="font-medium">Copy message</span> in
+            the pipeline to send the ready-made invite from your own phone — when the contact taps
             <span className="font-medium"> Start</span>, the bot links them and greets them automatically. After that the AI runs the whole conversation and books the meeting.
             {status?.bot?.username ? <> Your bot: <span className="font-mono">t.me/{status.bot.username}</span>.</> : null}
           </p>
