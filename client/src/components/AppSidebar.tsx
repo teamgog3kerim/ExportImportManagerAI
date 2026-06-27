@@ -15,7 +15,6 @@ import { pageForRoute } from "@shared/permissions";
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "AI Insights", url: "/ai-insights", icon: BrainCircuit },
-  { title: "Sales Bot", url: "/sales-bot", icon: Bot },
   { title: "Finance", url: "/finance", icon: Wallet },
   { title: "Exchange Rates", url: "/exchange-rates", icon: TrendingUp },
 ];
@@ -37,6 +36,7 @@ const otherItems = [
   { title: "Cost Estimator", url: "/cost-estimator", icon: Calculator },
   { title: "Tax Estimator", url: "/customs", icon: Calculator },
   { title: "Settings", url: "/settings", icon: Settings },
+  { title: "Sales Bot", url: "/sales-bot", icon: Bot },
 ];
 
 export function AppSidebar() {
