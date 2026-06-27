@@ -185,6 +185,66 @@ export async function discoverLeads(
   }
 }
 
+export interface DetectedMeeting {
+  confirmed: boolean;
+  title: string;
+  scheduledAt: string; // ISO 8601
+  location: string;
+  mode: string; // physical | demo | online
+  notes: string;
+}
+
+// Inspects the latest conversation to decide whether the lead has agreed to a
+// concrete meeting or demo at a specific date/time. Only returns confirmed:true
+// when a parseable date/time was actually agreed — vague intent is ignored so we
+// never auto-book a meeting on a maybe.
+export async function detectMeeting(
+  config: SalesBotConfig,
+  lead: SalesLead,
+  history: SalesMessage[],
+): Promise<DetectedMeeting | null> {
+  const transcript = history
+    .slice(-16)
+    .map(m => `${m.direction === "inbound" ? "Lead" : "Agent"}: ${m.body}`)
+    .join("\n");
+  const nowIso = new Date().toISOString();
+  const system =
+    `You analyse a sales chat for ${config.companyName}. The current date/time is ${nowIso}. ` +
+    "Decide if the LEAD has clearly agreed to a specific meeting or product demo at a concrete date AND time. " +
+    "Resolve relative phrases (e.g. 'tomorrow 3pm', 'next Tuesday morning') into an absolute ISO 8601 datetime with timezone offset. " +
+    'Respond ONLY as JSON: {"confirmed": <true|false>, "scheduledAt": "<ISO 8601 or empty>", "title": "<short meeting title>", "location": "<place or empty>", "mode": "<physical|demo|online>", "notes": "<one short sentence of context>"}. ' +
+    "Set confirmed=false unless BOTH a clear agreement and a concrete date/time are present.";
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-5-mini",
+      response_format: { type: "json_object" },
+      reasoning_effort: "low",
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: `Lead: ${lead.companyName}\n\nConversation:\n${transcript}` },
+      ],
+      max_completion_tokens: 2000,
+    });
+    const parsed = safeParseJson(response.choices[0]?.message?.content ?? "");
+    if (!parsed.confirmed) return null;
+    const iso = String(parsed.scheduledAt ?? "").trim();
+    const when = new Date(iso);
+    if (!iso || isNaN(when.getTime())) return null; // no usable time -> don't book
+    const mode = ["physical", "demo", "online"].includes(parsed.mode) ? parsed.mode : "physical";
+    return {
+      confirmed: true,
+      title: String(parsed.title ?? "").trim() || `Meeting with ${lead.companyName}`,
+      scheduledAt: when.toISOString(),
+      location: String(parsed.location ?? "").trim(),
+      mode,
+      notes: String(parsed.notes ?? "").trim(),
+    };
+  } catch (e) {
+    console.error("[salesBot] detectMeeting failed:", (e as Error).message);
+    return null;
+  }
+}
+
 // Dependency-free CSV parser. Accepts a header row and maps common column names
 // to lead fields. Tolerates quoted values and commas inside quotes.
 function splitCsvLine(line: string): string[] {

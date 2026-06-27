@@ -81,6 +81,26 @@ export default function SalesBot() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/sales-bot/leads/${id}`),
     onSuccess: () => { invalidateLeads(); toast({ title: "Lead removed" }); },
   });
+  const outreachMut = useMutation({
+    mutationFn: (id: string) => apiRequest("POST", `/api/sales-bot/leads/${id}/outreach`),
+    onSuccess: () => { invalidateLeads(); toast({ title: "Outreach started", description: "The bot just sent its opening message." }); },
+    onError: (e: any) => toast({ title: "Outreach failed", description: e.message, variant: "destructive" }),
+  });
+
+  const botUsername = status?.bot?.username;
+  const copyInvite = async (leadId: string) => {
+    if (!botUsername) {
+      toast({ title: "Connect the bot first", description: "Set up the Telegram bot before sharing invite links.", variant: "destructive" });
+      return;
+    }
+    const link = `https://t.me/${botUsername}?start=${leadId}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      toast({ title: "Invite link copied", description: "Send it to this contact. When they tap Start, the bot greets them automatically." });
+    } catch {
+      toast({ title: "Copy this invite link", description: link });
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -185,6 +205,17 @@ export default function SalesBot() {
                   {lead.aiPitch && <p className="text-sm text-foreground/80 mt-2">Pitch angle: {lead.aiPitch}</p>}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
+                  {lead.telegramChatId ? (
+                    lead.status === "approved" && (
+                      <Button size="sm" onClick={() => outreachMut.mutate(lead.id)} disabled={outreachMut.isPending} data-testid={`button-outreach-${lead.id}`}>
+                        {outreachMut.isPending && outreachMut.variables === lead.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Start outreach
+                      </Button>
+                    )
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => copyInvite(lead.id)} data-testid={`button-invite-${lead.id}`}>
+                      <Link2 className="h-4 w-4" /> Copy invite link
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => { setActiveLeadId(lead.id); setTab("conversations"); }} data-testid={`button-open-chat-${lead.id}`}>
                     <MessageSquare className="h-4 w-4" /> Chat
                   </Button>
@@ -636,6 +667,10 @@ function SettingsPanel({ config, status }: { config?: SalesBotConfig; status?: B
             <div><p className="text-sm font-medium text-foreground">Auto-reply to inbound messages</p><p className="text-xs text-muted-foreground">When on, the AI answers people who message the bot.</p></div>
             <Switch checked={!!merged.autoReplyEnabled} onCheckedChange={v => set("autoReplyEnabled", v)} data-testid="switch-autoreply" />
           </div>
+          <div className="flex items-center justify-between gap-3 rounded-md border p-3">
+            <div><p className="text-sm font-medium text-foreground">Auto-start outreach on approval</p><p className="text-xs text-muted-foreground">When on, approving a connected lead immediately sends the AI opener. Turn off to start outreach manually.</p></div>
+            <Switch checked={!!merged.autoOutreachEnabled} onCheckedChange={v => set("autoOutreachEnabled", v)} data-testid="switch-autooutreach" />
+          </div>
           <Button onClick={() => saveMut.mutate()} disabled={Object.keys(form).length === 0 || saveMut.isPending} data-testid="button-save-config">
             {saveMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Save settings
           </Button>
@@ -661,9 +696,22 @@ function SettingsPanel({ config, status }: { config?: SalesBotConfig; status?: B
             {webhookMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Connect webhook
           </Button>
           <p className="text-xs text-muted-foreground">
-            Leads can only be messaged after they tap <span className="font-medium">Start</span> on your bot. Share your bot link
-            {status?.bot?.username ? <> (<span className="font-mono">t.me/{status.bot.username}</span>)</> : null} with prospects to begin conversations.
+            Telegram does not let bots message people first. For each approved lead, use
+            <span className="font-medium"> Copy invite link</span> in the pipeline and send it to the contact — when they tap
+            <span className="font-medium"> Start</span>, the bot links them and greets them automatically. After that the AI runs the whole conversation and books the meeting.
+            {status?.bot?.username ? <> Your bot: <span className="font-mono">t.me/{status.bot.username}</span>.</> : null}
           </p>
+
+          <div className="pt-1">
+            <Label htmlFor="adminChat">Admin chat ID for meeting alerts</Label>
+            <Input id="adminChat" value={merged.adminChatId ?? ""} onChange={e => set("adminChatId", e.target.value)} placeholder="e.g. 123456789" data-testid="input-config-adminchat" />
+            <p className="text-xs text-muted-foreground mt-1">
+              Open your bot in Telegram and send <span className="font-mono">/myid</span> — it replies with your chat ID. Paste it here and save to get a Telegram alert whenever the bot books a meeting.
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => saveMut.mutate()} disabled={Object.keys(form).length === 0 || saveMut.isPending} data-testid="button-save-config-telegram">
+            {saveMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Save settings
+          </Button>
         </CardContent>
       </Card>
     </div>

@@ -593,8 +593,13 @@ export const salesBotConfig = pgTable("sales_bot_config", {
   productCatalog: text("product_catalog").notNull().default(""),
   persona: text("persona").notNull().default(""),
   autoReplyEnabled: boolean("auto_reply_enabled").notNull().default(true),
+  // When on, approving a reachable lead immediately sends the AI opener and the
+  // bot drives the conversation toward a meeting without manual prompting.
+  autoOutreachEnabled: boolean("auto_outreach_enabled").notNull().default(true),
   dailyDiscoveryEnabled: boolean("daily_discovery_enabled").notNull().default(false),
   meetingLink: text("meeting_link"),
+  // Telegram chat ID of the admin/CEO who receives meeting-booked alerts.
+  adminChatId: text("admin_chat_id"),
   updatedAt: text("updated_at").notNull(),
 });
 

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { generateAIResponse, generateDailySummary } from "./openai";
 import { insertExportPurchaseSchema, insertCadSchema, insertExportShipmentSchema, insertSupplierSchema, insertBuyerSchema, insertExpenseSchema, insertPettyCashAccountSchema, insertPettyCashTransactionSchema, insertSupplierPaymentSchema, insertCustomerPaymentSchema, updateSupplierPaymentSchema, updateCustomerPaymentSchema, insertSaleSchema, insertSalesLeadSchema, insertSalesMeetingSchema, updateSalesBotConfigSchema } from "@shared/schema";
 import { isTelegramConfigured, getBotInfo, sendTelegramMessage, setTelegramWebhook, getWebhookSecret, type TelegramUpdate } from "./telegram";
-import { generateSalesReply, qualifyLead, discoverLeads, parseCsvLeads } from "./salesBot";
+import { generateSalesReply, qualifyLead, discoverLeads, parseCsvLeads, detectMeeting } from "./salesBot";
 import { scrapeAddisFortuneRates, scrapedToExchangeRates } from "./lib/rateScraper";
 import { buildReport } from "./lib/reportNarrator";
 import { apiAccessGuard, ensureBootstrapAdmin, registerAuthRoutes } from "./auth";
@@ -35,6 +35,74 @@ async function refreshLiveRates() {
     console.warn("[rates] scrape failed:", (e as Error).message);
   } finally {
     scrapeInFlight = false;
+  }
+}
+
+// Lead statuses from which the bot is allowed to actively message a contact. A
+// lead must be approved by the CEO first; discovered/rejected/lost/won leads are
+// never contacted. Enforced server-side (not just in the UI).
+const CONTACTABLE_STATUSES = new Set(["approved", "contacted", "in_conversation", "meeting_booked"]);
+
+// Per-lead lock so two webhook events arriving close together for the same lead
+// cannot both pass the "already booked?" check and create duplicate meetings.
+const bookingInProgress = new Set<string>();
+
+// After each AI reply we check whether the lead has just committed to a concrete
+// meeting. If so we record it once and alert the CEO over Telegram (when an admin
+// chat id is configured) plus in the in-app Meetings tab.
+async function maybeBookMeetingAndNotify(leadId: string): Promise<void> {
+  if (bookingInProgress.has(leadId)) return;
+  bookingInProgress.add(leadId);
+  try {
+    const config = await storage.getSalesBotConfig();
+    const lead = await storage.getSalesLead(leadId);
+    if (!lead) return;
+    // Don't re-book if a meeting is already on the books for this lead.
+    const existing = (await storage.getSalesMeetings()).filter(m => m.leadId === leadId && m.status !== "cancelled");
+    if (existing.length > 0) return;
+
+    const history = await storage.getSalesMessages(leadId);
+    const detected = await detectMeeting(config, lead, history);
+    if (!detected) return;
+
+    // Re-check after the AI call (an async gap) in case a meeting was booked in
+    // the meantime, then create.
+    const stillNone = (await storage.getSalesMeetings()).filter(m => m.leadId === leadId && m.status !== "cancelled").length === 0;
+    if (!stillNone) return;
+
+    const meeting = await storage.createSalesMeeting({
+      leadId,
+      title: detected.title,
+      scheduledAt: detected.scheduledAt,
+      location: detected.location || (detected.mode === "online" ? "Online" : ""),
+      mode: detected.mode,
+      notes: detected.notes,
+      status: "confirmed",
+    });
+    await storage.updateSalesLead(leadId, { status: "meeting_booked" });
+
+    const when = new Date(meeting.scheduledAt).toLocaleString("en-US", {
+      dateStyle: "full",
+      timeStyle: "short",
+    });
+    if (config.adminChatId) {
+      const lines = [
+        "New meeting booked by the sales bot",
+        "",
+        `Company: ${lead.companyName}`,
+        `When: ${when}`,
+        meeting.location ? `Where: ${meeting.location}` : null,
+        lead.contactName ? `Contact: ${lead.contactName}` : null,
+        lead.phone ? `Phone: ${lead.phone}` : null,
+        detected.notes ? `Notes: ${detected.notes}` : null,
+      ].filter(Boolean) as string[];
+      try { await sendTelegramMessage(config.adminChatId, lines.join("\n")); }
+      catch (e) { console.error("[salesBot] admin notify failed:", (e as Error).message); }
+    }
+  } catch (e) {
+    console.error("[salesBot] maybeBookMeetingAndNotify failed:", (e as Error).message);
+  } finally {
+    bookingInProgress.delete(leadId);
   }
 }
 
@@ -650,10 +718,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const lead = await storage.getSalesLead(req.params.id);
     if (!lead) return res.status(404).json({ message: "Lead not found" });
     const updated = await storage.updateSalesLead(lead.id, { status: "approved" });
-    // If this lead has already connected on Telegram, send an AI opener now.
-    if (lead.telegramChatId && isTelegramConfigured()) {
+    // If this lead has already connected on Telegram and auto-outreach is on,
+    // send the AI opener now and let the bot drive the conversation.
+    const config = await storage.getSalesBotConfig();
+    if (lead.telegramChatId && isTelegramConfigured() && config.autoOutreachEnabled) {
       try {
-        const config = await storage.getSalesBotConfig();
         const history = await storage.getSalesMessages(lead.id);
         const opener = await generateSalesReply(config, lead, history, "[The CEO just approved this lead for outreach. Send a warm, professional opening message introducing yourself and the company.]");
         await sendTelegramMessage(lead.telegramChatId, opener);
@@ -664,6 +733,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
     res.json(await storage.getSalesLead(lead.id) ?? updated);
+  });
+
+  // Manually (re)start the AI outreach for an approved lead that is reachable on
+  // Telegram. Used by the "Start outreach" button when auto-outreach is off or
+  // the CEO wants to re-trigger the opener.
+  app.post("/api/sales-bot/leads/:id/outreach", async (req, res) => {
+    const lead = await storage.getSalesLead(req.params.id);
+    if (!lead) return res.status(404).json({ message: "Lead not found" });
+    if (!CONTACTABLE_STATUSES.has(lead.status)) {
+      return res.status(400).json({ message: "Approve this lead before starting outreach." });
+    }
+    if (!lead.telegramChatId) {
+      return res.status(400).json({ message: "This lead has not connected on Telegram yet. Share the invite link so they tap Start first." });
+    }
+    if (!isTelegramConfigured()) {
+      return res.status(400).json({ message: "Telegram is not configured. Add TELEGRAM_BOT_TOKEN and connect the webhook." });
+    }
+    try {
+      const config = await storage.getSalesBotConfig();
+      const history = await storage.getSalesMessages(lead.id);
+      const opener = await generateSalesReply(config, lead, history, "[The CEO just approved this lead for outreach. Send a warm, professional opening message introducing yourself and the company.]");
+      await sendTelegramMessage(lead.telegramChatId, opener);
+      await storage.createSalesMessage({ leadId: lead.id, direction: "outbound", channel: "telegram", body: opener });
+      const out = await storage.updateSalesLead(lead.id, { status: "contacted" });
+      res.json(out);
+    } catch (e) {
+      res.status(502).json({ message: (e as Error).message });
+    }
   });
 
   app.post("/api/sales-bot/leads/:id/reject", async (req, res) => {
@@ -797,7 +894,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message.chat.first_name ||
         (username ? `@${username}` : `Telegram ${chatId}`);
 
+      // Helper command so the CEO can grab their own chat id for meeting alerts.
+      if (text === "/myid") {
+        await sendTelegramMessage(
+          chatId,
+          `Your Telegram chat ID is: ${chatId}\n\nPaste this into EXIMMAN → Sales Bot → Settings (Admin chat ID) to receive meeting alerts here.`,
+        );
+        return;
+      }
+
+      // Deep-link start: "/start <leadId>" links this chat to an existing approved
+      // lead so the bot can run the outreach conversation with the right context.
+      const isStart = text.startsWith("/start");
       let lead = await storage.getSalesLeadByChatId(chatId);
+      if (!lead && isStart) {
+        const payload = text.slice("/start".length).trim();
+        if (payload) {
+          const target = await storage.getSalesLead(payload);
+          // Only link the chat to a lead the CEO has approved for outreach.
+          // Otherwise fall through and treat them as a fresh inbound contact.
+          if (target && !target.telegramChatId && CONTACTABLE_STATUSES.has(target.status)) {
+            lead = (await storage.updateSalesLead(target.id, {
+              telegramChatId: chatId,
+              telegramUsername: username ?? null,
+              status: "in_conversation",
+            }))!;
+          }
+        }
+      }
       if (!lead) {
         lead = await storage.createSalesLead({
           companyName: displayName,
@@ -812,13 +936,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }))!;
       }
 
-      await storage.createSalesMessage({ leadId: lead.id, direction: "inbound", channel: "telegram", body: text });
+      // Don't store the raw "/start ..." command as a conversation turn.
+      if (!isStart) {
+        await storage.createSalesMessage({ leadId: lead.id, direction: "inbound", channel: "telegram", body: text });
+      }
 
       const config = await storage.getSalesBotConfig();
       if (!config.autoReplyEnabled || !isTelegramConfigured()) return;
 
       const history = await storage.getSalesMessages(lead.id);
-      const incoming = text === "/start"
+      const incoming = isStart
         ? "[The user just started the conversation. Greet them warmly, introduce yourself and the company in 2-3 sentences, and ask one qualifying question.]"
         : text;
       const reply = await generateSalesReply(config, lead, history, incoming);
@@ -827,6 +954,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (lead.status === "in_conversation" || lead.status === "approved" || lead.status === "contacted") {
         await storage.updateSalesLead(lead.id, { status: "in_conversation" });
       }
+
+      // After replying, see if the lead just agreed to a concrete meeting and, if
+      // so, book it and alert the CEO.
+      await maybeBookMeetingAndNotify(lead.id);
     } catch (e) {
       console.error("[telegram] webhook handling failed:", (e as Error).message);
     }

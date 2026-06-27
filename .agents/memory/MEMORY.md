@@ -3,3 +3,4 @@
 - [Server has no watch mode](server-no-watch.md) — backend .ts edits need restart_workflow; Vite HMR only covers client.
 - [Elevate vs absolute positioning](elevate-positioning.md) — hover-elevate/active-elevate set position:relative and override `absolute`; pin via a wrapper div, elevate the inner control.
 - [OpenAI integration proxy limits](openai-integration-limits.md) — Replit OpenAI proxy blocks /audio/speech (TTS); chat works (use max_completion_tokens). Fall back to browser Web Speech API for runtime TTS.
+- [Telegram bot outreach](telegram-bot-outreach.md) — bots cannot cold-message; use t.me/<bot>?start=<leadId> deep links, approval-gate the linking, lock auto-booking.
