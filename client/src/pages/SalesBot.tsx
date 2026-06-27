@@ -352,7 +352,7 @@ function AddLeadDialog() {
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <Label htmlFor="cn">Company name</Label>
+            <Label htmlFor="cn">Company name <span className="text-destructive">*</span></Label>
             <Input id="cn" value={form.companyName} onChange={e => set("companyName", e.target.value)} data-testid="input-company-name" />
           </div>
           <div>
@@ -365,13 +365,13 @@ function AddLeadDialog() {
           <div className="grid grid-cols-2 gap-3">
             <div><Label htmlFor="con">Contact</Label><Input id="con" value={form.contactName} onChange={e => set("contactName", e.target.value)} data-testid="input-contact" /></div>
             <div><Label htmlFor="loc">Location</Label><Input id="loc" value={form.location} onChange={e => set("location", e.target.value)} data-testid="input-location" /></div>
-            <div><Label htmlFor="ph">Phone</Label><Input id="ph" value={form.phone} onChange={e => set("phone", e.target.value)} data-testid="input-phone" /></div>
+            <div><Label htmlFor="ph">Phone <span className="text-destructive">*</span></Label><Input id="ph" value={form.phone} onChange={e => set("phone", e.target.value)} data-testid="input-phone" /></div>
             <div><Label htmlFor="em">Email</Label><Input id="em" value={form.email} onChange={e => set("email", e.target.value)} data-testid="input-email" /></div>
           </div>
           <div><Label htmlFor="nt">Notes</Label><Textarea id="nt" value={form.notes} onChange={e => set("notes", e.target.value)} data-testid="input-notes" /></div>
         </div>
         <DialogFooter>
-          <Button onClick={() => mut.mutate()} disabled={!form.companyName.trim() || mut.isPending} data-testid="button-save-lead">
+          <Button onClick={() => mut.mutate()} disabled={!form.companyName.trim() || !form.phone.trim() || mut.isPending} data-testid="button-save-lead">
             {mut.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Save
           </Button>
         </DialogFooter>
